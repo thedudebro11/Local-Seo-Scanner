@@ -1,17 +1,16 @@
 "use strict";
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const url = require("url");
 const pathResolver = require("./pathResolver-CbX9UHgB.js");
 const logger = require("./logger-DOTeCaxX.js");
 require("electron");
 require("path");
 function normalizeInputUrl(raw) {
-  let url$1 = raw.trim();
-  if (!/^https?:\/\//i.test(url$1)) {
-    url$1 = `https://${url$1}`;
+  let url = raw.trim();
+  if (!/^https?:\/\//i.test(url)) {
+    url = `https://${url}`;
   }
   try {
-    const parsed = new url.URL(url$1);
+    const parsed = new URL(url);
     parsed.hostname = parsed.hostname.toLowerCase();
     parsed.pathname = parsed.pathname.replace(/\/+$/, "") || "/";
     return parsed.href;
@@ -19,9 +18,9 @@ function normalizeInputUrl(raw) {
     throw new Error(`Invalid URL: "${raw}"`);
   }
 }
-function getDomain(url$1) {
+function getDomain(url) {
   try {
-    return new url.URL(url$1).hostname.toLowerCase();
+    return new URL(url).hostname.toLowerCase();
   } catch {
     return "";
   }

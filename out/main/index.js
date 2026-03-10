@@ -10,7 +10,7 @@ function registerScanHandlers(mainWindow2) {
       }
     };
     try {
-      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-Dint0Kfs.js"));
+      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-CH43LY54.js"));
       const result = await runAudit(request, emitProgress);
       return result;
     } catch (err) {

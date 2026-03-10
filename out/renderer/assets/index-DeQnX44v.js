@@ -285,10 +285,10 @@ react_production_min.version = "18.3.1";
   react.exports = react_production_min;
 }
 var reactExports = react.exports;
-const React = /* @__PURE__ */ getDefaultExportFromCjs(reactExports);
-const React$1 = /* @__PURE__ */ _mergeNamespaces({
+const React$2 = /* @__PURE__ */ getDefaultExportFromCjs(reactExports);
+const React$3 = /* @__PURE__ */ _mergeNamespaces({
   __proto__: null,
-  default: React
+  default: React$2
 }, [reactExports]);
 /**
  * @license React
@@ -7065,16 +7065,16 @@ function createHashHistory(options) {
   }
   return getUrlBasedHistory(createHashLocation, createHashHref, validateHashLocation, options);
 }
-function invariant(value, message) {
+function invariant(value, message2) {
   if (value === false || value === null || typeof value === "undefined") {
-    throw new Error(message);
+    throw new Error(message2);
   }
 }
-function warning(cond, message) {
+function warning(cond, message2) {
   if (!cond) {
-    if (typeof console !== "undefined") console.warn(message);
+    if (typeof console !== "undefined") console.warn(message2);
     try {
-      throw new Error(message);
+      throw new Error(message2);
     } catch (e) {
     }
   }
@@ -7320,12 +7320,12 @@ function matchRoutesImpl(routes, locationArg, basename, allowPartial) {
   }
   return matches;
 }
-function convertRouteMatchToUiMatch(match, loaderData) {
+function convertRouteMatchToUiMatch(match2, loaderData) {
   let {
     route,
     pathname,
     params
-  } = match;
+  } = match2;
   return {
     id: route.id,
     pathname,
@@ -7453,32 +7453,32 @@ function matchRouteBranch(branch, pathname, allowPartial) {
     let meta = routesMeta[i];
     let end = i === routesMeta.length - 1;
     let remainingPathname = matchedPathname === "/" ? pathname : pathname.slice(matchedPathname.length) || "/";
-    let match = matchPath({
+    let match2 = matchPath({
       path: meta.relativePath,
       caseSensitive: meta.caseSensitive,
       end
     }, remainingPathname);
     let route = meta.route;
-    if (!match && end && allowPartial && !routesMeta[routesMeta.length - 1].route.index) {
-      match = matchPath({
+    if (!match2 && end && allowPartial && !routesMeta[routesMeta.length - 1].route.index) {
+      match2 = matchPath({
         path: meta.relativePath,
         caseSensitive: meta.caseSensitive,
         end: false
       }, remainingPathname);
     }
-    if (!match) {
+    if (!match2) {
       return null;
     }
-    Object.assign(matchedParams, match.params);
+    Object.assign(matchedParams, match2.params);
     matches.push({
       // TODO: Can this as be avoided?
       params: matchedParams,
-      pathname: joinPaths([matchedPathname, match.pathname]),
-      pathnameBase: normalizePathname(joinPaths([matchedPathname, match.pathnameBase])),
+      pathname: joinPaths([matchedPathname, match2.pathname]),
+      pathnameBase: normalizePathname(joinPaths([matchedPathname, match2.pathnameBase])),
       route
     });
-    if (match.pathnameBase !== "/") {
-      matchedPathname = joinPaths([matchedPathname, match.pathnameBase]);
+    if (match2.pathnameBase !== "/") {
+      matchedPathname = joinPaths([matchedPathname, match2.pathnameBase]);
     }
   }
   return matches;
@@ -7492,11 +7492,11 @@ function matchPath(pattern, pathname) {
     };
   }
   let [matcher, compiledParams] = compilePath(pattern.path, pattern.caseSensitive, pattern.end);
-  let match = pathname.match(matcher);
-  if (!match) return null;
-  let matchedPathname = match[0];
+  let match2 = pathname.match(matcher);
+  if (!match2) return null;
+  let matchedPathname = match2[0];
   let pathnameBase = matchedPathname.replace(/(.)\/+$/, "$1");
-  let captureGroups = match.slice(1);
+  let captureGroups = match2.slice(1);
   let params = compiledParams.reduce((memo, _ref, index2) => {
     let {
       paramName,
@@ -7622,14 +7622,14 @@ function getInvalidPathError(char, field, dest, path) {
   return "Cannot include a '" + char + "' character in a manually specified " + ("`to." + field + "` field [" + JSON.stringify(path) + "].  Please separate it out to the ") + ("`to." + dest + "` field. Alternatively you may provide the full path as ") + 'a string in <Link to="..."> and the router will parse it for you.';
 }
 function getPathContributingMatches(matches) {
-  return matches.filter((match, index2) => index2 === 0 || match.route.path && match.route.path.length > 0);
+  return matches.filter((match2, index2) => index2 === 0 || match2.route.path && match2.route.path.length > 0);
 }
 function getResolveToMatches(matches, v7_relativeSplatPath) {
   let pathMatches = getPathContributingMatches(matches);
   if (v7_relativeSplatPath) {
-    return pathMatches.map((match, idx) => idx === pathMatches.length - 1 ? match.pathname : match.pathnameBase);
+    return pathMatches.map((match2, idx) => idx === pathMatches.length - 1 ? match2.pathname : match2.pathnameBase);
   }
-  return pathMatches.map((match) => match.pathnameBase);
+  return pathMatches.map((match2) => match2.pathnameBase);
 }
 function resolveTo(toArg, routePathnames, locationPathname, isPathRelative) {
   if (isPathRelative === void 0) {
@@ -8532,19 +8532,19 @@ function createRouter(init) {
       });
       return;
     }
-    let match = getTargetMatch(matches, path);
+    let match2 = getTargetMatch(matches, path);
     let preventScrollReset = (opts && opts.preventScrollReset) === true;
     if (submission && isMutationMethod(submission.formMethod)) {
-      handleFetcherAction(key, routeId, path, match, matches, fogOfWar.active, flushSync, preventScrollReset, submission);
+      handleFetcherAction(key, routeId, path, match2, matches, fogOfWar.active, flushSync, preventScrollReset, submission);
       return;
     }
     fetchLoadMatches.set(key, {
       routeId,
       path
     });
-    handleFetcherLoader(key, routeId, path, match, matches, fogOfWar.active, flushSync, preventScrollReset, submission);
+    handleFetcherLoader(key, routeId, path, match2, matches, fogOfWar.active, flushSync, preventScrollReset, submission);
   }
-  async function handleFetcherAction(key, routeId, path, match, requestMatches, isFogOfWar, flushSync, preventScrollReset, submission) {
+  async function handleFetcherAction(key, routeId, path, match2, requestMatches, isFogOfWar, flushSync, preventScrollReset, submission) {
     interruptActiveLoads();
     fetchLoadMatches.delete(key);
     function detectAndHandle405Error(m2) {
@@ -8561,7 +8561,7 @@ function createRouter(init) {
       }
       return false;
     }
-    if (!isFogOfWar && detectAndHandle405Error(match)) {
+    if (!isFogOfWar && detectAndHandle405Error(match2)) {
       return;
     }
     let existingFetcher = state.fetchers.get(key);
@@ -8588,16 +8588,16 @@ function createRouter(init) {
         return;
       } else {
         requestMatches = discoverResult.matches;
-        match = getTargetMatch(requestMatches, path);
-        if (detectAndHandle405Error(match)) {
+        match2 = getTargetMatch(requestMatches, path);
+        if (detectAndHandle405Error(match2)) {
           return;
         }
       }
     }
     fetchControllers.set(key, abortController);
     let originatingLoadId = incrementingLoadId;
-    let actionResults = await callDataStrategy("action", state, fetchRequest, [match], requestMatches, key);
-    let actionResult = actionResults[match.route.id];
+    let actionResults = await callDataStrategy("action", state, fetchRequest, [match2], requestMatches, key);
+    let actionResult = actionResults[match2.route.id];
     if (fetchRequest.signal.aborted) {
       if (fetchControllers.get(key) === abortController) {
         fetchControllers.delete(key);
@@ -8643,7 +8643,7 @@ function createRouter(init) {
     fetchReloadIds.set(key, loadId);
     let loadFetcher = getLoadingFetcher(submission, actionResult.data);
     state.fetchers.set(key, loadFetcher);
-    let [matchesToLoad, revalidatingFetchers] = getMatchesToLoad(init.history, state, matches, submission, nextLocation, false, future.v7_skipActionErrorRevalidation, isRevalidationRequired, cancelledDeferredRoutes, cancelledFetcherLoads, deletedFetchers, fetchLoadMatches, fetchRedirectIds, routesToUse, basename, [match.route.id, actionResult]);
+    let [matchesToLoad, revalidatingFetchers] = getMatchesToLoad(init.history, state, matches, submission, nextLocation, false, future.v7_skipActionErrorRevalidation, isRevalidationRequired, cancelledDeferredRoutes, cancelledFetcherLoads, deletedFetchers, fetchLoadMatches, fetchRedirectIds, routesToUse, basename, [match2.route.id, actionResult]);
     revalidatingFetchers.filter((rf2) => rf2.key !== key).forEach((rf2) => {
       let staleKey = rf2.key;
       let existingFetcher2 = state.fetchers.get(staleKey);
@@ -8710,7 +8710,7 @@ function createRouter(init) {
       isRevalidationRequired = false;
     }
   }
-  async function handleFetcherLoader(key, routeId, path, match, matches, isFogOfWar, flushSync, preventScrollReset, submission) {
+  async function handleFetcherLoader(key, routeId, path, match2, matches, isFogOfWar, flushSync, preventScrollReset, submission) {
     let existingFetcher = state.fetchers.get(key);
     updateFetcherState(key, getLoadingFetcher(submission, existingFetcher ? existingFetcher.data : void 0), {
       flushSync
@@ -8735,13 +8735,13 @@ function createRouter(init) {
         return;
       } else {
         matches = discoverResult.matches;
-        match = getTargetMatch(matches, path);
+        match2 = getTargetMatch(matches, path);
       }
     }
     fetchControllers.set(key, abortController);
     let originatingLoadId = incrementingLoadId;
-    let results = await callDataStrategy("loader", state, fetchRequest, [match], matches, key);
-    let result = results[match.route.id];
+    let results = await callDataStrategy("loader", state, fetchRequest, [match2], matches, key);
+    let result = results[match2.route.id];
     if (isDeferredResult(result)) {
       result = await resolveDeferredData(result, fetchRequest.signal, true) || result;
     }
@@ -9269,10 +9269,10 @@ function normalizeTo(location, matches, basename, prependBasename, to, v7_relati
   let activeRouteMatch;
   if (fromRouteId) {
     contextualMatches = [];
-    for (let match of matches) {
-      contextualMatches.push(match);
-      if (match.route.id === fromRouteId) {
-        activeRouteMatch = match;
+    for (let match2 of matches) {
+      contextualMatches.push(match2);
+      if (match2.route.id === fromRouteId) {
+        activeRouteMatch = match2;
         break;
       }
     }
@@ -9440,10 +9440,10 @@ function getMatchesToLoad(history, state, matches, submission, location, initial
   }
   let actionStatus = pendingActionResult ? pendingActionResult[1].statusCode : void 0;
   let shouldSkipRevalidation = skipActionErrorRevalidation && actionStatus && actionStatus >= 400;
-  let navigationMatches = boundaryMatches.filter((match, index2) => {
+  let navigationMatches = boundaryMatches.filter((match2, index2) => {
     let {
       route
-    } = match;
+    } = match2;
     if (route.lazy) {
       return true;
     }
@@ -9453,12 +9453,12 @@ function getMatchesToLoad(history, state, matches, submission, location, initial
     if (initialHydration) {
       return shouldLoadRouteOnHydration(route, state.loaderData, state.errors);
     }
-    if (isNewLoader(state.loaderData, state.matches[index2], match) || cancelledDeferredRoutes.some((id2) => id2 === match.route.id)) {
+    if (isNewLoader(state.loaderData, state.matches[index2], match2) || cancelledDeferredRoutes.some((id2) => id2 === match2.route.id)) {
       return true;
     }
     let currentRouteMatch = state.matches[index2];
-    let nextRouteMatch = match;
-    return shouldRevalidateLoader(match, _extends$2({
+    let nextRouteMatch = match2;
+    return shouldRevalidateLoader(match2, _extends$2({
       currentUrl,
       currentParams: currentRouteMatch.params,
       nextUrl,
@@ -9542,22 +9542,22 @@ function shouldLoadRouteOnHydration(route, loaderData, errors) {
   }
   return !hasData && !hasError;
 }
-function isNewLoader(currentLoaderData, currentMatch, match) {
+function isNewLoader(currentLoaderData, currentMatch, match2) {
   let isNew = (
     // [a] -> [a, b]
     !currentMatch || // [a, b] -> [a, c]
-    match.route.id !== currentMatch.route.id
+    match2.route.id !== currentMatch.route.id
   );
-  let isMissingData = currentLoaderData[match.route.id] === void 0;
+  let isMissingData = currentLoaderData[match2.route.id] === void 0;
   return isNew || isMissingData;
 }
-function isNewRouteInstance(currentMatch, match) {
+function isNewRouteInstance(currentMatch, match2) {
   let currentPath = currentMatch.route.path;
   return (
     // param change for this match, /users/123 -> /users/456
-    currentMatch.pathname !== match.pathname || // splat param changed, which is not present in match.path
+    currentMatch.pathname !== match2.pathname || // splat param changed, which is not present in match.path
     // e.g. /files/images/avatar.jpg -> files/finances.xls
-    currentPath != null && currentPath.endsWith("*") && currentMatch.params["*"] !== match.params["*"]
+    currentPath != null && currentPath.endsWith("*") && currentMatch.params["*"] !== match2.params["*"]
   );
 }
 function shouldRevalidateLoader(loaderMatch, arg) {
@@ -9639,19 +9639,19 @@ async function defaultDataStrategy(_ref4) {
 }
 async function callDataStrategyImpl(dataStrategyImpl, type, state, request, matchesToLoad, matches, fetcherKey, manifest, mapRouteProperties2, requestContext) {
   let loadRouteDefinitionsPromises = matches.map((m2) => m2.route.lazy ? loadLazyRouteModule(m2.route, mapRouteProperties2, manifest) : void 0);
-  let dsMatches = matches.map((match, i) => {
+  let dsMatches = matches.map((match2, i) => {
     let loadRoutePromise = loadRouteDefinitionsPromises[i];
-    let shouldLoad = matchesToLoad.some((m2) => m2.route.id === match.route.id);
+    let shouldLoad = matchesToLoad.some((m2) => m2.route.id === match2.route.id);
     let resolve = async (handlerOverride) => {
-      if (handlerOverride && request.method === "GET" && (match.route.lazy || match.route.loader)) {
+      if (handlerOverride && request.method === "GET" && (match2.route.lazy || match2.route.loader)) {
         shouldLoad = true;
       }
-      return shouldLoad ? callLoaderOrAction(type, request, match, loadRoutePromise, handlerOverride, requestContext) : Promise.resolve({
+      return shouldLoad ? callLoaderOrAction(type, request, match2, loadRoutePromise, handlerOverride, requestContext) : Promise.resolve({
         type: ResultType.data,
         result: void 0
       });
     };
-    return _extends$2({}, match, {
+    return _extends$2({}, match2, {
       shouldLoad,
       resolve
     });
@@ -9669,7 +9669,7 @@ async function callDataStrategyImpl(dataStrategyImpl, type, state, request, matc
   }
   return results;
 }
-async function callLoaderOrAction(type, request, match, loadRoutePromise, handlerOverride, staticContext) {
+async function callLoaderOrAction(type, request, match2, loadRoutePromise, handlerOverride, staticContext) {
   let result;
   let onReject;
   let runHandler = (handler) => {
@@ -9679,11 +9679,11 @@ async function callLoaderOrAction(type, request, match, loadRoutePromise, handle
     request.signal.addEventListener("abort", onReject);
     let actualHandler = (ctx) => {
       if (typeof handler !== "function") {
-        return Promise.reject(new Error("You cannot call the handler for a route which defines a boolean " + ('"' + type + '" [routeId: ' + match.route.id + "]")));
+        return Promise.reject(new Error("You cannot call the handler for a route which defines a boolean " + ('"' + type + '" [routeId: ' + match2.route.id + "]")));
       }
       return handler({
         request,
-        params: match.params,
+        params: match2.params,
         context: staticContext
       }, ...ctx !== void 0 ? [ctx] : []);
     };
@@ -9704,7 +9704,7 @@ async function callLoaderOrAction(type, request, match, loadRoutePromise, handle
     return Promise.race([handlerPromise, abortPromise]);
   };
   try {
-    let handler = match.route[type];
+    let handler = match2.route[type];
     if (loadRoutePromise) {
       if (handler) {
         let handlerError;
@@ -9723,7 +9723,7 @@ async function callLoaderOrAction(type, request, match, loadRoutePromise, handle
         result = value;
       } else {
         await loadRoutePromise;
-        handler = match.route[type];
+        handler = match2.route[type];
         if (handler) {
           result = await runHandler(handler);
         } else if (type === "action") {
@@ -9732,7 +9732,7 @@ async function callLoaderOrAction(type, request, match, loadRoutePromise, handle
           throw getInternalRouterError(405, {
             method: request.method,
             pathname,
-            routeId: match.route.id
+            routeId: match2.route.id
           });
         } else {
           return {
@@ -9750,7 +9750,7 @@ async function callLoaderOrAction(type, request, match, loadRoutePromise, handle
     } else {
       result = await runHandler(handler);
     }
-    invariant(result.result !== void 0, "You defined " + (type === "action" ? "an action" : "a loader") + " for route " + ('"' + match.route.id + "\" but didn't return anything from your `" + type + "` ") + "function. Please return a value or `null`.");
+    invariant(result.result !== void 0, "You defined " + (type === "action" ? "an action" : "a loader") + " for route " + ('"' + match2.route.id + "\" but didn't return anything from your `" + type + "` ") + "function. Please return a value or `null`.");
   } catch (e) {
     return {
       type: ResultType.error,
@@ -9941,11 +9941,11 @@ function processRouteLoaderData(matches, results, pendingActionResult, activeDef
   let foundError = false;
   let loaderHeaders = {};
   let pendingError = pendingActionResult && isErrorResult(pendingActionResult[1]) ? pendingActionResult[1].error : void 0;
-  matches.forEach((match) => {
-    if (!(match.route.id in results)) {
+  matches.forEach((match2) => {
+    if (!(match2.route.id in results)) {
       return;
     }
-    let id2 = match.route.id;
+    let id2 = match2.route.id;
     let result = results[id2];
     invariant(!isRedirectResult(result), "Cannot handle redirect results in processLoaderData");
     if (isErrorResult(result)) {
@@ -10011,7 +10011,7 @@ function processLoaderData(state, matches, results, pendingActionResult, revalid
   revalidatingFetchers.forEach((rf2) => {
     let {
       key,
-      match,
+      match: match2,
       controller
     } = rf2;
     let result = fetcherResults[key];
@@ -10019,7 +10019,7 @@ function processLoaderData(state, matches, results, pendingActionResult, revalid
     if (controller && controller.signal.aborted) {
       return;
     } else if (isErrorResult(result)) {
-      let boundaryMatch = findNearestBoundary(state.matches, match == null ? void 0 : match.route.id);
+      let boundaryMatch = findNearestBoundary(state.matches, match2 == null ? void 0 : match2.route.id);
       if (!(errors && errors[boundaryMatch.route.id])) {
         errors = _extends$2({}, errors, {
           [boundaryMatch.route.id]: result.error
@@ -10042,13 +10042,13 @@ function processLoaderData(state, matches, results, pendingActionResult, revalid
 }
 function mergeLoaderData(loaderData, newLoaderData, matches, errors) {
   let mergedLoaderData = _extends$2({}, newLoaderData);
-  for (let match of matches) {
-    let id2 = match.route.id;
+  for (let match2 of matches) {
+    let id2 = match2.route.id;
     if (newLoaderData.hasOwnProperty(id2)) {
       if (newLoaderData[id2] !== void 0) {
         mergedLoaderData[id2] = newLoaderData[id2];
       }
-    } else if (loaderData[id2] !== void 0 && match.route.loader) {
+    } else if (loaderData[id2] !== void 0 && match2.route.loader) {
       mergedLoaderData[id2] = loaderData[id2];
     }
     if (errors && errors.hasOwnProperty(id2)) {
@@ -10094,7 +10094,7 @@ function getInternalRouterError(status, _temp5) {
     routeId,
     method,
     type,
-    message
+    message: message2
   } = _temp5 === void 0 ? {} : _temp5;
   let statusText = "Unknown Server Error";
   let errorMessage = "Unknown @remix-run/router error";
@@ -10186,12 +10186,12 @@ async function resolveNavigationDeferredResults(matches, results, signal, curren
   let entries = Object.entries(results);
   for (let index2 = 0; index2 < entries.length; index2++) {
     let [routeId, result] = entries[index2];
-    let match = matches.find((m2) => (m2 == null ? void 0 : m2.route.id) === routeId);
-    if (!match) {
+    let match2 = matches.find((m2) => (m2 == null ? void 0 : m2.route.id) === routeId);
+    if (!match2) {
       continue;
     }
-    let currentMatch = currentMatches.find((m2) => m2.route.id === match.route.id);
-    let isRevalidatingLoader = currentMatch != null && !isNewRouteInstance(currentMatch, match) && (currentLoaderData && currentLoaderData[match.route.id]) !== void 0;
+    let currentMatch = currentMatches.find((m2) => m2.route.id === match2.route.id);
+    let isRevalidatingLoader = currentMatch != null && !isNewRouteInstance(currentMatch, match2) && (currentLoaderData && currentLoaderData[match2.route.id]) !== void 0;
     if (isDeferredResult(result) && isRevalidatingLoader) {
       await resolveDeferredData(result, signal, false).then((result2) => {
         if (result2) {
@@ -10209,8 +10209,8 @@ async function resolveFetcherDeferredResults(matches, results, revalidatingFetch
       controller
     } = revalidatingFetchers[index2];
     let result = results[key];
-    let match = matches.find((m2) => (m2 == null ? void 0 : m2.route.id) === routeId);
-    if (!match) {
+    let match2 = matches.find((m2) => (m2 == null ? void 0 : m2.route.id) === routeId);
+    if (!match2) {
       continue;
     }
     if (isDeferredResult(result)) {
@@ -10597,24 +10597,24 @@ function useRoutesImpl(routes, locationArg, dataRouterState, future) {
   let matches = matchRoutes(routes, {
     pathname: remainingPathname
   });
-  let renderedMatches = _renderMatches(matches && matches.map((match) => Object.assign({}, match, {
-    params: Object.assign({}, parentParams, match.params),
+  let renderedMatches = _renderMatches(matches && matches.map((match2) => Object.assign({}, match2, {
+    params: Object.assign({}, parentParams, match2.params),
     pathname: joinPaths([
       parentPathnameBase,
       // Re-encode pathnames that were decoded inside matchRoutes
-      navigator2.encodeLocation ? navigator2.encodeLocation(match.pathname).pathname : match.pathname
+      navigator2.encodeLocation ? navigator2.encodeLocation(match2.pathname).pathname : match2.pathname
     ]),
-    pathnameBase: match.pathnameBase === "/" ? parentPathnameBase : joinPaths([
+    pathnameBase: match2.pathnameBase === "/" ? parentPathnameBase : joinPaths([
       parentPathnameBase,
       // Re-encode pathnames that were decoded inside matchRoutes
-      navigator2.encodeLocation ? navigator2.encodeLocation(match.pathnameBase).pathname : match.pathnameBase
+      navigator2.encodeLocation ? navigator2.encodeLocation(match2.pathnameBase).pathname : match2.pathnameBase
     ])
   })), parentMatches, dataRouterState, future);
   return renderedMatches;
 }
 function DefaultErrorComponent() {
   let error = useRouteError();
-  let message = isRouteErrorResponse(error) ? error.status + " " + error.statusText : error instanceof Error ? error.message : JSON.stringify(error);
+  let message2 = isRouteErrorResponse(error) ? error.status + " " + error.statusText : error instanceof Error ? error.message : JSON.stringify(error);
   let stack = error instanceof Error ? error.stack : null;
   let lightgrey = "rgba(200,200,200, 0.5)";
   let preStyles = {
@@ -10626,7 +10626,7 @@ function DefaultErrorComponent() {
     style: {
       fontStyle: "italic"
     }
-  }, message), stack ? /* @__PURE__ */ reactExports.createElement("pre", {
+  }, message2), stack ? /* @__PURE__ */ reactExports.createElement("pre", {
     style: preStyles
   }, stack) : null, devInfo);
 }
@@ -10674,12 +10674,12 @@ class RenderErrorBoundary extends reactExports.Component {
 function RenderedRoute(_ref) {
   let {
     routeContext,
-    match,
+    match: match2,
     children
   } = _ref;
   let dataRouterContext = reactExports.useContext(DataRouterContext);
-  if (dataRouterContext && dataRouterContext.static && dataRouterContext.staticContext && (match.route.errorElement || match.route.ErrorBoundary)) {
-    dataRouterContext.staticContext._deepestRenderedBoundaryId = match.route.id;
+  if (dataRouterContext && dataRouterContext.static && dataRouterContext.staticContext && (match2.route.errorElement || match2.route.ErrorBoundary)) {
+    dataRouterContext.staticContext._deepestRenderedBoundaryId = match2.route.id;
   }
   return /* @__PURE__ */ reactExports.createElement(RouteContext.Provider, {
     value: routeContext
@@ -10720,17 +10720,17 @@ function _renderMatches(matches, parentMatches, dataRouterState, future) {
   let fallbackIndex = -1;
   if (dataRouterState && future && future.v7_partialHydration) {
     for (let i = 0; i < renderedMatches.length; i++) {
-      let match = renderedMatches[i];
-      if (match.route.HydrateFallback || match.route.hydrateFallbackElement) {
+      let match2 = renderedMatches[i];
+      if (match2.route.HydrateFallback || match2.route.hydrateFallbackElement) {
         fallbackIndex = i;
       }
-      if (match.route.id) {
+      if (match2.route.id) {
         let {
           loaderData,
           errors: errors2
         } = dataRouterState;
-        let needsToRunLoader = match.route.loader && loaderData[match.route.id] === void 0 && (!errors2 || errors2[match.route.id] === void 0);
-        if (match.route.lazy || needsToRunLoader) {
+        let needsToRunLoader = match2.route.loader && loaderData[match2.route.id] === void 0 && (!errors2 || errors2[match2.route.id] === void 0);
+        if (match2.route.lazy || needsToRunLoader) {
           renderFallback = true;
           if (fallbackIndex >= 0) {
             renderedMatches = renderedMatches.slice(0, fallbackIndex + 1);
@@ -10742,14 +10742,14 @@ function _renderMatches(matches, parentMatches, dataRouterState, future) {
       }
     }
   }
-  return renderedMatches.reduceRight((outlet, match, index2) => {
+  return renderedMatches.reduceRight((outlet, match2, index2) => {
     let error;
     let shouldRenderHydrateFallback = false;
     let errorElement = null;
     let hydrateFallbackElement = null;
     if (dataRouterState) {
-      error = errors && match.route.id ? errors[match.route.id] : void 0;
-      errorElement = match.route.errorElement || defaultErrorElement;
+      error = errors && match2.route.id ? errors[match2.route.id] : void 0;
+      errorElement = match2.route.errorElement || defaultErrorElement;
       if (renderFallback) {
         if (fallbackIndex < 0 && index2 === 0) {
           warningOnce("route-fallback");
@@ -10757,7 +10757,7 @@ function _renderMatches(matches, parentMatches, dataRouterState, future) {
           hydrateFallbackElement = null;
         } else if (fallbackIndex === index2) {
           shouldRenderHydrateFallback = true;
-          hydrateFallbackElement = match.route.hydrateFallbackElement || null;
+          hydrateFallbackElement = match2.route.hydrateFallbackElement || null;
         }
       }
     }
@@ -10768,15 +10768,15 @@ function _renderMatches(matches, parentMatches, dataRouterState, future) {
         children = errorElement;
       } else if (shouldRenderHydrateFallback) {
         children = hydrateFallbackElement;
-      } else if (match.route.Component) {
-        children = /* @__PURE__ */ reactExports.createElement(match.route.Component, null);
-      } else if (match.route.element) {
-        children = match.route.element;
+      } else if (match2.route.Component) {
+        children = /* @__PURE__ */ reactExports.createElement(match2.route.Component, null);
+      } else if (match2.route.element) {
+        children = match2.route.element;
       } else {
         children = outlet;
       }
       return /* @__PURE__ */ reactExports.createElement(RenderedRoute, {
-        match,
+        match: match2,
         routeContext: {
           outlet,
           matches: matches2,
@@ -10785,7 +10785,7 @@ function _renderMatches(matches, parentMatches, dataRouterState, future) {
         children
       });
     };
-    return dataRouterState && (match.route.ErrorBoundary || match.route.errorElement || index2 === 0) ? /* @__PURE__ */ reactExports.createElement(RenderErrorBoundary, {
+    return dataRouterState && (match2.route.ErrorBoundary || match2.route.errorElement || index2 === 0) ? /* @__PURE__ */ reactExports.createElement(RenderErrorBoundary, {
       location: dataRouterState.location,
       revalidation: dataRouterState.revalidation,
       component: errorElement,
@@ -10874,7 +10874,7 @@ function useNavigateStable() {
   return navigate;
 }
 const alreadyWarned$1 = {};
-function warningOnce(key, cond, message) {
+function warningOnce(key, cond, message2) {
   if (!alreadyWarned$1[key]) {
     alreadyWarned$1[key] = true;
   }
@@ -11088,7 +11088,7 @@ const ViewTransitionContext = /* @__PURE__ */ reactExports.createContext({
 });
 const FetchersContext = /* @__PURE__ */ reactExports.createContext(/* @__PURE__ */ new Map());
 const START_TRANSITION = "startTransition";
-const startTransitionImpl = React$1[START_TRANSITION];
+const startTransitionImpl = React$3[START_TRANSITION];
 const FLUSH_SYNC = "flushSync";
 const flushSyncImpl = ReactDOM[FLUSH_SYNC];
 function startTransitionSafe(cb2) {
@@ -11511,33 +11511,33 @@ const NAV_ITEMS = [
   { to: "/settings", label: "Settings", icon: "⚙" }
 ];
 function Sidebar() {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("nav", { style: styles$7.sidebar, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$7.brand, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$7.brandIcon, children: "◉" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$7.brandName, children: "SEO Scanner" })
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("nav", { style: styles$d.sidebar, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$d.brand, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$d.brandIcon, children: "◉" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$d.brandName, children: "SEO Scanner" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { style: styles$7.navList, children: NAV_ITEMS.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { style: styles$d.navList, children: NAV_ITEMS.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
       NavLink,
       {
         to: item.to,
         end: item.to === "/",
         style: ({ isActive }) => ({
-          ...styles$7.navLink,
-          ...isActive ? styles$7.navLinkActive : {}
+          ...styles$d.navLink,
+          ...isActive ? styles$d.navLinkActive : {}
         }),
         children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$7.navIcon, children: item.icon }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$d.navIcon, children: item.icon }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: item.label })
         ]
       }
     ) }, item.to)) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$7.sidebarFooter, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$7.footerText, children: "Local SEO Scanner" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$7.footerVersion, children: "v1.0.0" })
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$d.sidebarFooter, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$d.footerText, children: "Local SEO Scanner" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$d.footerVersion, children: "v1.0.0" })
     ] })
   ] });
 }
-const styles$7 = {
+const styles$d = {
   sidebar: {
     width: "var(--sidebar-width)",
     minWidth: "var(--sidebar-width)",
@@ -11625,19 +11625,19 @@ function Topbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const label = getLabel(location.pathname);
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { style: styles$6.topbar, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { style: styles$6.title, children: label }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$6.actions, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { style: styles$c.topbar, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { style: styles$c.title, children: label }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$c.actions, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
       "button",
       {
-        style: styles$6.newScanBtn,
+        style: styles$c.newScanBtn,
         onClick: () => navigate("/scan/new"),
         children: "+ New Scan"
       }
     ) })
   ] });
 }
-const styles$6 = {
+const styles$c = {
   topbar: {
     height: 52,
     minHeight: 52,
@@ -11672,15 +11672,15 @@ const styles$6 = {
   }
 };
 function AppShell() {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.shell, children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$b.shell, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(Sidebar, {}),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.main, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$b.main, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Topbar, {}),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("main", { style: styles$5.content, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {}) })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("main", { style: styles$b.content, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {}) })
     ] })
   ] });
 }
-const styles$5 = {
+const styles$b = {
   shell: {
     display: "flex",
     height: "100vh",
@@ -11701,139 +11701,3527 @@ const styles$5 = {
     padding: "var(--space-6)"
   }
 };
+const __vite_import_meta_env__$1 = {};
+const createStoreImpl = (createState) => {
+  let state;
+  const listeners = /* @__PURE__ */ new Set();
+  const setState = (partial, replace) => {
+    const nextState = typeof partial === "function" ? partial(state) : partial;
+    if (!Object.is(nextState, state)) {
+      const previousState = state;
+      state = (replace != null ? replace : typeof nextState !== "object" || nextState === null) ? nextState : Object.assign({}, state, nextState);
+      listeners.forEach((listener) => listener(state, previousState));
+    }
+  };
+  const getState = () => state;
+  const getInitialState = () => initialState;
+  const subscribe = (listener) => {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  };
+  const destroy = () => {
+    if ((__vite_import_meta_env__$1 ? "production" : void 0) !== "production") {
+      console.warn(
+        "[DEPRECATED] The `destroy` method will be unsupported in a future version. Instead use unsubscribe function returned by subscribe. Everything will be garbage-collected if store is garbage-collected."
+      );
+    }
+    listeners.clear();
+  };
+  const api = { setState, getState, getInitialState, subscribe, destroy };
+  const initialState = state = createState(setState, getState, api);
+  return api;
+};
+const createStore = (createState) => createState ? createStoreImpl(createState) : createStoreImpl;
+var withSelector = { exports: {} };
+var withSelector_production = {};
+var shim$2 = { exports: {} };
+var useSyncExternalStoreShim_production = {};
+/**
+ * @license React
+ * use-sync-external-store-shim.production.js
+ *
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+var React$1 = reactExports;
+function is$1(x2, y2) {
+  return x2 === y2 && (0 !== x2 || 1 / x2 === 1 / y2) || x2 !== x2 && y2 !== y2;
+}
+var objectIs$1 = "function" === typeof Object.is ? Object.is : is$1, useState = React$1.useState, useEffect$1 = React$1.useEffect, useLayoutEffect = React$1.useLayoutEffect, useDebugValue$2 = React$1.useDebugValue;
+function useSyncExternalStore$2(subscribe, getSnapshot) {
+  var value = getSnapshot(), _useState = useState({ inst: { value, getSnapshot } }), inst = _useState[0].inst, forceUpdate = _useState[1];
+  useLayoutEffect(
+    function() {
+      inst.value = value;
+      inst.getSnapshot = getSnapshot;
+      checkIfSnapshotChanged(inst) && forceUpdate({ inst });
+    },
+    [subscribe, value, getSnapshot]
+  );
+  useEffect$1(
+    function() {
+      checkIfSnapshotChanged(inst) && forceUpdate({ inst });
+      return subscribe(function() {
+        checkIfSnapshotChanged(inst) && forceUpdate({ inst });
+      });
+    },
+    [subscribe]
+  );
+  useDebugValue$2(value);
+  return value;
+}
+function checkIfSnapshotChanged(inst) {
+  var latestGetSnapshot = inst.getSnapshot;
+  inst = inst.value;
+  try {
+    var nextValue = latestGetSnapshot();
+    return !objectIs$1(inst, nextValue);
+  } catch (error) {
+    return true;
+  }
+}
+function useSyncExternalStore$1(subscribe, getSnapshot) {
+  return getSnapshot();
+}
+var shim$1 = "undefined" === typeof window || "undefined" === typeof window.document || "undefined" === typeof window.document.createElement ? useSyncExternalStore$1 : useSyncExternalStore$2;
+useSyncExternalStoreShim_production.useSyncExternalStore = void 0 !== React$1.useSyncExternalStore ? React$1.useSyncExternalStore : shim$1;
+{
+  shim$2.exports = useSyncExternalStoreShim_production;
+}
+var shimExports = shim$2.exports;
+/**
+ * @license React
+ * use-sync-external-store-shim/with-selector.production.js
+ *
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+var React = reactExports, shim = shimExports;
+function is(x2, y2) {
+  return x2 === y2 && (0 !== x2 || 1 / x2 === 1 / y2) || x2 !== x2 && y2 !== y2;
+}
+var objectIs = "function" === typeof Object.is ? Object.is : is, useSyncExternalStore = shim.useSyncExternalStore, useRef = React.useRef, useEffect = React.useEffect, useMemo = React.useMemo, useDebugValue$1 = React.useDebugValue;
+withSelector_production.useSyncExternalStoreWithSelector = function(subscribe, getSnapshot, getServerSnapshot, selector, isEqual) {
+  var instRef = useRef(null);
+  if (null === instRef.current) {
+    var inst = { hasValue: false, value: null };
+    instRef.current = inst;
+  } else inst = instRef.current;
+  instRef = useMemo(
+    function() {
+      function memoizedSelector(nextSnapshot) {
+        if (!hasMemo) {
+          hasMemo = true;
+          memoizedSnapshot = nextSnapshot;
+          nextSnapshot = selector(nextSnapshot);
+          if (void 0 !== isEqual && inst.hasValue) {
+            var currentSelection = inst.value;
+            if (isEqual(currentSelection, nextSnapshot))
+              return memoizedSelection = currentSelection;
+          }
+          return memoizedSelection = nextSnapshot;
+        }
+        currentSelection = memoizedSelection;
+        if (objectIs(memoizedSnapshot, nextSnapshot)) return currentSelection;
+        var nextSelection = selector(nextSnapshot);
+        if (void 0 !== isEqual && isEqual(currentSelection, nextSelection))
+          return memoizedSnapshot = nextSnapshot, currentSelection;
+        memoizedSnapshot = nextSnapshot;
+        return memoizedSelection = nextSelection;
+      }
+      var hasMemo = false, memoizedSnapshot, memoizedSelection, maybeGetServerSnapshot = void 0 === getServerSnapshot ? null : getServerSnapshot;
+      return [
+        function() {
+          return memoizedSelector(getSnapshot());
+        },
+        null === maybeGetServerSnapshot ? void 0 : function() {
+          return memoizedSelector(maybeGetServerSnapshot());
+        }
+      ];
+    },
+    [getSnapshot, getServerSnapshot, selector, isEqual]
+  );
+  var value = useSyncExternalStore(subscribe, instRef[0], instRef[1]);
+  useEffect(
+    function() {
+      inst.hasValue = true;
+      inst.value = value;
+    },
+    [value]
+  );
+  useDebugValue$1(value);
+  return value;
+};
+{
+  withSelector.exports = withSelector_production;
+}
+var withSelectorExports = withSelector.exports;
+const useSyncExternalStoreExports = /* @__PURE__ */ getDefaultExportFromCjs(withSelectorExports);
+const __vite_import_meta_env__ = {};
+const { useDebugValue } = React$2;
+const { useSyncExternalStoreWithSelector } = useSyncExternalStoreExports;
+let didWarnAboutEqualityFn = false;
+const identity = (arg) => arg;
+function useStore(api, selector = identity, equalityFn) {
+  if ((__vite_import_meta_env__ ? "production" : void 0) !== "production" && equalityFn && !didWarnAboutEqualityFn) {
+    console.warn(
+      "[DEPRECATED] Use `createWithEqualityFn` instead of `create` or use `useStoreWithEqualityFn` instead of `useStore`. They can be imported from 'zustand/traditional'. https://github.com/pmndrs/zustand/discussions/1937"
+    );
+    didWarnAboutEqualityFn = true;
+  }
+  const slice = useSyncExternalStoreWithSelector(
+    api.subscribe,
+    api.getState,
+    api.getServerState || api.getInitialState,
+    selector,
+    equalityFn
+  );
+  useDebugValue(slice);
+  return slice;
+}
+const createImpl = (createState) => {
+  if ((__vite_import_meta_env__ ? "production" : void 0) !== "production" && typeof createState !== "function") {
+    console.warn(
+      "[DEPRECATED] Passing a vanilla store will be unsupported in a future version. Instead use `import { useStore } from 'zustand'`."
+    );
+  }
+  const api = typeof createState === "function" ? createStore(createState) : createState;
+  const useBoundStore = (selector, equalityFn) => useStore(api, selector, equalityFn);
+  Object.assign(useBoundStore, api);
+  return useBoundStore;
+};
+const create = (createState) => createState ? createImpl(createState) : createImpl;
+const useScanStore = create((set) => ({
+  isScanning: false,
+  progress: 0,
+  stepLabel: "",
+  currentRequest: null,
+  latestResult: null,
+  savedScans: [],
+  error: null,
+  startScan: async (request) => {
+    set({
+      isScanning: true,
+      progress: 0,
+      stepLabel: "Starting…",
+      error: null,
+      latestResult: null,
+      currentRequest: request
+    });
+    const unsubscribe = window.api.onScanProgress((event) => {
+      set({ progress: event.percent, stepLabel: event.step });
+    });
+    try {
+      const result = await window.api.startScan(request);
+      set({
+        latestResult: result,
+        isScanning: false,
+        progress: 100,
+        stepLabel: "Complete."
+      });
+      return result.id;
+    } catch (err) {
+      const message2 = err instanceof Error ? err.message : String(err);
+      set({
+        isScanning: false,
+        error: message2,
+        stepLabel: ""
+      });
+      return null;
+    } finally {
+      unsubscribe();
+    }
+  },
+  loadSavedScans: async () => {
+    try {
+      const scans = await window.api.getSavedScans();
+      set({ savedScans: scans });
+    } catch (err) {
+      console.error("[useScanStore] Failed to load saved scans:", err);
+    }
+  },
+  clearError: () => set({ error: null }),
+  clearResult: () => set({ latestResult: null, progress: 0, stepLabel: "", currentRequest: null })
+}));
+function Button({
+  variant = "primary",
+  size = "md",
+  loading = false,
+  fullWidth = false,
+  disabled,
+  children,
+  style,
+  ...rest
+}) {
+  const isDisabled = disabled || loading;
+  const base = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    border: "none",
+    borderRadius: "var(--radius-md)",
+    fontWeight: 600,
+    fontFamily: "var(--font-sans)",
+    cursor: isDisabled ? "not-allowed" : "pointer",
+    opacity: isDisabled ? 0.55 : 1,
+    transition: "background-color var(--transition-fast), opacity var(--transition-fast)",
+    whiteSpace: "nowrap",
+    width: fullWidth ? "100%" : void 0
+  };
+  const sizes = {
+    sm: { fontSize: 12, padding: "5px 12px", height: 28 },
+    md: { fontSize: 13, padding: "7px 16px", height: 34 },
+    lg: { fontSize: 14, padding: "9px 20px", height: 40 }
+  };
+  const variants = {
+    primary: {
+      backgroundColor: "var(--color-brand)",
+      color: "#fff"
+    },
+    secondary: {
+      backgroundColor: "var(--color-bg-raised)",
+      color: "var(--color-text-primary)",
+      border: "1px solid var(--color-border)"
+    },
+    ghost: {
+      backgroundColor: "transparent",
+      color: "var(--color-text-secondary)"
+    },
+    danger: {
+      backgroundColor: "var(--color-high)",
+      color: "#fff"
+    }
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "button",
+    {
+      disabled: isDisabled,
+      style: { ...base, ...sizes[size], ...variants[variant], ...style },
+      ...rest,
+      children: [
+        loading && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: spinnerStyle, children: "⟳" }),
+        children
+      ]
+    }
+  );
+}
+const spinnerStyle = {
+  display: "inline-block",
+  animation: "spin 0.8s linear infinite"
+};
+function Card({
+  children,
+  style,
+  padding = "md",
+  elevated = false,
+  onClick
+}) {
+  const paddings = {
+    none: 0,
+    sm: "var(--space-4)",
+    md: "var(--space-6)",
+    lg: "var(--space-8)"
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      onClick,
+      style: {
+        backgroundColor: "var(--color-bg-surface)",
+        border: "1px solid var(--color-border)",
+        borderRadius: "var(--radius-lg)",
+        padding: paddings[padding],
+        boxShadow: elevated ? "var(--shadow-md)" : "none",
+        cursor: onClick ? "pointer" : void 0,
+        ...style
+      },
+      children
+    }
+  );
+}
+function EmptyState({
+  icon = "◌",
+  title,
+  description,
+  action,
+  style
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "div",
+    {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "var(--space-12)",
+        gap: "var(--space-4)",
+        border: "1px dashed var(--color-border)",
+        borderRadius: "var(--radius-lg)",
+        textAlign: "center",
+        ...style
+      },
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 36, color: "var(--color-text-muted)", lineHeight: 1 }, children: icon }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: "var(--space-2)" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { fontSize: 14, fontWeight: 600, color: "var(--color-text-primary)" }, children: title }),
+          description && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { fontSize: 13, color: "var(--color-text-secondary)", maxWidth: 360 }, children: description })
+        ] }),
+        action && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: action })
+      ]
+    }
+  );
+}
+function scoreBandColor(score) {
+  if (score >= 85) return "var(--color-score-strong)";
+  if (score >= 70) return "var(--color-score-solid)";
+  if (score >= 55) return "var(--color-score-needs)";
+  return "var(--color-score-leak)";
+}
+function toDate(argument) {
+  const argStr = Object.prototype.toString.call(argument);
+  if (argument instanceof Date || typeof argument === "object" && argStr === "[object Date]") {
+    return new argument.constructor(+argument);
+  } else if (typeof argument === "number" || argStr === "[object Number]" || typeof argument === "string" || argStr === "[object String]") {
+    return new Date(argument);
+  } else {
+    return /* @__PURE__ */ new Date(NaN);
+  }
+}
+function constructFrom(date, value) {
+  if (date instanceof Date) {
+    return new date.constructor(value);
+  } else {
+    return new Date(value);
+  }
+}
+const millisecondsInWeek = 6048e5;
+const millisecondsInDay = 864e5;
+let defaultOptions = {};
+function getDefaultOptions() {
+  return defaultOptions;
+}
+function startOfWeek(date, options) {
+  const defaultOptions2 = getDefaultOptions();
+  const weekStartsOn = options?.weekStartsOn ?? options?.locale?.options?.weekStartsOn ?? defaultOptions2.weekStartsOn ?? defaultOptions2.locale?.options?.weekStartsOn ?? 0;
+  const _date = toDate(date);
+  const day = _date.getDay();
+  const diff = (day < weekStartsOn ? 7 : 0) + day - weekStartsOn;
+  _date.setDate(_date.getDate() - diff);
+  _date.setHours(0, 0, 0, 0);
+  return _date;
+}
+function startOfISOWeek(date) {
+  return startOfWeek(date, { weekStartsOn: 1 });
+}
+function getISOWeekYear(date) {
+  const _date = toDate(date);
+  const year = _date.getFullYear();
+  const fourthOfJanuaryOfNextYear = constructFrom(date, 0);
+  fourthOfJanuaryOfNextYear.setFullYear(year + 1, 0, 4);
+  fourthOfJanuaryOfNextYear.setHours(0, 0, 0, 0);
+  const startOfNextYear = startOfISOWeek(fourthOfJanuaryOfNextYear);
+  const fourthOfJanuaryOfThisYear = constructFrom(date, 0);
+  fourthOfJanuaryOfThisYear.setFullYear(year, 0, 4);
+  fourthOfJanuaryOfThisYear.setHours(0, 0, 0, 0);
+  const startOfThisYear = startOfISOWeek(fourthOfJanuaryOfThisYear);
+  if (_date.getTime() >= startOfNextYear.getTime()) {
+    return year + 1;
+  } else if (_date.getTime() >= startOfThisYear.getTime()) {
+    return year;
+  } else {
+    return year - 1;
+  }
+}
+function startOfDay(date) {
+  const _date = toDate(date);
+  _date.setHours(0, 0, 0, 0);
+  return _date;
+}
+function getTimezoneOffsetInMilliseconds(date) {
+  const _date = toDate(date);
+  const utcDate = new Date(
+    Date.UTC(
+      _date.getFullYear(),
+      _date.getMonth(),
+      _date.getDate(),
+      _date.getHours(),
+      _date.getMinutes(),
+      _date.getSeconds(),
+      _date.getMilliseconds()
+    )
+  );
+  utcDate.setUTCFullYear(_date.getFullYear());
+  return +date - +utcDate;
+}
+function differenceInCalendarDays(dateLeft, dateRight) {
+  const startOfDayLeft = startOfDay(dateLeft);
+  const startOfDayRight = startOfDay(dateRight);
+  const timestampLeft = +startOfDayLeft - getTimezoneOffsetInMilliseconds(startOfDayLeft);
+  const timestampRight = +startOfDayRight - getTimezoneOffsetInMilliseconds(startOfDayRight);
+  return Math.round((timestampLeft - timestampRight) / millisecondsInDay);
+}
+function startOfISOWeekYear(date) {
+  const year = getISOWeekYear(date);
+  const fourthOfJanuary = constructFrom(date, 0);
+  fourthOfJanuary.setFullYear(year, 0, 4);
+  fourthOfJanuary.setHours(0, 0, 0, 0);
+  return startOfISOWeek(fourthOfJanuary);
+}
+function isDate(value) {
+  return value instanceof Date || typeof value === "object" && Object.prototype.toString.call(value) === "[object Date]";
+}
+function isValid(date) {
+  if (!isDate(date) && typeof date !== "number") {
+    return false;
+  }
+  const _date = toDate(date);
+  return !isNaN(Number(_date));
+}
+function startOfYear(date) {
+  const cleanDate = toDate(date);
+  const _date = constructFrom(date, 0);
+  _date.setFullYear(cleanDate.getFullYear(), 0, 1);
+  _date.setHours(0, 0, 0, 0);
+  return _date;
+}
+const formatDistanceLocale = {
+  lessThanXSeconds: {
+    one: "less than a second",
+    other: "less than {{count}} seconds"
+  },
+  xSeconds: {
+    one: "1 second",
+    other: "{{count}} seconds"
+  },
+  halfAMinute: "half a minute",
+  lessThanXMinutes: {
+    one: "less than a minute",
+    other: "less than {{count}} minutes"
+  },
+  xMinutes: {
+    one: "1 minute",
+    other: "{{count}} minutes"
+  },
+  aboutXHours: {
+    one: "about 1 hour",
+    other: "about {{count}} hours"
+  },
+  xHours: {
+    one: "1 hour",
+    other: "{{count}} hours"
+  },
+  xDays: {
+    one: "1 day",
+    other: "{{count}} days"
+  },
+  aboutXWeeks: {
+    one: "about 1 week",
+    other: "about {{count}} weeks"
+  },
+  xWeeks: {
+    one: "1 week",
+    other: "{{count}} weeks"
+  },
+  aboutXMonths: {
+    one: "about 1 month",
+    other: "about {{count}} months"
+  },
+  xMonths: {
+    one: "1 month",
+    other: "{{count}} months"
+  },
+  aboutXYears: {
+    one: "about 1 year",
+    other: "about {{count}} years"
+  },
+  xYears: {
+    one: "1 year",
+    other: "{{count}} years"
+  },
+  overXYears: {
+    one: "over 1 year",
+    other: "over {{count}} years"
+  },
+  almostXYears: {
+    one: "almost 1 year",
+    other: "almost {{count}} years"
+  }
+};
+const formatDistance = (token, count, options) => {
+  let result;
+  const tokenValue = formatDistanceLocale[token];
+  if (typeof tokenValue === "string") {
+    result = tokenValue;
+  } else if (count === 1) {
+    result = tokenValue.one;
+  } else {
+    result = tokenValue.other.replace("{{count}}", count.toString());
+  }
+  if (options?.addSuffix) {
+    if (options.comparison && options.comparison > 0) {
+      return "in " + result;
+    } else {
+      return result + " ago";
+    }
+  }
+  return result;
+};
+function buildFormatLongFn(args) {
+  return (options = {}) => {
+    const width = options.width ? String(options.width) : args.defaultWidth;
+    const format2 = args.formats[width] || args.formats[args.defaultWidth];
+    return format2;
+  };
+}
+const dateFormats = {
+  full: "EEEE, MMMM do, y",
+  long: "MMMM do, y",
+  medium: "MMM d, y",
+  short: "MM/dd/yyyy"
+};
+const timeFormats = {
+  full: "h:mm:ss a zzzz",
+  long: "h:mm:ss a z",
+  medium: "h:mm:ss a",
+  short: "h:mm a"
+};
+const dateTimeFormats = {
+  full: "{{date}} 'at' {{time}}",
+  long: "{{date}} 'at' {{time}}",
+  medium: "{{date}}, {{time}}",
+  short: "{{date}}, {{time}}"
+};
+const formatLong = {
+  date: buildFormatLongFn({
+    formats: dateFormats,
+    defaultWidth: "full"
+  }),
+  time: buildFormatLongFn({
+    formats: timeFormats,
+    defaultWidth: "full"
+  }),
+  dateTime: buildFormatLongFn({
+    formats: dateTimeFormats,
+    defaultWidth: "full"
+  })
+};
+const formatRelativeLocale = {
+  lastWeek: "'last' eeee 'at' p",
+  yesterday: "'yesterday at' p",
+  today: "'today at' p",
+  tomorrow: "'tomorrow at' p",
+  nextWeek: "eeee 'at' p",
+  other: "P"
+};
+const formatRelative = (token, _date, _baseDate, _options) => formatRelativeLocale[token];
+function buildLocalizeFn(args) {
+  return (value, options) => {
+    const context = options?.context ? String(options.context) : "standalone";
+    let valuesArray;
+    if (context === "formatting" && args.formattingValues) {
+      const defaultWidth = args.defaultFormattingWidth || args.defaultWidth;
+      const width = options?.width ? String(options.width) : defaultWidth;
+      valuesArray = args.formattingValues[width] || args.formattingValues[defaultWidth];
+    } else {
+      const defaultWidth = args.defaultWidth;
+      const width = options?.width ? String(options.width) : args.defaultWidth;
+      valuesArray = args.values[width] || args.values[defaultWidth];
+    }
+    const index2 = args.argumentCallback ? args.argumentCallback(value) : value;
+    return valuesArray[index2];
+  };
+}
+const eraValues = {
+  narrow: ["B", "A"],
+  abbreviated: ["BC", "AD"],
+  wide: ["Before Christ", "Anno Domini"]
+};
+const quarterValues = {
+  narrow: ["1", "2", "3", "4"],
+  abbreviated: ["Q1", "Q2", "Q3", "Q4"],
+  wide: ["1st quarter", "2nd quarter", "3rd quarter", "4th quarter"]
+};
+const monthValues = {
+  narrow: ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"],
+  abbreviated: [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec"
+  ],
+  wide: [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+  ]
+};
+const dayValues = {
+  narrow: ["S", "M", "T", "W", "T", "F", "S"],
+  short: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+  abbreviated: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  wide: [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday"
+  ]
+};
+const dayPeriodValues = {
+  narrow: {
+    am: "a",
+    pm: "p",
+    midnight: "mi",
+    noon: "n",
+    morning: "morning",
+    afternoon: "afternoon",
+    evening: "evening",
+    night: "night"
+  },
+  abbreviated: {
+    am: "AM",
+    pm: "PM",
+    midnight: "midnight",
+    noon: "noon",
+    morning: "morning",
+    afternoon: "afternoon",
+    evening: "evening",
+    night: "night"
+  },
+  wide: {
+    am: "a.m.",
+    pm: "p.m.",
+    midnight: "midnight",
+    noon: "noon",
+    morning: "morning",
+    afternoon: "afternoon",
+    evening: "evening",
+    night: "night"
+  }
+};
+const formattingDayPeriodValues = {
+  narrow: {
+    am: "a",
+    pm: "p",
+    midnight: "mi",
+    noon: "n",
+    morning: "in the morning",
+    afternoon: "in the afternoon",
+    evening: "in the evening",
+    night: "at night"
+  },
+  abbreviated: {
+    am: "AM",
+    pm: "PM",
+    midnight: "midnight",
+    noon: "noon",
+    morning: "in the morning",
+    afternoon: "in the afternoon",
+    evening: "in the evening",
+    night: "at night"
+  },
+  wide: {
+    am: "a.m.",
+    pm: "p.m.",
+    midnight: "midnight",
+    noon: "noon",
+    morning: "in the morning",
+    afternoon: "in the afternoon",
+    evening: "in the evening",
+    night: "at night"
+  }
+};
+const ordinalNumber = (dirtyNumber, _options) => {
+  const number = Number(dirtyNumber);
+  const rem100 = number % 100;
+  if (rem100 > 20 || rem100 < 10) {
+    switch (rem100 % 10) {
+      case 1:
+        return number + "st";
+      case 2:
+        return number + "nd";
+      case 3:
+        return number + "rd";
+    }
+  }
+  return number + "th";
+};
+const localize = {
+  ordinalNumber,
+  era: buildLocalizeFn({
+    values: eraValues,
+    defaultWidth: "wide"
+  }),
+  quarter: buildLocalizeFn({
+    values: quarterValues,
+    defaultWidth: "wide",
+    argumentCallback: (quarter) => quarter - 1
+  }),
+  month: buildLocalizeFn({
+    values: monthValues,
+    defaultWidth: "wide"
+  }),
+  day: buildLocalizeFn({
+    values: dayValues,
+    defaultWidth: "wide"
+  }),
+  dayPeriod: buildLocalizeFn({
+    values: dayPeriodValues,
+    defaultWidth: "wide",
+    formattingValues: formattingDayPeriodValues,
+    defaultFormattingWidth: "wide"
+  })
+};
+function buildMatchFn(args) {
+  return (string, options = {}) => {
+    const width = options.width;
+    const matchPattern = width && args.matchPatterns[width] || args.matchPatterns[args.defaultMatchWidth];
+    const matchResult = string.match(matchPattern);
+    if (!matchResult) {
+      return null;
+    }
+    const matchedString = matchResult[0];
+    const parsePatterns = width && args.parsePatterns[width] || args.parsePatterns[args.defaultParseWidth];
+    const key = Array.isArray(parsePatterns) ? findIndex(parsePatterns, (pattern) => pattern.test(matchedString)) : (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- I challange you to fix the type
+      findKey(parsePatterns, (pattern) => pattern.test(matchedString))
+    );
+    let value;
+    value = args.valueCallback ? args.valueCallback(key) : key;
+    value = options.valueCallback ? (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- I challange you to fix the type
+      options.valueCallback(value)
+    ) : value;
+    const rest = string.slice(matchedString.length);
+    return { value, rest };
+  };
+}
+function findKey(object, predicate) {
+  for (const key in object) {
+    if (Object.prototype.hasOwnProperty.call(object, key) && predicate(object[key])) {
+      return key;
+    }
+  }
+  return void 0;
+}
+function findIndex(array, predicate) {
+  for (let key = 0; key < array.length; key++) {
+    if (predicate(array[key])) {
+      return key;
+    }
+  }
+  return void 0;
+}
+function buildMatchPatternFn(args) {
+  return (string, options = {}) => {
+    const matchResult = string.match(args.matchPattern);
+    if (!matchResult) return null;
+    const matchedString = matchResult[0];
+    const parseResult = string.match(args.parsePattern);
+    if (!parseResult) return null;
+    let value = args.valueCallback ? args.valueCallback(parseResult[0]) : parseResult[0];
+    value = options.valueCallback ? options.valueCallback(value) : value;
+    const rest = string.slice(matchedString.length);
+    return { value, rest };
+  };
+}
+const matchOrdinalNumberPattern = /^(\d+)(th|st|nd|rd)?/i;
+const parseOrdinalNumberPattern = /\d+/i;
+const matchEraPatterns = {
+  narrow: /^(b|a)/i,
+  abbreviated: /^(b\.?\s?c\.?|b\.?\s?c\.?\s?e\.?|a\.?\s?d\.?|c\.?\s?e\.?)/i,
+  wide: /^(before christ|before common era|anno domini|common era)/i
+};
+const parseEraPatterns = {
+  any: [/^b/i, /^(a|c)/i]
+};
+const matchQuarterPatterns = {
+  narrow: /^[1234]/i,
+  abbreviated: /^q[1234]/i,
+  wide: /^[1234](th|st|nd|rd)? quarter/i
+};
+const parseQuarterPatterns = {
+  any: [/1/i, /2/i, /3/i, /4/i]
+};
+const matchMonthPatterns = {
+  narrow: /^[jfmasond]/i,
+  abbreviated: /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i,
+  wide: /^(january|february|march|april|may|june|july|august|september|october|november|december)/i
+};
+const parseMonthPatterns = {
+  narrow: [
+    /^j/i,
+    /^f/i,
+    /^m/i,
+    /^a/i,
+    /^m/i,
+    /^j/i,
+    /^j/i,
+    /^a/i,
+    /^s/i,
+    /^o/i,
+    /^n/i,
+    /^d/i
+  ],
+  any: [
+    /^ja/i,
+    /^f/i,
+    /^mar/i,
+    /^ap/i,
+    /^may/i,
+    /^jun/i,
+    /^jul/i,
+    /^au/i,
+    /^s/i,
+    /^o/i,
+    /^n/i,
+    /^d/i
+  ]
+};
+const matchDayPatterns = {
+  narrow: /^[smtwf]/i,
+  short: /^(su|mo|tu|we|th|fr|sa)/i,
+  abbreviated: /^(sun|mon|tue|wed|thu|fri|sat)/i,
+  wide: /^(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i
+};
+const parseDayPatterns = {
+  narrow: [/^s/i, /^m/i, /^t/i, /^w/i, /^t/i, /^f/i, /^s/i],
+  any: [/^su/i, /^m/i, /^tu/i, /^w/i, /^th/i, /^f/i, /^sa/i]
+};
+const matchDayPeriodPatterns = {
+  narrow: /^(a|p|mi|n|(in the|at) (morning|afternoon|evening|night))/i,
+  any: /^([ap]\.?\s?m\.?|midnight|noon|(in the|at) (morning|afternoon|evening|night))/i
+};
+const parseDayPeriodPatterns = {
+  any: {
+    am: /^a/i,
+    pm: /^p/i,
+    midnight: /^mi/i,
+    noon: /^no/i,
+    morning: /morning/i,
+    afternoon: /afternoon/i,
+    evening: /evening/i,
+    night: /night/i
+  }
+};
+const match = {
+  ordinalNumber: buildMatchPatternFn({
+    matchPattern: matchOrdinalNumberPattern,
+    parsePattern: parseOrdinalNumberPattern,
+    valueCallback: (value) => parseInt(value, 10)
+  }),
+  era: buildMatchFn({
+    matchPatterns: matchEraPatterns,
+    defaultMatchWidth: "wide",
+    parsePatterns: parseEraPatterns,
+    defaultParseWidth: "any"
+  }),
+  quarter: buildMatchFn({
+    matchPatterns: matchQuarterPatterns,
+    defaultMatchWidth: "wide",
+    parsePatterns: parseQuarterPatterns,
+    defaultParseWidth: "any",
+    valueCallback: (index2) => index2 + 1
+  }),
+  month: buildMatchFn({
+    matchPatterns: matchMonthPatterns,
+    defaultMatchWidth: "wide",
+    parsePatterns: parseMonthPatterns,
+    defaultParseWidth: "any"
+  }),
+  day: buildMatchFn({
+    matchPatterns: matchDayPatterns,
+    defaultMatchWidth: "wide",
+    parsePatterns: parseDayPatterns,
+    defaultParseWidth: "any"
+  }),
+  dayPeriod: buildMatchFn({
+    matchPatterns: matchDayPeriodPatterns,
+    defaultMatchWidth: "any",
+    parsePatterns: parseDayPeriodPatterns,
+    defaultParseWidth: "any"
+  })
+};
+const enUS = {
+  code: "en-US",
+  formatDistance,
+  formatLong,
+  formatRelative,
+  localize,
+  match,
+  options: {
+    weekStartsOn: 0,
+    firstWeekContainsDate: 1
+  }
+};
+function getDayOfYear(date) {
+  const _date = toDate(date);
+  const diff = differenceInCalendarDays(_date, startOfYear(_date));
+  const dayOfYear = diff + 1;
+  return dayOfYear;
+}
+function getISOWeek(date) {
+  const _date = toDate(date);
+  const diff = +startOfISOWeek(_date) - +startOfISOWeekYear(_date);
+  return Math.round(diff / millisecondsInWeek) + 1;
+}
+function getWeekYear(date, options) {
+  const _date = toDate(date);
+  const year = _date.getFullYear();
+  const defaultOptions2 = getDefaultOptions();
+  const firstWeekContainsDate = options?.firstWeekContainsDate ?? options?.locale?.options?.firstWeekContainsDate ?? defaultOptions2.firstWeekContainsDate ?? defaultOptions2.locale?.options?.firstWeekContainsDate ?? 1;
+  const firstWeekOfNextYear = constructFrom(date, 0);
+  firstWeekOfNextYear.setFullYear(year + 1, 0, firstWeekContainsDate);
+  firstWeekOfNextYear.setHours(0, 0, 0, 0);
+  const startOfNextYear = startOfWeek(firstWeekOfNextYear, options);
+  const firstWeekOfThisYear = constructFrom(date, 0);
+  firstWeekOfThisYear.setFullYear(year, 0, firstWeekContainsDate);
+  firstWeekOfThisYear.setHours(0, 0, 0, 0);
+  const startOfThisYear = startOfWeek(firstWeekOfThisYear, options);
+  if (_date.getTime() >= startOfNextYear.getTime()) {
+    return year + 1;
+  } else if (_date.getTime() >= startOfThisYear.getTime()) {
+    return year;
+  } else {
+    return year - 1;
+  }
+}
+function startOfWeekYear(date, options) {
+  const defaultOptions2 = getDefaultOptions();
+  const firstWeekContainsDate = options?.firstWeekContainsDate ?? options?.locale?.options?.firstWeekContainsDate ?? defaultOptions2.firstWeekContainsDate ?? defaultOptions2.locale?.options?.firstWeekContainsDate ?? 1;
+  const year = getWeekYear(date, options);
+  const firstWeek = constructFrom(date, 0);
+  firstWeek.setFullYear(year, 0, firstWeekContainsDate);
+  firstWeek.setHours(0, 0, 0, 0);
+  const _date = startOfWeek(firstWeek, options);
+  return _date;
+}
+function getWeek(date, options) {
+  const _date = toDate(date);
+  const diff = +startOfWeek(_date, options) - +startOfWeekYear(_date, options);
+  return Math.round(diff / millisecondsInWeek) + 1;
+}
+function addLeadingZeros(number, targetLength) {
+  const sign = number < 0 ? "-" : "";
+  const output = Math.abs(number).toString().padStart(targetLength, "0");
+  return sign + output;
+}
+const lightFormatters = {
+  // Year
+  y(date, token) {
+    const signedYear = date.getFullYear();
+    const year = signedYear > 0 ? signedYear : 1 - signedYear;
+    return addLeadingZeros(token === "yy" ? year % 100 : year, token.length);
+  },
+  // Month
+  M(date, token) {
+    const month = date.getMonth();
+    return token === "M" ? String(month + 1) : addLeadingZeros(month + 1, 2);
+  },
+  // Day of the month
+  d(date, token) {
+    return addLeadingZeros(date.getDate(), token.length);
+  },
+  // AM or PM
+  a(date, token) {
+    const dayPeriodEnumValue = date.getHours() / 12 >= 1 ? "pm" : "am";
+    switch (token) {
+      case "a":
+      case "aa":
+        return dayPeriodEnumValue.toUpperCase();
+      case "aaa":
+        return dayPeriodEnumValue;
+      case "aaaaa":
+        return dayPeriodEnumValue[0];
+      case "aaaa":
+      default:
+        return dayPeriodEnumValue === "am" ? "a.m." : "p.m.";
+    }
+  },
+  // Hour [1-12]
+  h(date, token) {
+    return addLeadingZeros(date.getHours() % 12 || 12, token.length);
+  },
+  // Hour [0-23]
+  H(date, token) {
+    return addLeadingZeros(date.getHours(), token.length);
+  },
+  // Minute
+  m(date, token) {
+    return addLeadingZeros(date.getMinutes(), token.length);
+  },
+  // Second
+  s(date, token) {
+    return addLeadingZeros(date.getSeconds(), token.length);
+  },
+  // Fraction of second
+  S(date, token) {
+    const numberOfDigits = token.length;
+    const milliseconds = date.getMilliseconds();
+    const fractionalSeconds = Math.trunc(
+      milliseconds * Math.pow(10, numberOfDigits - 3)
+    );
+    return addLeadingZeros(fractionalSeconds, token.length);
+  }
+};
+const dayPeriodEnum = {
+  midnight: "midnight",
+  noon: "noon",
+  morning: "morning",
+  afternoon: "afternoon",
+  evening: "evening",
+  night: "night"
+};
+const formatters = {
+  // Era
+  G: function(date, token, localize2) {
+    const era = date.getFullYear() > 0 ? 1 : 0;
+    switch (token) {
+      case "G":
+      case "GG":
+      case "GGG":
+        return localize2.era(era, { width: "abbreviated" });
+      case "GGGGG":
+        return localize2.era(era, { width: "narrow" });
+      case "GGGG":
+      default:
+        return localize2.era(era, { width: "wide" });
+    }
+  },
+  // Year
+  y: function(date, token, localize2) {
+    if (token === "yo") {
+      const signedYear = date.getFullYear();
+      const year = signedYear > 0 ? signedYear : 1 - signedYear;
+      return localize2.ordinalNumber(year, { unit: "year" });
+    }
+    return lightFormatters.y(date, token);
+  },
+  // Local week-numbering year
+  Y: function(date, token, localize2, options) {
+    const signedWeekYear = getWeekYear(date, options);
+    const weekYear = signedWeekYear > 0 ? signedWeekYear : 1 - signedWeekYear;
+    if (token === "YY") {
+      const twoDigitYear = weekYear % 100;
+      return addLeadingZeros(twoDigitYear, 2);
+    }
+    if (token === "Yo") {
+      return localize2.ordinalNumber(weekYear, { unit: "year" });
+    }
+    return addLeadingZeros(weekYear, token.length);
+  },
+  // ISO week-numbering year
+  R: function(date, token) {
+    const isoWeekYear = getISOWeekYear(date);
+    return addLeadingZeros(isoWeekYear, token.length);
+  },
+  // Extended year. This is a single number designating the year of this calendar system.
+  // The main difference between `y` and `u` localizers are B.C. years:
+  // | Year | `y` | `u` |
+  // |------|-----|-----|
+  // | AC 1 |   1 |   1 |
+  // | BC 1 |   1 |   0 |
+  // | BC 2 |   2 |  -1 |
+  // Also `yy` always returns the last two digits of a year,
+  // while `uu` pads single digit years to 2 characters and returns other years unchanged.
+  u: function(date, token) {
+    const year = date.getFullYear();
+    return addLeadingZeros(year, token.length);
+  },
+  // Quarter
+  Q: function(date, token, localize2) {
+    const quarter = Math.ceil((date.getMonth() + 1) / 3);
+    switch (token) {
+      case "Q":
+        return String(quarter);
+      case "QQ":
+        return addLeadingZeros(quarter, 2);
+      case "Qo":
+        return localize2.ordinalNumber(quarter, { unit: "quarter" });
+      case "QQQ":
+        return localize2.quarter(quarter, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "QQQQQ":
+        return localize2.quarter(quarter, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "QQQQ":
+      default:
+        return localize2.quarter(quarter, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  // Stand-alone quarter
+  q: function(date, token, localize2) {
+    const quarter = Math.ceil((date.getMonth() + 1) / 3);
+    switch (token) {
+      case "q":
+        return String(quarter);
+      case "qq":
+        return addLeadingZeros(quarter, 2);
+      case "qo":
+        return localize2.ordinalNumber(quarter, { unit: "quarter" });
+      case "qqq":
+        return localize2.quarter(quarter, {
+          width: "abbreviated",
+          context: "standalone"
+        });
+      case "qqqqq":
+        return localize2.quarter(quarter, {
+          width: "narrow",
+          context: "standalone"
+        });
+      case "qqqq":
+      default:
+        return localize2.quarter(quarter, {
+          width: "wide",
+          context: "standalone"
+        });
+    }
+  },
+  // Month
+  M: function(date, token, localize2) {
+    const month = date.getMonth();
+    switch (token) {
+      case "M":
+      case "MM":
+        return lightFormatters.M(date, token);
+      case "Mo":
+        return localize2.ordinalNumber(month + 1, { unit: "month" });
+      case "MMM":
+        return localize2.month(month, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "MMMMM":
+        return localize2.month(month, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "MMMM":
+      default:
+        return localize2.month(month, { width: "wide", context: "formatting" });
+    }
+  },
+  // Stand-alone month
+  L: function(date, token, localize2) {
+    const month = date.getMonth();
+    switch (token) {
+      case "L":
+        return String(month + 1);
+      case "LL":
+        return addLeadingZeros(month + 1, 2);
+      case "Lo":
+        return localize2.ordinalNumber(month + 1, { unit: "month" });
+      case "LLL":
+        return localize2.month(month, {
+          width: "abbreviated",
+          context: "standalone"
+        });
+      case "LLLLL":
+        return localize2.month(month, {
+          width: "narrow",
+          context: "standalone"
+        });
+      case "LLLL":
+      default:
+        return localize2.month(month, { width: "wide", context: "standalone" });
+    }
+  },
+  // Local week of year
+  w: function(date, token, localize2, options) {
+    const week = getWeek(date, options);
+    if (token === "wo") {
+      return localize2.ordinalNumber(week, { unit: "week" });
+    }
+    return addLeadingZeros(week, token.length);
+  },
+  // ISO week of year
+  I: function(date, token, localize2) {
+    const isoWeek = getISOWeek(date);
+    if (token === "Io") {
+      return localize2.ordinalNumber(isoWeek, { unit: "week" });
+    }
+    return addLeadingZeros(isoWeek, token.length);
+  },
+  // Day of the month
+  d: function(date, token, localize2) {
+    if (token === "do") {
+      return localize2.ordinalNumber(date.getDate(), { unit: "date" });
+    }
+    return lightFormatters.d(date, token);
+  },
+  // Day of year
+  D: function(date, token, localize2) {
+    const dayOfYear = getDayOfYear(date);
+    if (token === "Do") {
+      return localize2.ordinalNumber(dayOfYear, { unit: "dayOfYear" });
+    }
+    return addLeadingZeros(dayOfYear, token.length);
+  },
+  // Day of week
+  E: function(date, token, localize2) {
+    const dayOfWeek = date.getDay();
+    switch (token) {
+      case "E":
+      case "EE":
+      case "EEE":
+        return localize2.day(dayOfWeek, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "EEEEE":
+        return localize2.day(dayOfWeek, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "EEEEEE":
+        return localize2.day(dayOfWeek, {
+          width: "short",
+          context: "formatting"
+        });
+      case "EEEE":
+      default:
+        return localize2.day(dayOfWeek, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  // Local day of week
+  e: function(date, token, localize2, options) {
+    const dayOfWeek = date.getDay();
+    const localDayOfWeek = (dayOfWeek - options.weekStartsOn + 8) % 7 || 7;
+    switch (token) {
+      case "e":
+        return String(localDayOfWeek);
+      case "ee":
+        return addLeadingZeros(localDayOfWeek, 2);
+      case "eo":
+        return localize2.ordinalNumber(localDayOfWeek, { unit: "day" });
+      case "eee":
+        return localize2.day(dayOfWeek, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "eeeee":
+        return localize2.day(dayOfWeek, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "eeeeee":
+        return localize2.day(dayOfWeek, {
+          width: "short",
+          context: "formatting"
+        });
+      case "eeee":
+      default:
+        return localize2.day(dayOfWeek, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  // Stand-alone local day of week
+  c: function(date, token, localize2, options) {
+    const dayOfWeek = date.getDay();
+    const localDayOfWeek = (dayOfWeek - options.weekStartsOn + 8) % 7 || 7;
+    switch (token) {
+      case "c":
+        return String(localDayOfWeek);
+      case "cc":
+        return addLeadingZeros(localDayOfWeek, token.length);
+      case "co":
+        return localize2.ordinalNumber(localDayOfWeek, { unit: "day" });
+      case "ccc":
+        return localize2.day(dayOfWeek, {
+          width: "abbreviated",
+          context: "standalone"
+        });
+      case "ccccc":
+        return localize2.day(dayOfWeek, {
+          width: "narrow",
+          context: "standalone"
+        });
+      case "cccccc":
+        return localize2.day(dayOfWeek, {
+          width: "short",
+          context: "standalone"
+        });
+      case "cccc":
+      default:
+        return localize2.day(dayOfWeek, {
+          width: "wide",
+          context: "standalone"
+        });
+    }
+  },
+  // ISO day of week
+  i: function(date, token, localize2) {
+    const dayOfWeek = date.getDay();
+    const isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+    switch (token) {
+      case "i":
+        return String(isoDayOfWeek);
+      case "ii":
+        return addLeadingZeros(isoDayOfWeek, token.length);
+      case "io":
+        return localize2.ordinalNumber(isoDayOfWeek, { unit: "day" });
+      case "iii":
+        return localize2.day(dayOfWeek, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "iiiii":
+        return localize2.day(dayOfWeek, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "iiiiii":
+        return localize2.day(dayOfWeek, {
+          width: "short",
+          context: "formatting"
+        });
+      case "iiii":
+      default:
+        return localize2.day(dayOfWeek, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  // AM or PM
+  a: function(date, token, localize2) {
+    const hours = date.getHours();
+    const dayPeriodEnumValue = hours / 12 >= 1 ? "pm" : "am";
+    switch (token) {
+      case "a":
+      case "aa":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "aaa":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "abbreviated",
+          context: "formatting"
+        }).toLowerCase();
+      case "aaaaa":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "aaaa":
+      default:
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  // AM, PM, midnight, noon
+  b: function(date, token, localize2) {
+    const hours = date.getHours();
+    let dayPeriodEnumValue;
+    if (hours === 12) {
+      dayPeriodEnumValue = dayPeriodEnum.noon;
+    } else if (hours === 0) {
+      dayPeriodEnumValue = dayPeriodEnum.midnight;
+    } else {
+      dayPeriodEnumValue = hours / 12 >= 1 ? "pm" : "am";
+    }
+    switch (token) {
+      case "b":
+      case "bb":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "bbb":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "abbreviated",
+          context: "formatting"
+        }).toLowerCase();
+      case "bbbbb":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "bbbb":
+      default:
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  // in the morning, in the afternoon, in the evening, at night
+  B: function(date, token, localize2) {
+    const hours = date.getHours();
+    let dayPeriodEnumValue;
+    if (hours >= 17) {
+      dayPeriodEnumValue = dayPeriodEnum.evening;
+    } else if (hours >= 12) {
+      dayPeriodEnumValue = dayPeriodEnum.afternoon;
+    } else if (hours >= 4) {
+      dayPeriodEnumValue = dayPeriodEnum.morning;
+    } else {
+      dayPeriodEnumValue = dayPeriodEnum.night;
+    }
+    switch (token) {
+      case "B":
+      case "BB":
+      case "BBB":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "BBBBB":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "BBBB":
+      default:
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  // Hour [1-12]
+  h: function(date, token, localize2) {
+    if (token === "ho") {
+      let hours = date.getHours() % 12;
+      if (hours === 0) hours = 12;
+      return localize2.ordinalNumber(hours, { unit: "hour" });
+    }
+    return lightFormatters.h(date, token);
+  },
+  // Hour [0-23]
+  H: function(date, token, localize2) {
+    if (token === "Ho") {
+      return localize2.ordinalNumber(date.getHours(), { unit: "hour" });
+    }
+    return lightFormatters.H(date, token);
+  },
+  // Hour [0-11]
+  K: function(date, token, localize2) {
+    const hours = date.getHours() % 12;
+    if (token === "Ko") {
+      return localize2.ordinalNumber(hours, { unit: "hour" });
+    }
+    return addLeadingZeros(hours, token.length);
+  },
+  // Hour [1-24]
+  k: function(date, token, localize2) {
+    let hours = date.getHours();
+    if (hours === 0) hours = 24;
+    if (token === "ko") {
+      return localize2.ordinalNumber(hours, { unit: "hour" });
+    }
+    return addLeadingZeros(hours, token.length);
+  },
+  // Minute
+  m: function(date, token, localize2) {
+    if (token === "mo") {
+      return localize2.ordinalNumber(date.getMinutes(), { unit: "minute" });
+    }
+    return lightFormatters.m(date, token);
+  },
+  // Second
+  s: function(date, token, localize2) {
+    if (token === "so") {
+      return localize2.ordinalNumber(date.getSeconds(), { unit: "second" });
+    }
+    return lightFormatters.s(date, token);
+  },
+  // Fraction of second
+  S: function(date, token) {
+    return lightFormatters.S(date, token);
+  },
+  // Timezone (ISO-8601. If offset is 0, output is always `'Z'`)
+  X: function(date, token, _localize) {
+    const timezoneOffset = date.getTimezoneOffset();
+    if (timezoneOffset === 0) {
+      return "Z";
+    }
+    switch (token) {
+      case "X":
+        return formatTimezoneWithOptionalMinutes(timezoneOffset);
+      case "XXXX":
+      case "XX":
+        return formatTimezone(timezoneOffset);
+      case "XXXXX":
+      case "XXX":
+      default:
+        return formatTimezone(timezoneOffset, ":");
+    }
+  },
+  // Timezone (ISO-8601. If offset is 0, output is `'+00:00'` or equivalent)
+  x: function(date, token, _localize) {
+    const timezoneOffset = date.getTimezoneOffset();
+    switch (token) {
+      case "x":
+        return formatTimezoneWithOptionalMinutes(timezoneOffset);
+      case "xxxx":
+      case "xx":
+        return formatTimezone(timezoneOffset);
+      case "xxxxx":
+      case "xxx":
+      default:
+        return formatTimezone(timezoneOffset, ":");
+    }
+  },
+  // Timezone (GMT)
+  O: function(date, token, _localize) {
+    const timezoneOffset = date.getTimezoneOffset();
+    switch (token) {
+      case "O":
+      case "OO":
+      case "OOO":
+        return "GMT" + formatTimezoneShort(timezoneOffset, ":");
+      case "OOOO":
+      default:
+        return "GMT" + formatTimezone(timezoneOffset, ":");
+    }
+  },
+  // Timezone (specific non-location)
+  z: function(date, token, _localize) {
+    const timezoneOffset = date.getTimezoneOffset();
+    switch (token) {
+      case "z":
+      case "zz":
+      case "zzz":
+        return "GMT" + formatTimezoneShort(timezoneOffset, ":");
+      case "zzzz":
+      default:
+        return "GMT" + formatTimezone(timezoneOffset, ":");
+    }
+  },
+  // Seconds timestamp
+  t: function(date, token, _localize) {
+    const timestamp = Math.trunc(date.getTime() / 1e3);
+    return addLeadingZeros(timestamp, token.length);
+  },
+  // Milliseconds timestamp
+  T: function(date, token, _localize) {
+    const timestamp = date.getTime();
+    return addLeadingZeros(timestamp, token.length);
+  }
+};
+function formatTimezoneShort(offset, delimiter = "") {
+  const sign = offset > 0 ? "-" : "+";
+  const absOffset = Math.abs(offset);
+  const hours = Math.trunc(absOffset / 60);
+  const minutes = absOffset % 60;
+  if (minutes === 0) {
+    return sign + String(hours);
+  }
+  return sign + String(hours) + delimiter + addLeadingZeros(minutes, 2);
+}
+function formatTimezoneWithOptionalMinutes(offset, delimiter) {
+  if (offset % 60 === 0) {
+    const sign = offset > 0 ? "-" : "+";
+    return sign + addLeadingZeros(Math.abs(offset) / 60, 2);
+  }
+  return formatTimezone(offset, delimiter);
+}
+function formatTimezone(offset, delimiter = "") {
+  const sign = offset > 0 ? "-" : "+";
+  const absOffset = Math.abs(offset);
+  const hours = addLeadingZeros(Math.trunc(absOffset / 60), 2);
+  const minutes = addLeadingZeros(absOffset % 60, 2);
+  return sign + hours + delimiter + minutes;
+}
+const dateLongFormatter = (pattern, formatLong2) => {
+  switch (pattern) {
+    case "P":
+      return formatLong2.date({ width: "short" });
+    case "PP":
+      return formatLong2.date({ width: "medium" });
+    case "PPP":
+      return formatLong2.date({ width: "long" });
+    case "PPPP":
+    default:
+      return formatLong2.date({ width: "full" });
+  }
+};
+const timeLongFormatter = (pattern, formatLong2) => {
+  switch (pattern) {
+    case "p":
+      return formatLong2.time({ width: "short" });
+    case "pp":
+      return formatLong2.time({ width: "medium" });
+    case "ppp":
+      return formatLong2.time({ width: "long" });
+    case "pppp":
+    default:
+      return formatLong2.time({ width: "full" });
+  }
+};
+const dateTimeLongFormatter = (pattern, formatLong2) => {
+  const matchResult = pattern.match(/(P+)(p+)?/) || [];
+  const datePattern = matchResult[1];
+  const timePattern = matchResult[2];
+  if (!timePattern) {
+    return dateLongFormatter(pattern, formatLong2);
+  }
+  let dateTimeFormat;
+  switch (datePattern) {
+    case "P":
+      dateTimeFormat = formatLong2.dateTime({ width: "short" });
+      break;
+    case "PP":
+      dateTimeFormat = formatLong2.dateTime({ width: "medium" });
+      break;
+    case "PPP":
+      dateTimeFormat = formatLong2.dateTime({ width: "long" });
+      break;
+    case "PPPP":
+    default:
+      dateTimeFormat = formatLong2.dateTime({ width: "full" });
+      break;
+  }
+  return dateTimeFormat.replace("{{date}}", dateLongFormatter(datePattern, formatLong2)).replace("{{time}}", timeLongFormatter(timePattern, formatLong2));
+};
+const longFormatters = {
+  p: timeLongFormatter,
+  P: dateTimeLongFormatter
+};
+const dayOfYearTokenRE = /^D+$/;
+const weekYearTokenRE = /^Y+$/;
+const throwTokens = ["D", "DD", "YY", "YYYY"];
+function isProtectedDayOfYearToken(token) {
+  return dayOfYearTokenRE.test(token);
+}
+function isProtectedWeekYearToken(token) {
+  return weekYearTokenRE.test(token);
+}
+function warnOrThrowProtectedError(token, format2, input) {
+  const _message = message(token, format2, input);
+  console.warn(_message);
+  if (throwTokens.includes(token)) throw new RangeError(_message);
+}
+function message(token, format2, input) {
+  const subject = token[0] === "Y" ? "years" : "days of the month";
+  return `Use \`${token.toLowerCase()}\` instead of \`${token}\` (in \`${format2}\`) for formatting ${subject} to the input \`${input}\`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md`;
+}
+const formattingTokensRegExp = /[yYQqMLwIdDecihHKkms]o|(\w)\1*|''|'(''|[^'])+('|$)|./g;
+const longFormattingTokensRegExp = /P+p+|P+|p+|''|'(''|[^'])+('|$)|./g;
+const escapedStringRegExp = /^'([^]*?)'?$/;
+const doubleQuoteRegExp = /''/g;
+const unescapedLatinCharacterRegExp = /[a-zA-Z]/;
+function format(date, formatStr, options) {
+  const defaultOptions2 = getDefaultOptions();
+  const locale = defaultOptions2.locale ?? enUS;
+  const firstWeekContainsDate = defaultOptions2.firstWeekContainsDate ?? defaultOptions2.locale?.options?.firstWeekContainsDate ?? 1;
+  const weekStartsOn = defaultOptions2.weekStartsOn ?? defaultOptions2.locale?.options?.weekStartsOn ?? 0;
+  const originalDate = toDate(date);
+  if (!isValid(originalDate)) {
+    throw new RangeError("Invalid time value");
+  }
+  let parts = formatStr.match(longFormattingTokensRegExp).map((substring) => {
+    const firstCharacter = substring[0];
+    if (firstCharacter === "p" || firstCharacter === "P") {
+      const longFormatter = longFormatters[firstCharacter];
+      return longFormatter(substring, locale.formatLong);
+    }
+    return substring;
+  }).join("").match(formattingTokensRegExp).map((substring) => {
+    if (substring === "''") {
+      return { isToken: false, value: "'" };
+    }
+    const firstCharacter = substring[0];
+    if (firstCharacter === "'") {
+      return { isToken: false, value: cleanEscapedString(substring) };
+    }
+    if (formatters[firstCharacter]) {
+      return { isToken: true, value: substring };
+    }
+    if (firstCharacter.match(unescapedLatinCharacterRegExp)) {
+      throw new RangeError(
+        "Format string contains an unescaped latin alphabet character `" + firstCharacter + "`"
+      );
+    }
+    return { isToken: false, value: substring };
+  });
+  if (locale.localize.preprocessor) {
+    parts = locale.localize.preprocessor(originalDate, parts);
+  }
+  const formatterOptions = {
+    firstWeekContainsDate,
+    weekStartsOn,
+    locale
+  };
+  return parts.map((part) => {
+    if (!part.isToken) return part.value;
+    const token = part.value;
+    if (isProtectedWeekYearToken(token) || isProtectedDayOfYearToken(token)) {
+      warnOrThrowProtectedError(token, formatStr, String(date));
+    }
+    const formatter = formatters[token[0]];
+    return formatter(originalDate, token, locale.localize, formatterOptions);
+  }).join("");
+}
+function cleanEscapedString(input) {
+  const matched = input.match(escapedStringRegExp);
+  if (!matched) {
+    return input;
+  }
+  return matched[1].replace(doubleQuoteRegExp, "'");
+}
 function DashboardPage() {
   const navigate = useNavigate();
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$4.page, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$4.hero, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$4.heroTitle, children: "Local Business Revenue Leak Detector" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$4.heroSubtitle, children: "Scan any local business website to find what's hurting their visibility, conversions, and trust — then generate a client-ready report." }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { style: styles$4.ctaBtn, onClick: () => navigate("/scan/new"), children: "Start a New Scan" })
+  const { savedScans, latestResult, loadSavedScans } = useScanStore();
+  reactExports.useEffect(() => {
+    loadSavedScans();
+  }, [loadSavedScans]);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.page, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.topRow, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$a.heading, children: "Local Business Revenue Leak Detector" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$a.subheading, children: "Scan local business websites to find what's hurting their visibility, conversions, and trust — then generate a client-ready report." })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { size: "lg", onClick: () => navigate("/scan/new"), children: "+ New Scan" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$4.cards, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$4.card, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$4.cardIcon, children: "⚡" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$4.cardTitle, children: "Quick Scan" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$4.cardText, children: "Homepage + key pages in under 2 minutes. Great for fast outreach qualification." })
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.statsRow, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        StatCard,
+        {
+          icon: "◉",
+          label: "Total Scans",
+          value: String(savedScans.length)
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        StatCard,
+        {
+          icon: "⚡",
+          label: "Last Scan",
+          value: latestResult ? latestResult.domain : savedScans[0]?.domain ?? "—",
+          sub: latestResult ? format(new Date(latestResult.scannedAt), "MMM d, h:mm a") : savedScans[0] ? format(new Date(savedScans[0].scannedAt), "MMM d, h:mm a") : void 0
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        StatCard,
+        {
+          icon: "📍",
+          label: "Avg Score",
+          value: savedScans.length > 0 ? String(
+            Math.round(
+              savedScans.reduce((s, x2) => s + x2.overallScore, 0) / savedScans.length
+            )
+          ) : "—"
+        }
+      )
+    ] }),
+    latestResult && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.latestBanner, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.latestInfo, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$a.latestLabel, children: "Latest scan" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$a.latestDomain, children: latestResult.domain }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "span",
+          {
+            style: {
+              fontSize: 22,
+              fontWeight: 800,
+              color: scoreBandColor(latestResult.scores.overall.value)
+            },
+            children: [
+              latestResult.scores.overall.value,
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 13, fontWeight: 400, color: "var(--color-text-muted)" }, children: "/100" })
+            ]
+          }
+        )
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$4.card, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$4.cardIcon, children: "🔍" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$4.cardTitle, children: "Full Audit" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$4.cardText, children: "Deep crawl of up to 50 pages with Lighthouse performance scores and full signal extraction." })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$4.card, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$4.cardIcon, children: "📄" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$4.cardTitle, children: "Client Reports" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$4.cardText, children: "Auto-generates a polished HTML report you can open in any browser and share directly with prospects." })
-      ] })
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Button,
+        {
+          variant: "secondary",
+          onClick: () => navigate(`/scan/results/${latestResult.id}`),
+          children: "View Results →"
+        }
+      )
+    ] }),
+    savedScans.length > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(SavedScansList, { scans: savedScans, onOpen: (id2) => navigate(`/scan/results/${id2}`) }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+      EmptyState,
+      {
+        icon: "◌",
+        title: "No saved scans yet",
+        description: "Run your first scan to start building a library of site audits.",
+        action: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { onClick: () => navigate("/scan/new"), children: "Start a New Scan" })
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.featureGrid, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        FeatureCard,
+        {
+          icon: "⚡",
+          title: "Quick Scan",
+          text: "Homepage + key pages in under 2 minutes. Great for fast outreach qualification."
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        FeatureCard,
+        {
+          icon: "🔍",
+          title: "Full Audit",
+          text: "Deep crawl with Lighthouse performance scores and full signal extraction."
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        FeatureCard,
+        {
+          icon: "📄",
+          title: "Client Reports",
+          text: "Generates a polished HTML report you can share directly with prospects."
+        }
+      )
     ] })
   ] });
 }
-const styles$4 = {
+function StatCard({ icon, label, value, sub }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { style: statStyles.card, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: statStyles.icon, children: icon }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: statStyles.label, children: label }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: statStyles.value, children: value }),
+    sub && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: statStyles.sub, children: sub })
+  ] });
+}
+function SavedScansList({
+  scans,
+  onOpen
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$a.sectionTitle, children: "Recent Scans" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$a.scanList, children: scans.slice(0, 10).map((scan) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "button",
+      {
+        style: styles$a.scanRow,
+        onClick: () => onOpen(scan.id),
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$a.scanDomain, children: scan.domain }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$a.scanDate, children: format(new Date(scan.scannedAt), "MMM d, yyyy") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "span",
+            {
+              style: {
+                ...styles$a.scanScore,
+                color: scoreBandColor(scan.overallScore)
+              },
+              children: scan.overallScore
+            }
+          )
+        ]
+      },
+      scan.id
+    )) })
+  ] });
+}
+function FeatureCard({ icon, title, text }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 28, marginBottom: "var(--space-3)" }, children: icon }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: { fontSize: 15, fontWeight: 600, color: "var(--color-text-primary)", marginBottom: "var(--space-2)" }, children: title }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.6 }, children: text })
+  ] });
+}
+const styles$a = {
   page: {
     display: "flex",
     flexDirection: "column",
-    gap: "var(--space-8)",
-    maxWidth: 900
+    gap: "var(--space-6)",
+    maxWidth: 960
   },
-  hero: {
+  topRow: {
     display: "flex",
-    flexDirection: "column",
-    gap: "var(--space-4)"
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "var(--space-6)"
   },
-  heroTitle: {
-    fontSize: 24,
+  heading: {
+    fontSize: 22,
     fontWeight: 700,
     color: "var(--color-text-primary)",
-    lineHeight: 1.2
+    lineHeight: 1.2,
+    marginBottom: "var(--space-2)"
   },
-  heroSubtitle: {
-    fontSize: 15,
+  subheading: {
+    fontSize: 14,
     color: "var(--color-text-secondary)",
-    maxWidth: 600,
+    maxWidth: 560,
     lineHeight: 1.6
   },
-  ctaBtn: {
-    display: "inline-block",
-    padding: "var(--space-3) var(--space-6)",
-    backgroundColor: "var(--color-brand)",
-    color: "#fff",
-    border: "none",
-    borderRadius: "var(--radius-md)",
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: "pointer",
-    alignSelf: "flex-start"
-  },
-  cards: {
+  statsRow: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-    gap: "var(--space-4)"
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    gap: "var(--space-3)"
   },
-  card: {
-    backgroundColor: "var(--color-bg-surface)",
+  latestBanner: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "var(--space-4)",
+    padding: "var(--space-4) var(--space-5)",
+    backgroundColor: "var(--color-brand-light)",
+    border: "1px solid rgba(99,102,241,0.3)",
+    borderRadius: "var(--radius-lg)",
+    flexWrap: "wrap"
+  },
+  latestInfo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-4)",
+    flexWrap: "wrap"
+  },
+  latestLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "var(--color-brand-hover)",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em"
+  },
+  latestDomain: {
+    fontSize: 15,
+    fontWeight: 600,
+    color: "var(--color-text-primary)",
+    fontFamily: "var(--font-mono)"
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: "var(--color-text-primary)",
+    marginBottom: "var(--space-3)"
+  },
+  scanList: {
+    display: "flex",
+    flexDirection: "column",
     border: "1px solid var(--color-border)",
     borderRadius: "var(--radius-lg)",
-    padding: "var(--space-6)",
+    overflow: "hidden"
+  },
+  scanRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-4)",
+    padding: "var(--space-3) var(--space-4)",
+    background: "none",
+    border: "none",
+    borderBottom: "1px solid var(--color-border)",
+    cursor: "pointer",
+    textAlign: "left",
+    width: "100%"
+  },
+  scanDomain: {
+    flex: 1,
+    fontSize: 13,
+    color: "var(--color-text-primary)",
+    fontFamily: "var(--font-mono)"
+  },
+  scanDate: {
+    fontSize: 12,
+    color: "var(--color-text-muted)"
+  },
+  scanScore: {
+    fontSize: 16,
+    fontWeight: 700,
+    width: 40,
+    textAlign: "right"
+  },
+  featureGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "var(--space-4)"
+  }
+};
+const statStyles = {
+  card: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    padding: "var(--space-4)"
+  },
+  icon: {
+    fontSize: 16,
+    marginBottom: 4
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: "var(--color-text-muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em"
+  },
+  value: {
+    fontSize: 22,
+    fontWeight: 700,
+    color: "var(--color-text-primary)",
+    fontFamily: "var(--font-mono)"
+  },
+  sub: {
+    fontSize: 11,
+    color: "var(--color-text-muted)"
+  }
+};
+function Input({
+  label,
+  error,
+  hint,
+  fullWidth = true,
+  style,
+  ...rest
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 6, width: fullWidth ? "100%" : void 0 }, children: [
+    label && /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: labelStyle$2, children: label }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "input",
+      {
+        style: {
+          ...inputBase,
+          borderColor: error ? "var(--color-high)" : "var(--color-border)",
+          ...style
+        },
+        ...rest
+      }
+    ),
+    error && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: errorStyle$1, children: error }),
+    !error && hint && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: hintStyle, children: hint })
+  ] });
+}
+const labelStyle$2 = {
+  fontSize: 12,
+  fontWeight: 600,
+  color: "var(--color-text-secondary)",
+  letterSpacing: "0.04em",
+  textTransform: "uppercase"
+};
+const inputBase = {
+  width: "100%",
+  padding: "8px 12px",
+  backgroundColor: "var(--color-bg-base)",
+  border: "1px solid var(--color-border)",
+  borderRadius: "var(--radius-md)",
+  color: "var(--color-text-primary)",
+  fontSize: 13,
+  fontFamily: "var(--font-sans)",
+  outline: "none",
+  transition: "border-color var(--transition-fast)"
+};
+const errorStyle$1 = {
+  fontSize: 12,
+  color: "var(--color-high)"
+};
+const hintStyle = {
+  fontSize: 12,
+  color: "var(--color-text-muted)"
+};
+function Select({
+  label,
+  options,
+  error,
+  fullWidth = true,
+  style,
+  ...rest
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 6, width: fullWidth ? "100%" : void 0 }, children: [
+    label && /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: labelStyle$1, children: label }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "select",
+      {
+        style: {
+          ...selectBase,
+          borderColor: error ? "var(--color-high)" : "var(--color-border)",
+          width: fullWidth ? "100%" : void 0,
+          ...style
+        },
+        ...rest,
+        children: options.map((opt) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: opt.value, children: opt.label }, opt.value))
+      }
+    ),
+    error && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: errorStyle, children: error })
+  ] });
+}
+const labelStyle$1 = {
+  fontSize: 12,
+  fontWeight: 600,
+  color: "var(--color-text-secondary)",
+  letterSpacing: "0.04em",
+  textTransform: "uppercase"
+};
+const selectBase = {
+  padding: "8px 12px",
+  backgroundColor: "var(--color-bg-base)",
+  border: "1px solid var(--color-border)",
+  borderRadius: "var(--radius-md)",
+  color: "var(--color-text-primary)",
+  fontSize: 13,
+  fontFamily: "var(--font-sans)",
+  outline: "none",
+  cursor: "pointer",
+  appearance: "none",
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 10px center",
+  paddingRight: 30
+};
+const errorStyle = {
+  fontSize: 12,
+  color: "var(--color-high)"
+};
+const BUSINESS_TYPE_OPTIONS = [
+  { value: "auto", label: "Auto-detect" },
+  { value: "restaurant", label: "Restaurant / Food" },
+  { value: "salon", label: "Salon / Spa / Beauty" },
+  { value: "roofer", label: "Roofer / Roofing" },
+  { value: "auto_shop", label: "Auto Shop / Mechanic" },
+  { value: "contractor", label: "Contractor / Trades" },
+  { value: "dentist", label: "Dentist / Medical" },
+  { value: "other", label: "Other Local Business" }
+];
+function BusinessTypeSelect({ value, onChange, disabled }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Select,
+    {
+      label: "Business Type",
+      value,
+      options: BUSINESS_TYPE_OPTIONS,
+      disabled,
+      onChange: (e) => onChange(e.target.value)
+    }
+  );
+}
+function validateUrl(raw) {
+  if (!raw.trim()) return "Please enter a website URL";
+  let url = raw.trim();
+  if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+  try {
+    new URL(url);
+    return null;
+  } catch {
+    return "Please enter a valid website URL (e.g. rooferaustin.com)";
+  }
+}
+const MAX_PAGES_BY_MODE = {
+  quick: 10,
+  full: 50
+};
+function ScanForm({ onSubmit, isLoading = false }) {
+  const [url, setUrl] = reactExports.useState("");
+  const [scanMode, setScanMode] = reactExports.useState("quick");
+  const [businessType, setBusinessType] = reactExports.useState("auto");
+  const [maxPages, setMaxPages] = reactExports.useState(MAX_PAGES_BY_MODE.quick);
+  const [urlError, setUrlError] = reactExports.useState(null);
+  function handleModeChange(mode) {
+    setScanMode(mode);
+    setMaxPages(MAX_PAGES_BY_MODE[mode]);
+  }
+  function handleSubmit(e) {
+    e.preventDefault();
+    const err = validateUrl(url);
+    if (err) {
+      setUrlError(err);
+      return;
+    }
+    setUrlError(null);
+    let finalUrl = url.trim();
+    if (!/^https?:\/\//i.test(finalUrl)) finalUrl = `https://${finalUrl}`;
+    onSubmit({ url: finalUrl, scanMode, businessType, maxPages });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, style: styles$9.form, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$9.section, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Input,
+      {
+        label: "Website URL",
+        type: "text",
+        placeholder: "e.g. rooferaustin.com or https://example.com",
+        value: url,
+        onChange: (e) => {
+          setUrl(e.target.value);
+          if (urlError) setUrlError(null);
+        },
+        error: urlError ?? void 0,
+        disabled: isLoading,
+        autoFocus: true
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$9.row, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$9.fieldGroup, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$9.fieldLabel, children: "Scan Mode" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$9.radioGroup, children: ["quick", "full"].map((mode) => /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: styles$9.radioLabel, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
+            {
+              type: "radio",
+              name: "scanMode",
+              value: mode,
+              checked: scanMode === mode,
+              onChange: () => handleModeChange(mode),
+              disabled: isLoading,
+              style: styles$9.radioInput
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$9.radioCard, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$9.radioTitle, children: mode === "quick" ? "Quick" : "Full" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$9.radioHint, children: mode === "quick" ? "~1–2 min · up to 10 pages" : "~5–10 min · up to 50 pages" })
+          ] })
+        ] }, mode)) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        BusinessTypeSelect,
+        {
+          value: businessType,
+          onChange: setBusinessType,
+          disabled: isLoading
+        }
+      ) })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { maxWidth: 200 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Input,
+      {
+        label: "Max Pages",
+        type: "number",
+        min: 1,
+        max: 100,
+        value: maxPages,
+        onChange: (e) => setMaxPages(Math.max(1, parseInt(e.target.value, 10) || 1)),
+        hint: "How many pages to crawl (affects scan depth)",
+        disabled: isLoading
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$9.submitRow, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Button,
+        {
+          type: "submit",
+          size: "lg",
+          loading: isLoading,
+          disabled: isLoading,
+          fullWidth: false,
+          children: isLoading ? "Scanning…" : "Start Scan"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$9.submitHint, children: scanMode === "quick" ? "Quick scan: homepage + key pages, ~1–2 minutes" : "Full scan: deep crawl + Lighthouse audit, ~5–10 minutes" })
+    ] })
+  ] }) });
+}
+const styles$9 = {
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-6)"
+  },
+  section: {
     display: "flex",
     flexDirection: "column",
     gap: "var(--space-3)"
   },
-  cardIcon: {
-    fontSize: 28
+  row: {
+    display: "flex",
+    gap: "var(--space-6)",
+    flexWrap: "wrap",
+    alignItems: "flex-start"
   },
-  cardTitle: {
-    fontSize: 15,
+  fieldGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    flex: 1,
+    minWidth: 200
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "var(--color-text-secondary)",
+    letterSpacing: "0.04em",
+    textTransform: "uppercase"
+  },
+  radioGroup: {
+    display: "flex",
+    gap: "var(--space-3)"
+  },
+  radioLabel: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "var(--space-2)",
+    cursor: "pointer",
+    flex: 1
+  },
+  radioInput: {
+    marginTop: 3,
+    accentColor: "var(--color-brand)",
+    flexShrink: 0
+  },
+  radioCard: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 2
+  },
+  radioTitle: {
+    fontSize: 13,
     fontWeight: 600,
     color: "var(--color-text-primary)"
   },
-  cardText: {
+  radioHint: {
+    fontSize: 11,
+    color: "var(--color-text-muted)"
+  },
+  submitRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-4)",
+    paddingTop: "var(--space-2)",
+    borderTop: "1px solid var(--color-border)"
+  },
+  submitHint: {
+    fontSize: 12,
+    color: "var(--color-text-muted)"
+  }
+};
+function Progress({
+  value,
+  label,
+  showPercent = false,
+  size = "md",
+  color,
+  style
+}) {
+  const clamped = Math.min(100, Math.max(0, value));
+  const trackHeight = size === "sm" ? 4 : 8;
+  const barColor = color ?? getBarColor(clamped);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 6, ...style }, children: [
+    (label || showPercent) && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: headerRow, children: [
+      label && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: labelStyle, children: label }),
+      showPercent && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: percentStyle, children: [
+        Math.round(clamped),
+        "%"
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        style: {
+          width: "100%",
+          height: trackHeight,
+          backgroundColor: "var(--color-bg-raised)",
+          borderRadius: trackHeight / 2,
+          overflow: "hidden"
+        },
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            style: {
+              height: "100%",
+              width: `${clamped}%`,
+              backgroundColor: barColor,
+              borderRadius: trackHeight / 2,
+              transition: "width 0.3s ease, background-color 0.3s ease"
+            }
+          }
+        )
+      }
+    )
+  ] });
+}
+function getBarColor(value) {
+  if (value >= 85) return "var(--color-score-strong)";
+  if (value >= 70) return "var(--color-score-solid)";
+  if (value >= 55) return "var(--color-score-needs)";
+  if (value > 0) return "var(--color-score-leak)";
+  return "var(--color-bg-overlay)";
+}
+const headerRow = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center"
+};
+const labelStyle = {
+  fontSize: 12,
+  color: "var(--color-text-secondary)"
+};
+const percentStyle = {
+  fontSize: 12,
+  fontWeight: 600,
+  color: "var(--color-text-primary)"
+};
+const STEPS = [
+  { label: "Validating URL", threshold: 2 },
+  { label: "Fetching homepage", threshold: 8 },
+  { label: "Loading robots.txt", threshold: 14 },
+  { label: "Loading sitemap", threshold: 20 },
+  { label: "Discovering pages", threshold: 30 },
+  { label: "Extracting signals", threshold: 50 },
+  { label: "Detecting business type", threshold: 60 },
+  { label: "Analyzing technical SEO", threshold: 68 },
+  { label: "Analyzing local SEO", threshold: 74 },
+  { label: "Analyzing conversions", threshold: 80 },
+  { label: "Running Lighthouse", threshold: 88 },
+  { label: "Scoring results", threshold: 94 },
+  { label: "Building reports", threshold: 98 },
+  { label: "Complete", threshold: 100 }
+];
+function ScanProgress({ progress, stepLabel, domain }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { style: styles$8.card, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$8.header, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$8.title, children: "Scanning in progress…" }),
+      domain && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$8.domain, children: domain })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Progress,
+      {
+        value: progress,
+        showPercent: true,
+        label: stepLabel || "Starting…",
+        size: "md",
+        color: "var(--color-brand)",
+        style: { marginBottom: "var(--space-6)" }
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$8.stepList, children: STEPS.map((step) => {
+      const done = progress > step.threshold;
+      const active = progress >= step.threshold && progress < step.threshold + 10;
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$8.stepRow, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "span",
+          {
+            style: {
+              ...styles$8.stepIcon,
+              color: done ? "var(--color-score-strong)" : active ? "var(--color-brand)" : "var(--color-text-muted)"
+            },
+            children: done ? "✓" : active ? "◉" : "○"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "span",
+          {
+            style: {
+              ...styles$8.stepText,
+              color: done ? "var(--color-text-secondary)" : active ? "var(--color-text-primary)" : "var(--color-text-muted)",
+              fontWeight: active ? 600 : 400
+            },
+            children: step.label
+          }
+        )
+      ] }, step.label);
+    }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$8.disclaimer, children: "Do not close the app while scanning is in progress." })
+  ] });
+}
+const styles$8 = {
+  card: {
+    maxWidth: 560
+  },
+  header: {
+    display: "flex",
+    alignItems: "baseline",
+    gap: "var(--space-3)",
+    marginBottom: "var(--space-5)"
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: "var(--color-text-primary)"
+  },
+  domain: {
+    fontSize: 13,
+    color: "var(--color-text-muted)",
+    fontFamily: "var(--font-mono)"
+  },
+  stepList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-2)",
+    marginBottom: "var(--space-5)"
+  },
+  stepRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-3)"
+  },
+  stepIcon: {
+    width: 16,
+    fontSize: 12,
+    textAlign: "center",
+    flexShrink: 0
+  },
+  stepText: {
+    fontSize: 12,
+    transition: "color 0.2s ease"
+  },
+  disclaimer: {
+    fontSize: 11,
+    color: "var(--color-text-muted)",
+    borderTop: "1px solid var(--color-border)",
+    paddingTop: "var(--space-3)",
+    marginTop: "var(--space-2)"
+  }
+};
+function getDomain(url) {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+function NewScanPage() {
+  const navigate = useNavigate();
+  const { isScanning, progress, stepLabel, error, currentRequest, clearError, startScan } = useScanStore();
+  const latestResult = useScanStore((s) => s.latestResult);
+  reactExports.useEffect(() => {
+    if (latestResult && !isScanning) {
+      navigate(`/scan/results/${latestResult.id}`);
+    }
+  }, [latestResult, isScanning, navigate]);
+  async function handleSubmit(request) {
+    clearError();
+    await startScan(request);
+  }
+  const domain = currentRequest ? getDomain(currentRequest.url) : void 0;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$7.page, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$7.header, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$7.title, children: "New Scan" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$7.subtitle, children: "Enter a local business URL to detect what's hurting their visibility, conversions, and trust." })
+    ] }),
+    error && !isScanning && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$7.errorBanner, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$7.errorIcon, children: "✕" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$7.errorText, children: error }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { style: styles$7.errorDismiss, onClick: clearError, children: "Dismiss" })
+    ] }),
+    isScanning ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+      ScanProgress,
+      {
+        progress,
+        stepLabel,
+        domain
+      }
+    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+      ScanForm,
+      {
+        onSubmit: handleSubmit,
+        isLoading: isScanning
+      }
+    )
+  ] });
+}
+const styles$7 = {
+  page: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-6)",
+    maxWidth: 680
+  },
+  header: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-2)"
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 700,
+    color: "var(--color-text-primary)"
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "var(--color-text-secondary)",
+    lineHeight: 1.6
+  },
+  errorBanner: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-3)",
+    padding: "var(--space-3) var(--space-4)",
+    backgroundColor: "rgba(239,68,68,0.12)",
+    border: "1px solid rgba(239,68,68,0.3)",
+    borderRadius: "var(--radius-md)",
+    color: "#fca5a5",
+    fontSize: 13
+  },
+  errorIcon: {
+    flexShrink: 0,
+    fontWeight: 700
+  },
+  errorText: {
+    flex: 1
+  },
+  errorDismiss: {
+    background: "none",
+    border: "none",
+    color: "#fca5a5",
+    cursor: "pointer",
+    fontSize: 12,
+    padding: "2px 6px",
+    borderRadius: 4,
+    flexShrink: 0
+  }
+};
+function ScoreCard({ label, score, isOverall, emoji }) {
+  const color = scoreBandColor(score.value);
+  const size = isOverall ? 56 : 40;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "div",
+    {
+      style: {
+        ...cardStyles.card,
+        ...isOverall ? cardStyles.overallCard : {}
+      },
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: cardStyles.header, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: cardStyles.emoji, children: emoji }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: cardStyles.label, children: label })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: cardStyles.scoreRow, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "span",
+            {
+              style: {
+                fontSize: size,
+                fontWeight: 800,
+                color,
+                lineHeight: 1,
+                fontVariantNumeric: "tabular-nums"
+              },
+              children: score.value
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: isOverall ? 22 : 16, color: "var(--color-text-muted)", fontWeight: 400 }, children: "/100" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "span",
+          {
+            style: {
+              display: "inline-block",
+              fontSize: 11,
+              fontWeight: 600,
+              color,
+              backgroundColor: `${color}22`,
+              padding: "2px 8px",
+              borderRadius: 99,
+              border: `1px solid ${color}44`
+            },
+            children: score.label
+          }
+        ),
+        score.rationale.length > 0 && !isOverall && /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { style: cardStyles.rationale, children: score.rationale.slice(0, 2).map((r2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: cardStyles.rationaleItem, children: r2 }, i)) })
+      ]
+    }
+  );
+}
+function ScoreOverview({ scores, domain }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$6.wrapper, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$6.sectionHeader, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$6.sectionTitle, children: "Score Overview" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$6.domainLabel, children: domain })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      ScoreCard,
+      {
+        label: "Overall Score",
+        score: scores.overall,
+        isOverall: true,
+        emoji: "◉"
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$6.grid, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreCard, { label: "Technical SEO", score: scores.technical, emoji: "⚙" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreCard, { label: "Local SEO", score: scores.localSeo, emoji: "📍" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreCard, { label: "Conversion", score: scores.conversion, emoji: "⚡" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreCard, { label: "Content", score: scores.content, emoji: "📝" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreCard, { label: "Trust", score: scores.trust, emoji: "🛡" })
+    ] })
+  ] });
+}
+const styles$6 = {
+  wrapper: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-4)"
+  },
+  sectionHeader: {
+    display: "flex",
+    alignItems: "baseline",
+    gap: "var(--space-3)"
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: "var(--color-text-primary)"
+  },
+  domainLabel: {
+    fontSize: 13,
+    color: "var(--color-text-muted)",
+    fontFamily: "var(--font-mono)"
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+    gap: "var(--space-3)"
+  }
+};
+const cardStyles = {
+  card: {
+    backgroundColor: "var(--color-bg-surface)",
+    border: "1px solid var(--color-border)",
+    borderRadius: "var(--radius-lg)",
+    padding: "var(--space-5)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-3)"
+  },
+  overallCard: {
+    backgroundColor: "var(--color-bg-surface)",
+    border: "1px solid var(--color-border-strong)",
+    padding: "var(--space-6)"
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-2)"
+  },
+  emoji: {
+    fontSize: 16
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "var(--color-text-secondary)",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em"
+  },
+  scoreRow: {
+    display: "flex",
+    alignItems: "baseline",
+    gap: "var(--space-1)"
+  },
+  rationale: {
+    listStyle: "none",
+    display: "flex",
+    flexDirection: "column",
+    gap: 3,
+    marginTop: "var(--space-1)"
+  },
+  rationaleItem: {
+    fontSize: 11,
+    color: "var(--color-text-muted)",
+    paddingLeft: "var(--space-3)",
+    position: "relative"
+  }
+};
+const VARIANT_STYLES = {
+  high: {
+    backgroundColor: "rgba(239,68,68,0.15)",
+    color: "#fca5a5",
+    border: "1px solid rgba(239,68,68,0.3)"
+  },
+  medium: {
+    backgroundColor: "rgba(245,158,11,0.15)",
+    color: "#fcd34d",
+    border: "1px solid rgba(245,158,11,0.3)"
+  },
+  low: {
+    backgroundColor: "rgba(34,197,94,0.12)",
+    color: "#86efac",
+    border: "1px solid rgba(34,197,94,0.25)"
+  },
+  technical: {
+    backgroundColor: "rgba(99,102,241,0.15)",
+    color: "#a5b4fc",
+    border: "1px solid rgba(99,102,241,0.3)"
+  },
+  local: {
+    backgroundColor: "rgba(20,184,166,0.15)",
+    color: "#5eead4",
+    border: "1px solid rgba(20,184,166,0.3)"
+  },
+  conversion: {
+    backgroundColor: "rgba(249,115,22,0.15)",
+    color: "#fdba74",
+    border: "1px solid rgba(249,115,22,0.3)"
+  },
+  content: {
+    backgroundColor: "rgba(168,85,247,0.15)",
+    color: "#d8b4fe",
+    border: "1px solid rgba(168,85,247,0.3)"
+  },
+  trust: {
+    backgroundColor: "rgba(236,72,153,0.15)",
+    color: "#f9a8d4",
+    border: "1px solid rgba(236,72,153,0.3)"
+  },
+  default: {
+    backgroundColor: "var(--color-bg-raised)",
+    color: "var(--color-text-secondary)",
+    border: "1px solid var(--color-border)"
+  }
+};
+function Badge({ variant = "default", children, style }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "span",
+    {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "2px 8px",
+        borderRadius: 99,
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: "0.03em",
+        whiteSpace: "nowrap",
+        ...VARIANT_STYLES[variant],
+        ...style
+      },
+      children
+    }
+  );
+}
+const CATEGORY_ORDER = [
+  "technical",
+  "local",
+  "conversion",
+  "content",
+  "trust"
+];
+const CATEGORY_LABELS = {
+  technical: "Technical SEO",
+  local: "Local SEO",
+  conversion: "Conversion",
+  content: "Content",
+  trust: "Trust"
+};
+const CATEGORY_EMOJIS = {
+  technical: "⚙",
+  local: "📍",
+  conversion: "⚡",
+  content: "📝",
+  trust: "🛡"
+};
+function FindingRow({ finding }) {
+  const [expanded, setExpanded] = reactExports.useState(false);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.wrapper, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "button",
+      {
+        style: rowStyles.header,
+        onClick: () => setExpanded(!expanded),
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.headerLeft, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: finding.severity, children: finding.severity.toUpperCase() }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles.title, children: finding.title })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles.chevron, children: expanded ? "▲" : "▼" })
+        ]
+      }
+    ),
+    expanded && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.detail, children: [
+      finding.summary && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: rowStyles.summary, children: finding.summary }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.metaGrid, children: [
+        finding.whyItMatters && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.metaBlock, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles.metaLabel, children: "Why it matters" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: rowStyles.metaText, children: finding.whyItMatters })
+        ] }),
+        finding.recommendation && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.metaBlock, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles.metaLabel, children: "Recommendation" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: rowStyles.metaText, children: finding.recommendation })
+        ] })
+      ] }),
+      finding.affectedUrls && finding.affectedUrls.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.metaBlock, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles.metaLabel, children: "Affected pages" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { style: rowStyles.urlList, children: [
+          finding.affectedUrls.slice(0, 5).map((url) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: rowStyles.urlItem, children: url }, url)),
+          finding.affectedUrls.length > 5 && /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: { ...rowStyles.urlItem, color: "var(--color-text-muted)" }, children: [
+            "+",
+            finding.affectedUrls.length - 5,
+            " more"
+          ] })
+        ] })
+      ] })
+    ] })
+  ] });
+}
+function IssueList({ findings }) {
+  if (findings.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.empty, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 24 }, children: "✓" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { fontSize: 13, color: "var(--color-text-muted)" }, children: "No findings recorded." })
+    ] });
+  }
+  const byCategory = CATEGORY_ORDER.reduce(
+    (acc, cat) => {
+      acc[cat] = findings.filter((f2) => f2.category === cat);
+      return acc;
+    },
+    { technical: [], local: [], conversion: [], content: [], trust: [] }
+  );
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.wrapper, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$5.sectionTitle, children: "Findings" }),
+    CATEGORY_ORDER.map((cat) => {
+      const catFindings = byCategory[cat];
+      if (catFindings.length === 0) return null;
+      const highCount = catFindings.filter((f2) => f2.severity === "high").length;
+      const medCount = catFindings.filter((f2) => f2.severity === "medium").length;
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.group, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.groupHeader, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$5.groupEmoji, children: CATEGORY_EMOJIS[cat] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$5.groupLabel, children: CATEGORY_LABELS[cat] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: styles$5.groupCount, children: [
+            catFindings.length,
+            " issue",
+            catFindings.length !== 1 ? "s" : ""
+          ] }),
+          highCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(Badge, { variant: "high", children: [
+            highCount,
+            " high"
+          ] }),
+          medCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(Badge, { variant: "medium", children: [
+            medCount,
+            " medium"
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$5.findingList, children: catFindings.sort((a, b) => {
+          const order = { high: 0, medium: 1, low: 2 };
+          return order[a.severity] - order[b.severity];
+        }).map((f2) => /* @__PURE__ */ jsxRuntimeExports.jsx(FindingRow, { finding: f2 }, f2.id)) })
+      ] }, cat);
+    })
+  ] });
+}
+const styles$5 = {
+  wrapper: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-5)"
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: "var(--color-text-primary)"
+  },
+  group: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-2)"
+  },
+  groupHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-2)",
+    padding: "var(--space-2) 0"
+  },
+  groupEmoji: {
+    fontSize: 14
+  },
+  groupLabel: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "var(--color-text-primary)",
+    flex: 1
+  },
+  groupCount: {
+    fontSize: 12,
+    color: "var(--color-text-muted)",
+    marginRight: "var(--space-2)"
+  },
+  findingList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+    borderLeft: "2px solid var(--color-border)",
+    paddingLeft: "var(--space-4)"
+  },
+  empty: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "var(--space-2)",
+    padding: "var(--space-8)",
+    color: "var(--color-score-strong)"
+  }
+};
+const rowStyles = {
+  wrapper: {
+    borderRadius: "var(--radius-md)",
+    overflow: "hidden",
+    border: "1px solid var(--color-border)",
+    backgroundColor: "var(--color-bg-surface)"
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    padding: "var(--space-3) var(--space-4)",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    textAlign: "left",
+    gap: "var(--space-3)"
+  },
+  headerLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-3)",
+    flex: 1,
+    minWidth: 0
+  },
+  title: {
+    fontSize: 13,
+    fontWeight: 500,
+    color: "var(--color-text-primary)",
+    flex: 1,
+    minWidth: 0
+  },
+  chevron: {
+    fontSize: 10,
+    color: "var(--color-text-muted)",
+    flexShrink: 0
+  },
+  detail: {
+    padding: "var(--space-4)",
+    paddingTop: 0,
+    borderTop: "1px solid var(--color-border)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-4)"
+  },
+  summary: {
+    fontSize: 13,
+    color: "var(--color-text-secondary)",
+    lineHeight: 1.6,
+    paddingTop: "var(--space-3)"
+  },
+  metaGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: "var(--space-4)"
+  },
+  metaBlock: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4
+  },
+  metaLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "var(--color-text-muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em"
+  },
+  metaText: {
     fontSize: 13,
     color: "var(--color-text-secondary)",
     lineHeight: 1.6
+  },
+  urlList: {
+    listStyle: "none",
+    display: "flex",
+    flexDirection: "column",
+    gap: 3
+  },
+  urlItem: {
+    fontSize: 12,
+    color: "var(--color-brand-hover)",
+    fontFamily: "var(--font-mono)"
   }
 };
-function NewScanPage() {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$3.page, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$3.title, children: "New Scan" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$3.sub, children: "Scan form coming in Phase 2 — enter a URL, pick a scan mode, and run." }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$3.placeholder, children: "[ScanForm will render here]" })
+function QuickWins({ quickWins, moneyLeaks }) {
+  if (quickWins.length === 0 && moneyLeaks.length === 0) return /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, {});
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$4.wrapper, children: [
+    quickWins.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { style: styles$4.card, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$4.header, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$4.icon, children: "⚡" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$4.title, children: "Quick Wins" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$4.subtitle, children: "High impact, fastest to fix" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("ol", { style: styles$4.list, children: quickWins.map((win, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: styles$4.item, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...styles$4.index, color: "var(--color-brand)" }, children: String(i + 1).padStart(2, "0") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$4.text, children: win })
+      ] }, i)) })
+    ] }),
+    moneyLeaks.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { style: styles$4.card, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$4.header, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$4.icon, children: "💸" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$4.title, children: "Money Leaks" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$4.subtitle, children: "Issues costing this business leads right now" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("ol", { style: styles$4.list, children: moneyLeaks.map((leak, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: styles$4.item, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...styles$4.index, color: "var(--color-high)" }, children: String(i + 1).padStart(2, "0") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$4.text, children: leak })
+      ] }, i)) })
+    ] })
+  ] });
+}
+const styles$4 = {
+  wrapper: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gap: "var(--space-4)"
+  },
+  card: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-4)"
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-2)",
+    flexWrap: "wrap"
+  },
+  icon: {
+    fontSize: 18
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: "var(--color-text-primary)"
+  },
+  subtitle: {
+    fontSize: 12,
+    color: "var(--color-text-muted)",
+    flex: "1 1 100%",
+    marginTop: -4,
+    paddingLeft: 26
+  },
+  list: {
+    listStyle: "none",
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-3)"
+  },
+  item: {
+    display: "flex",
+    gap: "var(--space-3)",
+    alignItems: "flex-start"
+  },
+  index: {
+    fontSize: 11,
+    fontWeight: 800,
+    fontFamily: "var(--font-mono)",
+    flexShrink: 0,
+    marginTop: 2
+  },
+  text: {
+    fontSize: 13,
+    color: "var(--color-text-secondary)",
+    lineHeight: 1.55
+  }
+};
+function ReportActions({ result, onNewScan }) {
+  const [openingReport, setOpeningReport] = reactExports.useState(false);
+  const [openingFolder, setOpeningFolder] = reactExports.useState(false);
+  const hasHtmlReport = Boolean(result.artifacts.htmlPath);
+  const hasJsonReport = Boolean(result.artifacts.jsonPath);
+  async function handleOpenReport() {
+    if (!result.artifacts.htmlPath) return;
+    setOpeningReport(true);
+    try {
+      await window.api.openReport(result.artifacts.htmlPath);
+    } finally {
+      setOpeningReport(false);
+    }
+  }
+  async function handleOpenFolder() {
+    setOpeningFolder(true);
+    try {
+      const folder = result.artifacts.jsonPath ? result.artifacts.jsonPath.split(/[/\\]/).slice(0, -1).join("/") : await window.api.getReportsPath();
+      await window.api.openFolder(folder);
+    } finally {
+      setOpeningFolder(false);
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$3.wrapper, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$3.actions, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Button,
+        {
+          variant: "primary",
+          onClick: handleOpenReport,
+          loading: openingReport,
+          disabled: !hasHtmlReport,
+          title: hasHtmlReport ? "Open the HTML report in your browser" : "Report not yet saved (available in Phase 7)",
+          children: "Open HTML Report"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Button,
+        {
+          variant: "secondary",
+          onClick: handleOpenFolder,
+          loading: openingFolder,
+          title: "Open the reports folder in Explorer / Finder",
+          children: "Open Reports Folder"
+        }
+      ),
+      onNewScan && /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: "ghost", onClick: onNewScan, children: "← New Scan" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$3.meta, children: [
+      hasHtmlReport && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$3.metaRow, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$3.metaLabel, children: "HTML Report" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$3.metaPath, children: result.artifacts.htmlPath })
+      ] }),
+      hasJsonReport && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$3.metaRow, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$3.metaLabel, children: "JSON Data" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$3.metaPath, children: result.artifacts.jsonPath })
+      ] }),
+      !hasHtmlReport && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$3.noteSaved, children: "Report saving is implemented in Phase 7. Run a full scan after that phase to generate on-disk artifacts." })
+    ] })
   ] });
 }
 const styles$3 = {
-  page: { display: "flex", flexDirection: "column", gap: "var(--space-6)", maxWidth: 640 },
-  title: { fontSize: 20, fontWeight: 700, color: "var(--color-text-primary)" },
-  sub: { fontSize: 14, color: "var(--color-text-secondary)" },
-  placeholder: {
-    padding: "var(--space-10)",
-    border: "2px dashed var(--color-border)",
-    borderRadius: "var(--radius-lg)",
+  wrapper: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-4)",
+    padding: "var(--space-5)",
+    backgroundColor: "var(--color-bg-surface)",
+    border: "1px solid var(--color-border)",
+    borderRadius: "var(--radius-lg)"
+  },
+  actions: {
+    display: "flex",
+    gap: "var(--space-3)",
+    flexWrap: "wrap",
+    alignItems: "center"
+  },
+  meta: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4
+  },
+  metaRow: {
+    display: "flex",
+    gap: "var(--space-3)",
+    alignItems: "baseline",
+    flexWrap: "wrap"
+  },
+  metaLabel: {
+    fontSize: 11,
+    fontWeight: 700,
     color: "var(--color-text-muted)",
-    textAlign: "center",
-    fontSize: 13
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+    flexShrink: 0
+  },
+  metaPath: {
+    fontSize: 11,
+    color: "var(--color-text-muted)",
+    fontFamily: "var(--font-mono)"
+  },
+  noteSaved: {
+    fontSize: 12,
+    color: "var(--color-text-muted)",
+    fontStyle: "italic"
   }
 };
 function ScanResultsPage() {
   const { id: id2 } = useParams();
+  const navigate = useNavigate();
+  const latestResult = useScanStore((s) => s.latestResult);
+  reactExports.useEffect(() => {
+    if (!latestResult || latestResult.id !== id2) {
+      window.api.loadScan(id2 ?? "").then((result2) => {
+      });
+    }
+  }, [id2, latestResult]);
+  const result = latestResult?.id === id2 ? latestResult : null;
+  if (!result) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$2.page, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      EmptyState,
+      {
+        icon: "◌",
+        title: "Scan result not found",
+        description: id2 ? `No result in memory for scan ID "${id2}". Results are kept in memory for the current session. Run a new scan or check Saved Scans after Phase 7 report persistence is wired up.` : "No scan ID provided. Run a new scan to see results.",
+        action: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: "primary", onClick: () => navigate("/scan/new"), children: "Run a New Scan" })
+      }
+    ) });
+  }
+  const scannedAt = format(new Date(result.scannedAt), "MMM d, yyyy — h:mm a");
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$2.page, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$2.title, children: "Scan Results" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: styles$2.sub, children: [
-      "Scan ID: ",
-      id2 ?? "unknown"
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$2.resultHeader, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$2.resultMeta, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$2.domain, children: result.domain }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$2.metaRow, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: styles$2.metaBadge, children: [
+            result.request.scanMode,
+            " scan"
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$2.metaBadge, children: result.detectedBusinessType }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$2.metaTime, children: scannedAt })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/scan/new", style: styles$2.backLink, children: "← New Scan" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$2.placeholder, children: "[ScoreOverview + IssueList + QuickWins + ReportActions will render here]" })
+    /* @__PURE__ */ jsxRuntimeExports.jsx(ReportActions, { result, onNewScan: () => navigate("/scan/new") }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreOverview, { scores: result.scores, domain: result.domain }),
+    (result.quickWins.length > 0 || result.moneyLeaks.length > 0) && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      QuickWins,
+      {
+        quickWins: result.quickWins,
+        moneyLeaks: result.moneyLeaks
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(IssueList, { findings: result.findings }),
+    result.pages.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(PageInventory, { pages: result.pages })
+  ] });
+}
+function PageInventory({ pages }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$2.section, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { style: styles$2.sectionTitle, children: [
+      "Page Inventory (",
+      pages.length,
+      ")"
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$2.pageTable, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: tableStyles.header, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { flex: 2 }, children: "URL" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 80, textAlign: "center" }, children: "Type" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 60, textAlign: "center" }, children: "Status" })
+      ] }),
+      pages.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: tableStyles.row, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...tableStyles.url, flex: 2 }, children: p2.url }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 80, textAlign: "center", ...tableStyles.type }, children: p2.pageType }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "span",
+          {
+            style: {
+              width: 60,
+              textAlign: "center",
+              fontSize: 12,
+              color: p2.statusCode === 200 ? "var(--color-score-strong)" : "var(--color-high)"
+            },
+            children: p2.statusCode
+          }
+        )
+      ] }, p2.url))
+    ] })
   ] });
 }
 const styles$2 = {
-  page: { display: "flex", flexDirection: "column", gap: "var(--space-6)" },
-  title: { fontSize: 20, fontWeight: 700, color: "var(--color-text-primary)" },
-  sub: { fontSize: 13, color: "var(--color-text-secondary)" },
-  placeholder: {
-    padding: "var(--space-10)",
-    border: "2px dashed var(--color-border)",
+  page: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-6)",
+    maxWidth: 960
+  },
+  resultHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "var(--space-4)"
+  },
+  resultMeta: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-2)"
+  },
+  domain: {
+    fontSize: 22,
+    fontWeight: 700,
+    color: "var(--color-text-primary)",
+    fontFamily: "var(--font-mono)"
+  },
+  metaRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-2)",
+    flexWrap: "wrap"
+  },
+  metaBadge: {
+    fontSize: 11,
+    fontWeight: 600,
+    padding: "2px 8px",
+    borderRadius: 99,
+    backgroundColor: "var(--color-bg-raised)",
+    color: "var(--color-text-secondary)",
+    border: "1px solid var(--color-border)",
+    textTransform: "capitalize"
+  },
+  metaTime: {
+    fontSize: 12,
+    color: "var(--color-text-muted)"
+  },
+  backLink: {
+    fontSize: 13,
+    color: "var(--color-text-secondary)",
+    textDecoration: "none",
+    flexShrink: 0
+  },
+  section: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-3)"
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: "var(--color-text-primary)"
+  },
+  pageTable: {
+    border: "1px solid var(--color-border)",
     borderRadius: "var(--radius-lg)",
+    overflow: "hidden"
+  }
+};
+const tableStyles = {
+  header: {
+    display: "flex",
+    gap: "var(--space-4)",
+    padding: "var(--space-3) var(--space-4)",
+    backgroundColor: "var(--color-bg-raised)",
+    borderBottom: "1px solid var(--color-border)",
+    fontSize: 11,
+    fontWeight: 700,
     color: "var(--color-text-muted)",
-    textAlign: "center",
-    fontSize: 13
+    textTransform: "uppercase",
+    letterSpacing: "0.04em"
+  },
+  row: {
+    display: "flex",
+    gap: "var(--space-4)",
+    padding: "var(--space-3) var(--space-4)",
+    borderBottom: "1px solid var(--color-border)",
+    alignItems: "center"
+  },
+  url: {
+    fontSize: 12,
+    color: "var(--color-text-secondary)",
+    fontFamily: "var(--font-mono)",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap"
+  },
+  type: {
+    fontSize: 11,
+    color: "var(--color-text-muted)",
+    textTransform: "capitalize"
   }
 };
 function SavedScansPage() {
@@ -11886,5 +15274,5 @@ function App() {
 const rootEl = document.getElementById("root");
 if (!rootEl) throw new Error("Root element not found");
 client.createRoot(rootEl).render(
-  /* @__PURE__ */ jsxRuntimeExports.jsx(React.StrictMode, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(App, {}) })
+  /* @__PURE__ */ jsxRuntimeExports.jsx(React$2.StrictMode, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(App, {}) })
 );

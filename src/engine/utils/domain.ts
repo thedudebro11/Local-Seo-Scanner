@@ -1,8 +1,7 @@
 /**
  * URL / domain utilities used throughout the engine.
+ * Uses the global URL constructor — available in both Node.js 10+ and all modern browsers.
  */
-
-import { URL } from 'url'
 
 /**
  * Normalize a raw URL string entered by a user.
