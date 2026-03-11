@@ -13941,6 +13941,7 @@ function ScanForm({ onSubmit, isLoading = false }) {
   const [businessType, setBusinessType] = reactExports.useState("auto");
   const [maxPages, setMaxPages] = reactExports.useState(MAX_PAGES_BY_MODE.quick);
   const [urlError, setUrlError] = reactExports.useState(null);
+  const [competitorUrls, setCompetitorUrls] = reactExports.useState(["", "", ""]);
   function handleModeChange(mode) {
     setScanMode(mode);
     setMaxPages(MAX_PAGES_BY_MODE[mode]);
@@ -13955,7 +13956,12 @@ function ScanForm({ onSubmit, isLoading = false }) {
     setUrlError(null);
     let finalUrl = url.trim();
     if (!/^https?:\/\//i.test(finalUrl)) finalUrl = `https://${finalUrl}`;
-    onSubmit({ url: finalUrl, scanMode, businessType, maxPages });
+    const filteredCompetitors = competitorUrls.map((u2) => {
+      const trimmed = u2.trim();
+      if (!trimmed) return "";
+      return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    }).filter(Boolean);
+    onSubmit({ url: finalUrl, scanMode, businessType, maxPages, competitorUrls: filteredCompetitors.length > 0 ? filteredCompetitors : void 0 });
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, style: styles$9.form, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$9.section, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -14018,6 +14024,28 @@ function ScanForm({ onSubmit, isLoading = false }) {
         disabled: isLoading
       }
     ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$9.section, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: styles$9.fieldLabel, children: [
+        "Competitor URLs ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontWeight: 400, textTransform: "none", letterSpacing: 0 }, children: "(optional — up to 3)" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: "var(--space-2)" }, children: [0, 1, 2].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Input,
+        {
+          type: "text",
+          placeholder: `e.g. competitor${i + 1}.com`,
+          value: competitorUrls[i],
+          onChange: (e) => {
+            const next = [...competitorUrls];
+            next[i] = e.target.value;
+            setCompetitorUrls(next);
+          },
+          disabled: isLoading
+        },
+        i
+      )) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 11, color: "var(--color-text-muted)" }, children: "Leave blank to skip competitor analysis. Each site is crawled up to 5 pages." })
+    ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$9.submitRow, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         Button,

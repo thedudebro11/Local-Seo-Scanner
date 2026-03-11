@@ -33,6 +33,7 @@ export function ScanForm({ onSubmit, isLoading = false }: Props): JSX.Element {
   const [businessType, setBusinessType]   = useState<BusinessType>('auto')
   const [maxPages, setMaxPages]           = useState<number>(MAX_PAGES_BY_MODE.quick)
   const [urlError, setUrlError]           = useState<string | null>(null)
+  const [competitorUrls, setCompetitorUrls] = useState<[string, string, string]>(['', '', ''])
 
   // When scan mode changes, reset max pages to the mode default
   function handleModeChange(mode: ScanMode): void {
@@ -53,7 +54,15 @@ export function ScanForm({ onSubmit, isLoading = false }: Props): JSX.Element {
     let finalUrl = url.trim()
     if (!/^https?:\/\//i.test(finalUrl)) finalUrl = `https://${finalUrl}`
 
-    onSubmit({ url: finalUrl, scanMode, businessType, maxPages })
+    const filteredCompetitors = competitorUrls
+      .map((u) => {
+        const trimmed = u.trim()
+        if (!trimmed) return ''
+        return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+      })
+      .filter(Boolean)
+
+    onSubmit({ url: finalUrl, scanMode, businessType, maxPages, competitorUrls: filteredCompetitors.length > 0 ? filteredCompetitors : undefined })
   }
 
   return (
@@ -128,6 +137,28 @@ export function ScanForm({ onSubmit, isLoading = false }: Props): JSX.Element {
             hint="How many pages to crawl (affects scan depth)"
             disabled={isLoading}
           />
+        </div>
+
+        {/* Competitor URLs ────────────────────────────── */}
+        <div style={styles.section}>
+          <span style={styles.fieldLabel}>Competitor URLs <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional — up to 3)</span></span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            {([0, 1, 2] as const).map((i) => (
+              <Input
+                key={i}
+                type="text"
+                placeholder={`e.g. competitor${i + 1}.com`}
+                value={competitorUrls[i]}
+                onChange={(e) => {
+                  const next: [string, string, string] = [...competitorUrls] as [string, string, string]
+                  next[i] = e.target.value
+                  setCompetitorUrls(next)
+                }}
+                disabled={isLoading}
+              />
+            ))}
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Leave blank to skip competitor analysis. Each site is crawled up to 5 pages.</span>
         </div>
 
         {/* Submit ─────────────────────────────────────── */}
