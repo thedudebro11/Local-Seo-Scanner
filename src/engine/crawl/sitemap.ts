@@ -5,7 +5,7 @@
  * Uses Cheerio in XML mode for parsing.
  */
 
-import * as cheerio from 'cheerio'
+import * as cheerio from 'cheerio/slim'
 import { createLogger } from '../utils/logger'
 
 const log = createLogger('sitemap')

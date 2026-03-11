@@ -10,7 +10,7 @@ function registerScanHandlers(mainWindow2) {
       }
     };
     try {
-      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-C1yqtm9N.js"));
+      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-Cr1zITY2.js"));
       const result = await runAudit(request, emitProgress);
       return result;
     } catch (err) {
@@ -21,7 +21,7 @@ function registerScanHandlers(mainWindow2) {
 }
 function registerFileHandlers() {
   electron.ipcMain.handle("file:list-scans", async () => {
-    const { listSavedScans } = await Promise.resolve().then(() => require("./chunks/scanRepository-DHGtEqjH.js"));
+    const { listSavedScans } = await Promise.resolve().then(() => require("./chunks/scanRepository-ujTCPbcB.js")).then((n) => n.scanRepository);
     return listSavedScans();
   });
   electron.ipcMain.handle("file:open-report", async (_, reportPath) => {
@@ -31,7 +31,7 @@ function registerFileHandlers() {
     electron.shell.showItemInFolder(folderPath);
   });
   electron.ipcMain.handle("file:load-scan", async (_, scanId) => {
-    const { loadScanById } = await Promise.resolve().then(() => require("./chunks/scanRepository-DHGtEqjH.js"));
+    const { loadScanById } = await Promise.resolve().then(() => require("./chunks/scanRepository-ujTCPbcB.js")).then((n) => n.scanRepository);
     return loadScanById(scanId);
   });
 }
@@ -43,7 +43,7 @@ function registerAppHandlers() {
     return process.platform;
   });
   electron.ipcMain.handle("app:reports-path", async () => {
-    const { getReportsDir } = await Promise.resolve().then(() => require("./chunks/pathResolver-CbX9UHgB.js"));
+    const { getReportsDir } = await Promise.resolve().then(() => require("./chunks/pathResolver-DKtUPGKe.js"));
     return getReportsDir();
   });
 }

@@ -10,7 +10,7 @@
 import type { Finding } from '../types/audit'
 
 const CATEGORY_WEIGHT: Record<Finding['category'], number> = {
-  localSeo: 0.30,
+  local: 0.30,
   technical: 0.25,
   conversion: 0.25,
   content: 0.10,

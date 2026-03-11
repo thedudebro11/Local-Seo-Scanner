@@ -19,33 +19,34 @@ Electron preload (electron/preload.ts)
 Electron main process (electron/main.ts + electron/ipc/)
   ↓  dynamic import
 Audit engine (src/engine/orchestrator/runAudit.ts)
-  ↓  (Phase 3+) crawler → extractors → analyzers → scoring → reports
+  ↓  crawler → extractors → analyzers → lighthouse → scoring → reports
 Saved artifacts on disk (userData/reports/)
 ```
 
 - **Renderer** is a React + Vite SPA. Communicates with main exclusively via `window.api`.
 - **Preload** exposes a typed bridge (`ElectronAPI`). No `nodeIntegration`.
 - **Main** registers IPC handlers; delegates all scan logic to the engine via dynamic import.
-- **Engine** lives in `src/engine/` and runs in the Node.js (main) process. Renderer only imports pure type definitions from `src/engine/types/`.
+- **Engine** lives in `src/engine/` and runs in the Node.js (main) process.
 
 ---
 
-## 3. Core Scan Pipeline (current state)
+## 3. Core Scan Pipeline (fully implemented)
 
 ```
-User fills ScanForm (URL, scan mode, business type, max pages)
-→ useScanStore.startScan(request)
-→ window.api.startScan(request)  [ipcRenderer.invoke]
-→ scanHandlers.ts receives 'scan:start'
-→ runAudit(request, emitProgress) called
-→ emitProgress() pushes scan:progress events → renderer progress bar updates
-→ runAudit resolves with AuditResult
-→ Zustand store sets latestResult
-→ NewScanPage useEffect navigates to /scan/results/:id
-→ ScanResultsPage reads latestResult, renders ScoreOverview + IssueList + QuickWins
+1.  Validate + normalize URL                    (2%)
+2.  Launch Playwright browser                   (5%)
+3.  Fetch robots.txt                            (8%)
+4.  Fetch sitemap                               (12%)
+5.  BFS crawl (Playwright, up to maxPages)      (16–65%)
+6.  Extract all signals + classify pages        (66%)
+7.  Detect business type                        (72%)
+8.  Run 5 analyzers → findings                  (76–88%)
+9.  Lighthouse performance audit (best-effort)  (90%)
+10. Score all categories + weighted overall     (92%)
+11. Write JSON + HTML reports to disk           (97%)
+12. Save to scan index (scanRepository)         (97%)
+→   Return AuditResult (scores, findings, artifacts, lighthouse)
 ```
-
-**Phase 5 note:** Crawl, extraction, and all 5 analyzers are real. Scoring (step 9) returns placeholder zeros until Phase 6.
 
 ---
 
@@ -53,74 +54,68 @@ User fills ScanForm (URL, scan mode, business type, max pages)
 
 | Path | Responsibility |
 |---|---|
-| `electron/` | Main process bootstrap, BrowserWindow creation, IPC handler registration |
-| `electron/ipc/` | `scanHandlers` (start scan, push progress), `fileHandlers` (list/load/open reports), `appHandlers` (version, paths) |
+| `electron/` | Main process bootstrap, BrowserWindow creation, IPC registration |
+| `electron/ipc/` | `scanHandlers`, `fileHandlers`, `appHandlers` |
 | `electron/preload.ts` | Typed `contextBridge` — `startScan`, `onScanProgress`, `getSavedScans`, `openReport`, `openFolder`, `loadScan` |
-| `src/app/` | React entry (`main.tsx`), root component, hash router (5 routes) |
-| `src/components/layout/` | `AppShell`, `Sidebar`, `Topbar` — persistent shell around all pages |
+| `src/app/` | React entry, hash router (5 routes) |
+| `src/components/layout/` | `AppShell`, `Sidebar`, `Topbar` |
 | `src/components/ui/` | `Button`, `Card`, `Input`, `Select`, `Badge`, `Progress`, `EmptyState` |
 | `src/components/scan/` | `ScanForm`, `ScanProgress`, `ScoreOverview`, `IssueList`, `QuickWins`, `BusinessTypeSelect` |
 | `src/components/reports/` | `ReportActions` — open HTML report / open reports folder |
 | `src/features/scans/` | `NewScanPage`, `ScanResultsPage`, `SavedScansPage`, `useScanStore` (Zustand) |
-| `src/features/dashboard/` | `DashboardPage` — stats, latest result banner, scan history list |
-| `src/engine/types/` | Shared TypeScript interfaces. Imported by both main and renderer. |
-| `src/engine/utils/` | `domain.ts` (URL helpers), `logger.ts` (structured console logger) |
-| `src/engine/storage/` | `pathResolver.ts` (artifact paths), `scanRepository.ts` (stub — returns `[]`) |
-| `src/engine/orchestrator/` | `runAudit.ts` — pipeline entry point (stub) |
+| `src/features/dashboard/` | `DashboardPage` — stats, latest result banner, scan history |
+| `src/engine/types/` | `audit.ts` (core types), `ipc.ts` (IPC channels + ElectronAPI) |
+| `src/engine/utils/` | `domain.ts` (URL helpers), `logger.ts` |
+| `src/engine/storage/` | `pathResolver.ts`, `scanRepository.ts` (real persistence via fs-extra) |
+| `src/engine/orchestrator/` | `runAudit.ts` — full pipeline entry point |
 | `src/engine/crawl/` | `fetchHtml`, `normalizeUrl`, `discoverUrls` (BFS), `classifyPage`, `robots`, `sitemap` |
-| `src/engine/extractors/` | `extractMeta`, `extractHeadings`, `extractSchema`, `extractContactSignals`, `extractLocalSignals`, `extractCTAs`, `extractTrustSignals`, `extractImages`, `extractTextStats`, `index` (barrel: `extractAllSignals`) |
-| `src/engine/analyzers/` | `types` (AnalyzerInput + helpers), `businessTypeDetector`, `technicalAnalyzer`, `localSeoAnalyzer`, `conversionAnalyzer`, `contentAnalyzer`, `trustAnalyzer` |
-| `src/engine/scoring/` | **Empty** — Phase 6 |
-| `src/engine/reports/` | **Empty** — Phase 7 |
-| `src/engine/lighthouse/` | **Empty** — Phase 8 |
+| `src/engine/extractors/` | 9 extractors + `index.ts` barrel (`extractAllSignals`). Uses `cheerio/slim` (avoids undici/Node 18 issue) |
+| `src/engine/analyzers/` | `businessTypeDetector`, `technicalAnalyzer`, `localSeoAnalyzer`, `conversionAnalyzer`, `contentAnalyzer`, `trustAnalyzer` |
+| `src/engine/scoring/` | `scoreHelpers`, `scoreTechnical`, `scoreLocalSeo`, `scoreConversion`, `scoreContent`, `scoreTrust`, `weightedFinalScore`, `prioritizeFindings` |
+| `src/engine/reports/` | `buildJsonReport`, `buildHtmlReport`, `reportTemplates`, `buildClientSummary` |
+| `src/engine/lighthouse/` | `runLighthouse` (chrome-launcher + dynamic ESM import), `lighthouseAnalyzer` |
 
 ---
 
-## 5. Data Models
-
-All defined in `src/engine/types/audit.ts`:
+## 5. Data Models (src/engine/types/audit.ts)
 
 | Type | Description |
 |---|---|
-| `AuditRequest` | Input: `url`, `scanMode` (quick/full), `businessType`, `maxPages` |
-| `AuditResult` | Full scan output: `id`, `domain`, `pages`, `findings`, `scores`, `quickWins`, `moneyLeaks`, `artifacts` |
-| `CrawledPage` | One fetched page: URL, status, title, H1s, canonicals, extracted signals (phones, CTAs, schema, etc.) |
-| `Finding` | One issue: `id`, `category`, `severity`, `title`, `summary`, `whyItMatters`, `recommendation`, `affectedUrls` |
-| `CategoryScore` | `value` (0–100), `label` (Strong/Solid/Needs Work/Leaking Opportunity), `rationale[]` |
-| `AuditScores` | Six `CategoryScore` values: `technical`, `localSeo`, `conversion`, `content`, `trust`, `overall` |
-| `ScanProgressEvent` | IPC push payload: `step` (string), `percent` (0–100), `message?` |
-| `SavedScanMeta` | Index entry: `id`, `domain`, `scannedAt`, `overallScore`, paths to JSON + HTML artifacts |
+| `AuditRequest` | `url`, `scanMode` (quick/full), `businessType`, `maxPages` |
+| `AuditResult` | `id`, `domain`, `pages`, `findings`, `scores`, `quickWins`, `moneyLeaks`, `lighthouse?`, `artifacts` |
+| `CrawledPage` | One fetched page + all extracted signals |
+| `Finding` | `id`, `category`, `severity`, `title`, `summary`, `whyItMatters`, `recommendation`, `affectedUrls?` |
+| `FindingCategory` | `'technical' \| 'local' \| 'conversion' \| 'content' \| 'trust'` |
+| `CategoryScore` | `value` (0–100), `label`, `rationale[]` |
+| `AuditScores` | `technical`, `localSeo`, `conversion`, `content`, `trust`, `overall` |
+| `LighthouseMetrics` | `performanceScore`, `seoScore`, `accessibilityScore`, Core Web Vitals (FCP, LCP, TBT, CLS, SI) |
+| `SavedScanMeta` | Index entry: `id`, `domain`, `scannedAt`, `overallScore`, `jsonPath`, `htmlPath` |
 
 Score weights: Technical 25%, Local SEO 30%, Conversion 25%, Content 10%, Trust 10%.
+Finding categories in code use `'local'` (not `'localSeo'`).
 
 ---
 
-## 6. Scan Results and Reports
+## 6. Key Implementation Notes
 
-- **In-memory result:** `useScanStore.latestResult` holds the current session's `AuditResult`.
-- **JSON report:** Path resolved via `pathResolver.buildJsonPath(scanId)` → `userData/reports/<scanId>/report.json`. **Not written yet (Phase 7).**
-- **HTML report:** Path resolved via `pathResolver.buildHtmlPath(scanId)` → `userData/reports/<scanId>/report.html`. **Not written yet (Phase 7).**
-- **Scan history index:** `scanRepository.listSavedScans()` returns `[]`. **Not persisted yet (Phase 7).**
-- `ReportActions` buttons exist in UI but "Open HTML Report" is disabled when `artifacts.htmlPath` is absent.
+- **cheerio/slim**: All runtime cheerio imports use `cheerio/slim` to avoid loading `undici` (which requires Node.js ≥ 20, but Electron 28 ships Node 18).
+- **Lighthouse + chrome-launcher**: Both are ESM-only — loaded via `await import(...)` dynamic import. Uses system Chrome auto-detected by chrome-launcher; falls back to Playwright's bundled Chromium path.
+- **Playwright**: Loaded via `await import('playwright')` (CJS-compatible). Chromium must be installed: `npx playwright install chromium`.
+- **Scan artifacts**: Written to `userData/reports/<scanId>/` — `report.json` (html stripped) and `report.html` (self-contained).
+- **Scan index**: `userData/reports/index.json` — append-only list of `SavedScanMeta`, newest-first on read.
 
 ---
 
-## 7. Current Implementation Status
+## 7. Implementation Status — ALL PHASES COMPLETE
 
-**Implemented**
-- Electron shell (window, security settings, IPC registration)
-- Typed preload bridge (`window.api`)
-- All IPC handler skeletons (scan, file, app)
-- Full React UI: routing, layout shell, all pages, all scan + results components
-- Zustand scan store with live progress subscription
-- Shared type system (`AuditRequest`, `AuditResult`, `Finding`, etc.)
-- URL utilities (`normalizeInputUrl`, `getDomain`, `resolveUrl`, `stripTrackingParams`)
-- Path resolver and scan ID generation
-
-**Not implemented yet (stub or empty)**
-- Lighthouse integration
-- Scoring: all category scorers, weighted final score, `prioritizeFindings`
-- Report generation: `buildJsonReport`, `buildHtmlReport`, `scanRepository` persistence
+- [x] Phase 1 — Electron shell, React shell, IPC skeleton, types, utils
+- [x] Phase 2 — Zustand store, ScanForm, progress wiring
+- [x] Phase 3 — Real crawler (Playwright BFS, robots, sitemap, classifyPage)
+- [x] Phase 4 — All 9 extractors (extractAllSignals barrel)
+- [x] Phase 5 — All 5 analyzers + businessTypeDetector
+- [x] Phase 6 — Scoring (5 category scorers, weighted overall, prioritizeFindings)
+- [x] Phase 7 — JSON + HTML report generation, scanRepository persistence
+- [x] Phase 8 — Lighthouse integration + Core Web Vitals findings
 
 ---
 
@@ -128,9 +123,8 @@ Score weights: Technical 25%, Local SEO 30%, Conversion 25%, Content 10%, Trust 
 
 | What to add | Where |
 |---|---|
-| New analyzer (e.g. new check category) | `src/engine/analyzers/` — implement `AnalyzerOutput`, wire into `runAudit.ts` |
-| New scan checks within a category | Add findings inside the relevant analyzer file |
-| Additional scoring logic | `src/engine/scoring/` — each scorer receives `ScorerInput`, returns `ScoreOutput` |
-| New report sections | `src/engine/reports/buildHtmlReport.ts` (Phase 7) and `reportTemplates.ts` |
-| New business type | Add to `BusinessType` union in `audit.ts`, add label in `BusinessTypeSelect.tsx`, add detection in `businessTypeDetector.ts` |
-| New IPC channels | Define in `src/engine/types/ipc.ts`, implement in `electron/ipc/`, expose in `electron/preload.ts` |
+| New analyzer check | Add finding in the relevant `src/engine/analyzers/` file |
+| New scoring positive signal | Add to the relevant `src/engine/scoring/score*.ts` file |
+| New report section | `buildHtmlReport.ts` + `reportTemplates.ts` |
+| New business type | `audit.ts` union + `BusinessTypeSelect.tsx` + `businessTypeDetector.ts` |
+| New IPC channel | `src/engine/types/ipc.ts` → `electron/ipc/` → `electron/preload.ts` |

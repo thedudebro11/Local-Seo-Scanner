@@ -22,11 +22,12 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const pathResolver = require("./pathResolver-CbX9UHgB.js");
-const logger = require("./logger-DOTeCaxX.js");
-const cheerio = require("cheerio");
+const pathResolver = require("./pathResolver-DKtUPGKe.js");
+const scanRepository = require("./scanRepository-ujTCPbcB.js");
+const cheerio = require("cheerio/slim");
+const fs = require("fs-extra");
+const path = require("path");
 require("electron");
-require("path");
 function _interopNamespaceDefault(e) {
   const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
   if (e) {
@@ -112,7 +113,7 @@ function stripTrackingParams(url) {
     return url;
   }
 }
-const log$4 = logger.createLogger("robots");
+const log$7 = scanRepository.createLogger("robots");
 const FETCH_TIMEOUT_MS$1 = 1e4;
 async function fetchRobots(siteUrl) {
   let robotsUrl;
@@ -128,17 +129,17 @@ async function fetchRobots(siteUrl) {
       headers: { "User-Agent": "LocalSEOScanner/1.0" }
     });
     if (!response.ok) {
-      log$4.info(`robots.txt not found at ${robotsUrl} (${response.status})`);
+      log$7.info(`robots.txt not found at ${robotsUrl} (${response.status})`);
       return emptyResult();
     }
     const text = await response.text();
     const result = parseRobots(text);
-    log$4.info(
+    log$7.info(
       `robots.txt found: disallowed=${result.disallowedPaths.length}, sitemaps=${result.sitemapUrls.length}`
     );
     return result;
   } catch (err) {
-    log$4.warn(`Failed to fetch robots.txt: ${err.message}`);
+    log$7.warn(`Failed to fetch robots.txt: ${err.message}`);
     return emptyResult();
   }
 }
@@ -183,7 +184,7 @@ function parseRobots(text) {
 function emptyResult() {
   return { found: false, disallowedPaths: [], sitemapUrls: [], allowsGooglebot: true };
 }
-const log$3 = logger.createLogger("sitemap");
+const log$6 = scanRepository.createLogger("sitemap");
 const FETCH_TIMEOUT_MS = 1e4;
 const CANDIDATE_PATHS = [
   "/sitemap.xml",
@@ -211,7 +212,7 @@ async function fetchSitemap(siteUrl, robotsSitemapUrls = []) {
     } catch {
     }
   }
-  log$3.info("No sitemap found");
+  log$6.info("No sitemap found");
   return { found: false, urls: [] };
 }
 async function trySitemap(sitemapUrl) {
@@ -223,7 +224,7 @@ async function trySitemap(sitemapUrl) {
   const text = await response.text();
   if (!text.trim().startsWith("<")) return { found: false, urls: [] };
   const urls = parseSitemapXml(text);
-  log$3.info(`Sitemap found at ${sitemapUrl}: ${urls.length} URLs`);
+  log$6.info(`Sitemap found at ${sitemapUrl}: ${urls.length} URLs`);
   return { found: true, urls, sitemapUrl };
 }
 function parseSitemapXml(xml) {
@@ -241,7 +242,7 @@ function parseSitemapXml(xml) {
   }
   return [...new Set(urls)];
 }
-const log$2 = logger.createLogger("fetchHtml");
+const log$5 = scanRepository.createLogger("fetchHtml");
 const PAGE_TIMEOUT_MS = 3e4;
 async function fetchHtml(url, context) {
   const page = await context.newPage();
@@ -253,10 +254,10 @@ async function fetchHtml(url, context) {
     const statusCode = response?.status() ?? 0;
     const finalUrl = page.url();
     const html = await page.content();
-    log$2.info(`Fetched ${url} → ${finalUrl} [${statusCode}]`);
+    log$5.info(`Fetched ${url} → ${finalUrl} [${statusCode}]`);
     return { requestedUrl: url, finalUrl, statusCode, html };
   } catch (err) {
-    log$2.warn(`Failed to fetch ${url}: ${err.message}`);
+    log$5.warn(`Failed to fetch ${url}: ${err.message}`);
     return { requestedUrl: url, finalUrl: url, statusCode: 0, html: "" };
   } finally {
     await page.close();
@@ -297,7 +298,7 @@ function shouldSkipUrl(url) {
   }
   return false;
 }
-const log$1 = logger.createLogger("discoverUrls");
+const log$4 = scanRepository.createLogger("discoverUrls");
 const CRAWLER_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 LocalSEOScanner/1.0";
 async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
   const context = await browser.newContext({
@@ -310,7 +311,7 @@ async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
   const queue = [startUrl];
   const fetchedPages = [];
   const internalLinkGraph = {};
-  log$1.info(`Starting BFS crawl from ${startUrl} (maxPages=${maxPages}, domain=${domain})`);
+  log$4.info(`Starting BFS crawl from ${startUrl} (maxPages=${maxPages}, domain=${domain})`);
   try {
     while (queue.length > 0 && fetchedPages.length < maxPages) {
       const url = queue.shift();
@@ -318,11 +319,11 @@ async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
       visited.add(url);
       const result = await fetchHtml(url, context);
       if (result.statusCode === 0 && result.html === "") {
-        log$1.warn(`Skipping failed fetch: ${url}`);
+        log$4.warn(`Skipping failed fetch: ${url}`);
         continue;
       }
       if (result.html.trim() && !result.html.trim().startsWith("<")) {
-        log$1.warn(`Skipping non-HTML response: ${url}`);
+        log$4.warn(`Skipping non-HTML response: ${url}`);
         continue;
       }
       fetchedPages.push(result);
@@ -340,7 +341,7 @@ async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
   } finally {
     await context.close();
   }
-  log$1.info(
+  log$4.info(
     `Crawl complete: ${fetchedPages.length} pages fetched, ${Object.keys(internalLinkGraph).length} nodes in link graph`
   );
   return { fetchedPages, internalLinkGraph };
@@ -1663,7 +1664,7 @@ function computeWeightedScore(scores) {
   return { value, label: scoreBand(value), rationale };
 }
 const CATEGORY_WEIGHT = {
-  localSeo: 0.3,
+  local: 0.3,
   technical: 0.25,
   conversion: 0.25,
   content: 0.1,
@@ -1686,7 +1687,545 @@ function buildQuickWins(findings) {
 function buildMoneyLeaks(findings) {
   return prioritizeFindings(findings).filter((f) => f.severity === "high").slice(0, 5).map((f) => f.summary);
 }
-const log = logger.createLogger("runAudit");
+const log$3 = scanRepository.createLogger("buildJsonReport");
+async function buildJsonReport(result, jsonPath) {
+  await fs.ensureDir(path.dirname(jsonPath));
+  const slim = {
+    ...result,
+    pages: result.pages.map(({ html: _html, textContent: _tc, ...rest }) => rest)
+  };
+  await fs.writeJson(jsonPath, slim, { spaces: 2 });
+  log$3.info(`JSON report written: ${jsonPath}`);
+  return jsonPath;
+}
+function scoreColor(value) {
+  if (value >= 85) return "#16a34a";
+  if (value >= 70) return "#2563eb";
+  if (value >= 55) return "#d97706";
+  return "#dc2626";
+}
+function severityColor(severity) {
+  if (severity === "high") return "#dc2626";
+  if (severity === "medium") return "#d97706";
+  return "#6b7280";
+}
+function severityBg(severity) {
+  if (severity === "high") return "#fef2f2";
+  if (severity === "medium") return "#fffbeb";
+  return "#f9fafb";
+}
+function renderScoreCard(label, score) {
+  const color = scoreColor(score.value);
+  return `
+    <div class="score-card">
+      <div class="score-card-value" style="color:${color}">${score.value}</div>
+      <div class="score-card-label">${label}</div>
+      <div class="score-card-band" style="color:${color}">${score.label}</div>
+    </div>`;
+}
+function renderFinding(f) {
+  const color = severityColor(f.severity);
+  const bg = severityBg(f.severity);
+  const affectedHtml = f.affectedUrls && f.affectedUrls.length > 0 ? `<div class="affected-urls"><strong>Affected:</strong> ${f.affectedUrls.slice(0, 3).map((u) => `<code>${u}</code>`).join(", ")}${f.affectedUrls.length > 3 ? ` +${f.affectedUrls.length - 3} more` : ""}</div>` : "";
+  return `
+    <div class="finding" style="background:${bg};border-left:4px solid ${color}">
+      <div class="finding-header">
+        <span class="severity-badge" style="background:${color}">${f.severity.toUpperCase()}</span>
+        <span class="finding-title">${escHtml(f.title)}</span>
+      </div>
+      <p class="finding-summary">${escHtml(f.summary)}</p>
+      <div class="finding-detail">
+        <p><strong>Why it matters:</strong> ${escHtml(f.whyItMatters)}</p>
+        <p><strong>What to do:</strong> ${escHtml(f.recommendation)}</p>
+      </div>
+      ${affectedHtml}
+    </div>`;
+}
+function renderBulletList(items, emptyMsg = "None detected.") {
+  if (items.length === 0) return `<p class="empty">${emptyMsg}</p>`;
+  return `<ul>${items.map((i) => `<li>${escHtml(i)}</li>`).join("")}</ul>`;
+}
+function categoryLabel(cat) {
+  const labels = {
+    technical: "Technical SEO",
+    local: "Local SEO",
+    localSeo: "Local SEO",
+    conversion: "Conversion",
+    content: "Content",
+    trust: "Trust & Credibility"
+  };
+  return labels[cat] ?? cat;
+}
+function escHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function formatDate(iso) {
+  try {
+    return new Date(iso).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    });
+  } catch {
+    return iso;
+  }
+}
+const VISIBILITY_CATEGORIES = /* @__PURE__ */ new Set(["technical", "local", "content"]);
+const LEADS_CATEGORIES = /* @__PURE__ */ new Set(["conversion", "trust"]);
+function toVisibilityStatement(f) {
+  return `${f.title} — ${f.summary}`;
+}
+function toLeadStatement(f) {
+  return `${f.title} — ${f.summary}`;
+}
+function buildClientSummary(result) {
+  const highMedium = result.findings.filter(
+    (f) => f.severity === "high" || f.severity === "medium"
+  );
+  const whatIsHurtingVisibility = highMedium.filter((f) => VISIBILITY_CATEGORIES.has(f.category)).slice(0, 4).map(toVisibilityStatement);
+  const whatMayBeHurtingLeads = highMedium.filter((f) => LEADS_CATEGORIES.has(f.category)).slice(0, 4).map(toLeadStatement);
+  const fastestWins = result.quickWins.slice(0, 5);
+  return { whatIsHurtingVisibility, whatMayBeHurtingLeads, fastestWins };
+}
+const log$2 = scanRepository.createLogger("buildHtmlReport");
+async function buildHtmlReport(result, htmlPath) {
+  await fs.ensureDir(path.dirname(htmlPath));
+  const html = generateHtml(result);
+  await fs.writeFile(htmlPath, html, "utf8");
+  log$2.info(`HTML report written: ${htmlPath}`);
+  return htmlPath;
+}
+function generateHtml(r) {
+  const overall = r.scores.overall;
+  const overallColor = scoreColor(overall.value);
+  const summary = buildClientSummary(r);
+  const date = formatDate(r.scannedAt);
+  const categoryOrder = ["local", "technical", "conversion", "content", "trust"];
+  const findingsByCategory = categoryOrder.map((cat) => ({
+    cat,
+    findings: r.findings.filter((f) => f.category === cat)
+  })).filter((g) => g.findings.length > 0);
+  const scoreCards = [
+    renderScoreCard("Local SEO", r.scores.localSeo),
+    renderScoreCard("Technical SEO", r.scores.technical),
+    renderScoreCard("Conversion", r.scores.conversion),
+    renderScoreCard("Content", r.scores.content),
+    renderScoreCard("Trust", r.scores.trust)
+  ].join("");
+  const findingSections = findingsByCategory.map(({ cat, findings }) => `
+    <div class="findings-group">
+      <h3 class="category-heading">${categoryLabel(cat)} <span class="finding-count">${findings.length} issue${findings.length !== 1 ? "s" : ""}</span></h3>
+      ${findings.map(renderFinding).join("")}
+    </div>`).join("");
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SEO Audit — ${escHtml(r.domain)}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; line-height: 1.6; color: #1f2937; background: #f8fafc; }
+    a { color: #2563eb; }
+    code { font-family: monospace; font-size: 13px; background: #f3f4f6; padding: 1px 4px; border-radius: 3px; word-break: break-all; }
+    .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+    /* Header */
+    .report-header { background: #0f172a; color: #fff; padding: 32px 40px; border-radius: 12px; margin-bottom: 32px; }
+    .report-header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .report-domain { font-size: 28px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+    .report-meta { font-size: 13px; color: #94a3b8; }
+
+    /* Overall score */
+    .overall-block { display: flex; align-items: center; gap: 24px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px 32px; margin-bottom: 24px; }
+    .overall-number { font-size: 72px; font-weight: 900; line-height: 1; }
+    .overall-label { font-size: 24px; font-weight: 700; }
+    .overall-sub { font-size: 14px; color: #6b7280; margin-top: 4px; }
+
+    /* Score cards */
+    .scores-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 32px; }
+    .score-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px 12px; text-align: center; }
+    .score-card-value { font-size: 32px; font-weight: 800; }
+    .score-card-label { font-size: 12px; color: #374151; font-weight: 600; margin: 2px 0; }
+    .score-card-band { font-size: 11px; font-weight: 500; }
+
+    /* Sections */
+    .section { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px 28px; margin-bottom: 24px; }
+    .section h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
+    .section ul { padding-left: 20px; }
+    .section li { margin-bottom: 8px; color: #374151; }
+    .section .empty { color: #9ca3af; font-style: italic; }
+
+    /* Money leaks */
+    .money-leaks { border-color: #fecaca; }
+    .money-leaks h2 { color: #dc2626; }
+
+    /* Quick wins */
+    .quick-wins { border-color: #bbf7d0; }
+    .quick-wins h2 { color: #16a34a; }
+
+    /* Client summary */
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .summary-col h3 { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; margin-bottom: 10px; }
+    .summary-col ul { padding-left: 18px; }
+    .summary-col li { font-size: 14px; margin-bottom: 6px; }
+
+    /* Findings */
+    .findings-group { margin-bottom: 28px; }
+    .category-heading { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #1f2937; }
+    .finding-count { font-size: 12px; font-weight: 500; background: #f3f4f6; color: #6b7280; padding: 2px 8px; border-radius: 20px; margin-left: 8px; }
+    .finding { border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+    .finding-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .severity-badge { font-size: 10px; font-weight: 700; color: #fff; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.5px; flex-shrink: 0; }
+    .finding-title { font-weight: 600; font-size: 14px; }
+    .finding-summary { font-size: 14px; color: #374151; margin-bottom: 8px; }
+    .finding-detail { font-size: 13px; color: #4b5563; }
+    .finding-detail p { margin-bottom: 4px; }
+    .affected-urls { font-size: 12px; color: #6b7280; margin-top: 6px; }
+
+    /* Rationale table */
+    .rationale-list { list-style: none; padding: 0; }
+    .rationale-list li { font-size: 13px; padding: 4px 0; color: #374151; }
+    .rationale-list li:before { content: "• "; color: #9ca3af; }
+
+    /* Footer */
+    .footer { text-align: center; font-size: 12px; color: #9ca3af; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+
+    /* Lighthouse pills */
+    .lh-pill { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 20px; text-align: center; min-width: 110px; }
+    .lh-pill-val { font-size: 36px; font-weight: 800; line-height: 1; }
+    .lh-pill-label { font-size: 12px; font-weight: 600; color: #6b7280; margin-top: 4px; }
+
+    @media print {
+      body { background: #fff; }
+      .container { padding: 16px; }
+      .report-header { border-radius: 4px; }
+      .section { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="report-header">
+    <h1>Local SEO Audit Report</h1>
+    <div class="report-domain">${escHtml(r.domain)}</div>
+    <div class="report-meta">Scanned ${date} · ${r.request.scanMode} scan · ${r.pages.length} page${r.pages.length !== 1 ? "s" : ""} crawled · ${escHtml(r.detectedBusinessType.replace("_", " "))} business</div>
+  </div>
+
+  <!-- Overall score -->
+  <div class="overall-block">
+    <div class="overall-number" style="color:${overallColor}">${overall.value}</div>
+    <div>
+      <div class="overall-label" style="color:${overallColor}">${escHtml(overall.label)}</div>
+      <div class="overall-sub">Overall Local SEO Score (out of 100)</div>
+      <div class="overall-sub">${r.findings.length} issue${r.findings.length !== 1 ? "s" : ""} found — ${r.findings.filter((f) => f.severity === "high").length} high priority</div>
+    </div>
+  </div>
+
+  <!-- Category scores -->
+  <div class="scores-grid">
+    ${scoreCards}
+  </div>
+
+  <!-- What's hurting the business -->
+  ${summary.whatIsHurtingVisibility.length > 0 || summary.whatMayBeHurtingLeads.length > 0 ? `
+  <div class="section">
+    <h2>What's Holding This Business Back</h2>
+    <div class="summary-grid">
+      <div class="summary-col">
+        <h3>Hurting Google Visibility</h3>
+        ${renderBulletList(summary.whatIsHurtingVisibility, "No major visibility issues found.")}
+      </div>
+      <div class="summary-col">
+        <h3>Hurting Lead Capture</h3>
+        ${renderBulletList(summary.whatMayBeHurtingLeads, "No major conversion issues found.")}
+      </div>
+    </div>
+  </div>` : ""}
+
+  <!-- Money leaks -->
+  ${r.moneyLeaks.length > 0 ? `
+  <div class="section money-leaks">
+    <h2>🚨 Revenue-Impacting Issues</h2>
+    ${renderBulletList(r.moneyLeaks)}
+  </div>` : ""}
+
+  <!-- Quick wins -->
+  ${r.quickWins.length > 0 ? `
+  <div class="section quick-wins">
+    <h2>✅ Quick Wins (Highest-Impact Actions)</h2>
+    ${renderBulletList(r.quickWins)}
+  </div>` : ""}
+
+  <!-- Lighthouse / Core Web Vitals -->
+  ${r.lighthouse && r.lighthouse.length > 0 ? (() => {
+    const lh = r.lighthouse[0];
+    const perfColor = scoreColor(lh.performanceScore);
+    const seoColor = scoreColor(lh.seoScore);
+    const a11yColor = scoreColor(lh.accessibilityScore);
+    const ms = (v) => v !== void 0 ? `${(v / 1e3).toFixed(2)}s` : "—";
+    const cls = (v) => v !== void 0 ? v.toFixed(3) : "—";
+    const pill = (label, val, color) => `<div class="lh-pill"><div class="lh-pill-val" style="color:${color}">${val}</div><div class="lh-pill-label">${label}</div></div>`;
+    return `
+  <div class="section">
+    <h2>⚡ Page Speed &amp; Core Web Vitals</h2>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Measured on mobile · Powered by Lighthouse · URL: <code>${escHtml(lh.url)}</code></p>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+      ${pill("Performance", lh.performanceScore, perfColor)}
+      ${pill("SEO", lh.seoScore, seoColor)}
+      ${pill("Accessibility", lh.accessibilityScore, a11yColor)}
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+      <thead><tr style="background:#f8fafc">
+        <th style="text-align:left;padding:8px 12px;border-bottom:1px solid #e5e7eb">Metric</th>
+        <th style="text-align:left;padding:8px 12px;border-bottom:1px solid #e5e7eb">Value</th>
+        <th style="text-align:left;padding:8px 12px;border-bottom:1px solid #e5e7eb">Target</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9">First Contentful Paint</td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9">${ms(lh.firstContentfulPaint)}</td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;color:#6b7280">&lt; 1.8s</td></tr>
+        <tr><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9">Largest Contentful Paint</td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9">${ms(lh.largestContentfulPaint)}</td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;color:#6b7280">&lt; 2.5s</td></tr>
+        <tr><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9">Total Blocking Time</td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9">${lh.totalBlockingTime !== void 0 ? lh.totalBlockingTime + "ms" : "—"}</td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;color:#6b7280">&lt; 200ms</td></tr>
+        <tr><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9">Cumulative Layout Shift</td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9">${cls(lh.cumulativeLayoutShift)}</td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;color:#6b7280">&lt; 0.1</td></tr>
+        <tr><td style="padding:8px 12px">Speed Index</td><td style="padding:8px 12px">${ms(lh.speedIndex)}</td><td style="padding:8px 12px;color:#6b7280">&lt; 3.4s</td></tr>
+      </tbody>
+    </table>
+  </div>`;
+  })() : ""}
+
+  <!-- All findings -->
+  <div class="section">
+    <h2>All Issues Found (${r.findings.length} total)</h2>
+    ${r.findings.length === 0 ? '<p class="empty">No issues detected. Great job!</p>' : findingSections}
+  </div>
+
+  <!-- Score rationale -->
+  <div class="section">
+    <h2>Score Breakdown Detail</h2>
+    ${["technical", "localSeo", "conversion", "content", "trust"].map((cat) => {
+    const score = r.scores[cat];
+    const color = scoreColor(score.value);
+    return `
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <span style="font-weight:700;font-size:24px;color:${color}">${score.value}</span>
+          <div>
+            <div style="font-weight:600">${categoryLabel(cat)}</div>
+            <div style="font-size:12px;color:${color}">${escHtml(score.label)}</div>
+          </div>
+        </div>
+        <ul class="rationale-list">
+          ${score.rationale.map((r2) => `<li>${escHtml(r2)}</li>`).join("")}
+        </ul>
+      </div>`;
+  }).join("")}
+  </div>
+
+  <div class="footer">
+    Generated by Local SEO Scanner &nbsp;·&nbsp; ${date} &nbsp;·&nbsp; Scan ID: ${escHtml(r.id)}
+  </div>
+
+</div>
+</body>
+</html>`;
+}
+const log$1 = scanRepository.createLogger("lighthouse");
+const CHROME_FLAGS = [
+  "--headless=new",
+  "--no-sandbox",
+  "--disable-setuid-sandbox",
+  "--disable-dev-shm-usage"
+];
+async function runLighthouse(url, fallbackChromiumPath) {
+  const { launch } = await import("chrome-launcher");
+  const { default: lighthouse } = await import("lighthouse");
+  let chrome = null;
+  try {
+    try {
+      chrome = await launch({ chromeFlags: CHROME_FLAGS, logLevel: "silent" });
+    } catch {
+      if (!fallbackChromiumPath) {
+        log$1.warn("System Chrome not found and no fallback path provided — skipping Lighthouse");
+        return null;
+      }
+      log$1.info(`System Chrome not found, using Playwright Chromium: ${fallbackChromiumPath}`);
+      chrome = await launch({
+        chromePath: fallbackChromiumPath,
+        chromeFlags: CHROME_FLAGS,
+        logLevel: "silent"
+      });
+    }
+    log$1.info(`Chrome launched on port ${chrome.port}, running Lighthouse on ${url}`);
+    const runnerResult = await lighthouse(url, {
+      port: chrome.port,
+      output: "json",
+      logLevel: "silent",
+      onlyCategories: ["performance", "seo", "accessibility"],
+      formFactor: "mobile",
+      screenEmulation: {
+        mobile: true,
+        width: 412,
+        height: 823,
+        deviceScaleFactor: 1.75,
+        disabled: false
+      }
+    });
+    if (!runnerResult?.lhr) {
+      log$1.warn("Lighthouse returned no result");
+      return null;
+    }
+    const { lhr } = runnerResult;
+    const score = (cat) => Math.round((lhr.categories[cat]?.score ?? 0) * 100);
+    const audit = (key) => {
+      const val = lhr.audits?.[key]?.numericValue;
+      return typeof val === "number" ? Math.round(val) : void 0;
+    };
+    const metrics = {
+      url,
+      performanceScore: score("performance"),
+      seoScore: score("seo"),
+      accessibilityScore: score("accessibility"),
+      firstContentfulPaint: audit("first-contentful-paint"),
+      largestContentfulPaint: audit("largest-contentful-paint"),
+      totalBlockingTime: audit("total-blocking-time"),
+      cumulativeLayoutShift: lhr.audits?.["cumulative-layout-shift"]?.numericValue,
+      speedIndex: audit("speed-index")
+    };
+    log$1.info(
+      `Lighthouse complete: perf=${metrics.performanceScore} seo=${metrics.seoScore} a11y=${metrics.accessibilityScore}`
+    );
+    return metrics;
+  } catch (err) {
+    log$1.warn(`Lighthouse run failed: ${err.message}`);
+    return null;
+  } finally {
+    if (chrome) {
+      try {
+        await chrome.kill();
+      } catch {
+      }
+    }
+  }
+}
+function analyzeLighthouse(metrics) {
+  const findings = [];
+  if (metrics.performanceScore < 50) {
+    findings.push({
+      id: "lh-performance-poor",
+      category: "technical",
+      severity: "high",
+      title: `Page performance is poor (Lighthouse score: ${metrics.performanceScore}/100)`,
+      summary: `The homepage scored ${metrics.performanceScore}/100 for performance — well below Google's recommended threshold of 90.`,
+      whyItMatters: "Page speed is a direct Google ranking factor on mobile. A slow site also increases bounce rates — visitors leave before the page loads. For local businesses, most searches happen on mobile.",
+      recommendation: "Work with a developer to address Core Web Vitals issues. Common fixes: optimize images (use WebP, add width/height), defer render-blocking JavaScript, enable browser caching, and use a CDN.",
+      affectedUrls: [metrics.url]
+    });
+  } else if (metrics.performanceScore < 70) {
+    findings.push({
+      id: "lh-performance-needs-work",
+      category: "technical",
+      severity: "medium",
+      title: `Page performance needs improvement (Lighthouse score: ${metrics.performanceScore}/100)`,
+      summary: `The homepage scored ${metrics.performanceScore}/100 for performance — below Google's recommended threshold.`,
+      whyItMatters: "Every second of load time increases bounce rates by ~20%. Even a moderate improvement in speed improves both user experience and search rankings.",
+      recommendation: "Review Lighthouse recommendations: compress images, minimize CSS/JS, and leverage browser caching. Tools like Google PageSpeed Insights provide specific file-level guidance.",
+      affectedUrls: [metrics.url]
+    });
+  }
+  if (metrics.largestContentfulPaint !== void 0) {
+    const lcp = metrics.largestContentfulPaint;
+    if (lcp > 4e3) {
+      findings.push({
+        id: "lh-lcp-slow",
+        category: "technical",
+        severity: "high",
+        title: `Largest Contentful Paint is slow (${(lcp / 1e3).toFixed(1)}s)`,
+        summary: `LCP is ${(lcp / 1e3).toFixed(1)}s — Google's "Good" threshold is under 2.5s.`,
+        whyItMatters: "LCP measures how long it takes for the main content to appear. Slow LCP signals a poor user experience and is penalized in Google's Core Web Vitals ranking.",
+        recommendation: 'Optimize your hero image: compress it, convert to WebP, and preload it with `<link rel="preload">`. Eliminate render-blocking resources above the fold.',
+        affectedUrls: [metrics.url]
+      });
+    } else if (lcp > 2500) {
+      findings.push({
+        id: "lh-lcp-needs-work",
+        category: "technical",
+        severity: "medium",
+        title: `Largest Contentful Paint needs improvement (${(lcp / 1e3).toFixed(1)}s)`,
+        summary: `LCP is ${(lcp / 1e3).toFixed(1)}s — target is under 2.5s.`,
+        whyItMatters: "LCP is a Core Web Vitals metric used by Google for ranking. Reducing it improves both SEO and perceived load speed.",
+        recommendation: "Compress the hero image, use next-gen formats (WebP/AVIF), and preload the LCP image element.",
+        affectedUrls: [metrics.url]
+      });
+    }
+  }
+  if (metrics.totalBlockingTime !== void 0) {
+    const tbt = metrics.totalBlockingTime;
+    if (tbt > 600) {
+      findings.push({
+        id: "lh-tbt-high",
+        category: "technical",
+        severity: "high",
+        title: `Page has heavy JavaScript blocking (TBT: ${tbt}ms)`,
+        summary: `Total Blocking Time is ${tbt}ms — Google's "Good" threshold is under 200ms.`,
+        whyItMatters: "High TBT means the browser is busy executing JavaScript and can't respond to user input. This makes the page feel frozen and correlates strongly with poor Core Web Vitals scores.",
+        recommendation: "Audit your JavaScript bundles. Remove unused scripts, split code by route, defer non-critical JS, and replace heavy tracking scripts with lightweight alternatives.",
+        affectedUrls: [metrics.url]
+      });
+    } else if (tbt > 200) {
+      findings.push({
+        id: "lh-tbt-medium",
+        category: "technical",
+        severity: "medium",
+        title: `JavaScript is causing moderate blocking (TBT: ${tbt}ms)`,
+        summary: `Total Blocking Time is ${tbt}ms — target is under 200ms.`,
+        whyItMatters: "Elevated TBT degrades interactivity scores and user experience, especially on mobile devices.",
+        recommendation: "Audit third-party scripts (chat widgets, analytics, tracking) and defer any that are not needed on page load.",
+        affectedUrls: [metrics.url]
+      });
+    }
+  }
+  if (metrics.cumulativeLayoutShift !== void 0) {
+    const cls = metrics.cumulativeLayoutShift;
+    if (cls > 0.25) {
+      findings.push({
+        id: "lh-cls-high",
+        category: "technical",
+        severity: "high",
+        title: `Page has severe layout instability (CLS: ${cls.toFixed(3)})`,
+        summary: `Cumulative Layout Shift is ${cls.toFixed(3)} — Google's "Good" threshold is under 0.1.`,
+        whyItMatters: "CLS measures how much the page jumps around as it loads. A high score frustrates users (and causes mis-clicks) and is a negative Core Web Vitals ranking signal.",
+        recommendation: "Add explicit width/height attributes to all images and iframes. Avoid inserting content above existing content. Reserve space for ads and embeds with CSS.",
+        affectedUrls: [metrics.url]
+      });
+    } else if (cls > 0.1) {
+      findings.push({
+        id: "lh-cls-medium",
+        category: "technical",
+        severity: "medium",
+        title: `Page has moderate layout instability (CLS: ${cls.toFixed(3)})`,
+        summary: `Cumulative Layout Shift is ${cls.toFixed(3)} — target is under 0.1.`,
+        whyItMatters: "Layout shifts frustrate users and affect Core Web Vitals scoring.",
+        recommendation: "Add width and height to images and embeds. Use CSS to reserve space for elements that load dynamically.",
+        affectedUrls: [metrics.url]
+      });
+    }
+  }
+  if (metrics.seoScore < 80) {
+    findings.push({
+      id: "lh-seo-low",
+      category: "technical",
+      severity: "medium",
+      title: `Lighthouse SEO score is low (${metrics.seoScore}/100)`,
+      summary: `Lighthouse flagged technical SEO issues — score is ${metrics.seoScore}/100.`,
+      whyItMatters: "Lighthouse's SEO category checks for crawlability, mobile-friendliness, and metadata correctness — basics that affect how Google indexes the site.",
+      recommendation: "Run a full Lighthouse audit in Chrome DevTools (F12 → Lighthouse tab) to see the specific SEO issues flagged. Common fixes: add meta description, ensure text is readable without zooming, fix broken links.",
+      affectedUrls: [metrics.url]
+    });
+  }
+  return findings;
+}
+const log = scanRepository.createLogger("runAudit");
 async function runAudit(request, emitProgress) {
   log.info(`Starting audit for ${request.url}`);
   emitProgress("Validating URL…", 2);
@@ -1710,6 +2249,8 @@ async function runAudit(request, emitProgress) {
   let sitemapFound = false;
   let allFindings = [];
   let scores = buildPlaceholderScores();
+  let reportArtifacts = {};
+  let lighthouseMetrics = [];
   let detectedBusinessType = request.businessType !== "auto" ? request.businessType : "other";
   try {
     emitProgress("Loading robots.txt…", 8);
@@ -1797,6 +2338,19 @@ async function runAudit(request, emitProgress) {
     log.info(
       `Analyzers complete: ${allFindings.length} findings (tech=${technical.findings.length}, local=${localSeo.findings.length}, conv=${conversion.findings.length}, content=${content.findings.length}, trust=${trust.findings.length})`
     );
+    emitProgress("Running performance audit…", 90);
+    try {
+      const chromiumPath = chromium.executablePath();
+      const lhMetric = await runLighthouse(normalizedUrl, chromiumPath);
+      if (lhMetric) {
+        lighthouseMetrics = [lhMetric];
+        const lhFindings = analyzeLighthouse(lhMetric);
+        allFindings = [...allFindings, ...lhFindings];
+        log.info(`Lighthouse: perf=${lhMetric.performanceScore} seo=${lhMetric.seoScore} findings=${lhFindings.length}`);
+      }
+    } catch (lhErr) {
+      log.warn(`Lighthouse step skipped: ${lhErr.message}`);
+    }
     emitProgress("Scoring results…", 92);
     const techScore = scoreTechnical({ findings: technical.findings, pages: crawledPages, robotsFound, sitemapFound });
     const localScore = scoreLocalSeo({ findings: localSeo.findings, pages: crawledPages });
@@ -1816,6 +2370,28 @@ async function runAudit(request, emitProgress) {
       `Scoring complete: tech=${techScore.value} local=${localScore.value} conv=${convScore.value} content=${contentScore.value} trust=${trustScore.value} overall=${scores.overall.value}`
     );
     emitProgress("Building reports…", 97);
+    const jsonPath = pathResolver.buildJsonPath(scanId);
+    const htmlPath = pathResolver.buildHtmlPath(scanId);
+    const partialResult = {
+      id: scanId,
+      request,
+      scannedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      domain,
+      detectedBusinessType,
+      pages: crawledPages,
+      findings: allFindings,
+      scores,
+      quickWins: buildQuickWins(allFindings),
+      moneyLeaks: buildMoneyLeaks(allFindings),
+      artifacts: { jsonPath, htmlPath }
+    };
+    await Promise.all([
+      buildJsonReport(partialResult, jsonPath),
+      buildHtmlReport(partialResult, htmlPath)
+    ]);
+    await scanRepository.saveScan(partialResult);
+    reportArtifacts = { jsonPath, htmlPath };
+    log.info(`Reports saved: ${jsonPath}`);
   } finally {
     await browser.close();
     log.info("Browser closed");
@@ -1833,7 +2409,8 @@ async function runAudit(request, emitProgress) {
     scores,
     quickWins: buildQuickWins(allFindings),
     moneyLeaks: buildMoneyLeaks(allFindings),
-    artifacts: {}
+    lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : void 0,
+    artifacts: reportArtifacts
   };
 }
 function buildPlaceholderScores() {

@@ -31,6 +31,12 @@ import { scoreContent } from '../scoring/scoreContent'
 import { scoreTrust } from '../scoring/scoreTrust'
 import { computeWeightedScore } from '../scoring/weightedFinalScore'
 import { prioritizeFindings, buildQuickWins, buildMoneyLeaks } from '../scoring/prioritizeFindings'
+import { buildJsonReport } from '../reports/buildJsonReport'
+import { buildHtmlReport } from '../reports/buildHtmlReport'
+import { saveScan } from '../storage/scanRepository'
+import { buildJsonPath, buildHtmlPath } from '../storage/pathResolver'
+import { runLighthouse } from '../lighthouse/runLighthouse'
+import { analyzeLighthouse } from '../lighthouse/lighthouseAnalyzer'
 
 const log = createLogger('runAudit')
 
@@ -75,6 +81,8 @@ export async function runAudit(
   let sitemapFound = false
   let allFindings: AuditResult['findings'] = []
   let scores: AuditScores = buildPlaceholderScores()
+  let reportArtifacts: AuditResult['artifacts'] = {}
+  let lighthouseMetrics: import('../types/audit').LighthouseMetrics[] = []
   // Narrowed to non-auto; detectBusinessType() is guaranteed never to return 'auto'
   let detectedBusinessType = (
     request.businessType !== 'auto' ? request.businessType : 'other'
@@ -188,7 +196,22 @@ export async function runAudit(
       `Analyzers complete: ${allFindings.length} findings (tech=${technical.findings.length}, local=${localSeo.findings.length}, conv=${conversion.findings.length}, content=${content.findings.length}, trust=${trust.findings.length})`,
     )
 
-    // ── 9. Score each category + compute weighted overall ─────────────────
+    // ── 9. Lighthouse performance audit (best-effort, non-blocking) ───────
+    emitProgress('Running performance audit…', 90)
+    try {
+      const chromiumPath = chromium.executablePath()
+      const lhMetric = await runLighthouse(normalizedUrl, chromiumPath)
+      if (lhMetric) {
+        lighthouseMetrics = [lhMetric]
+        const lhFindings = analyzeLighthouse(lhMetric)
+        allFindings = [...allFindings, ...lhFindings]
+        log.info(`Lighthouse: perf=${lhMetric.performanceScore} seo=${lhMetric.seoScore} findings=${lhFindings.length}`)
+      }
+    } catch (lhErr) {
+      log.warn(`Lighthouse step skipped: ${(lhErr as Error).message}`)
+    }
+
+    // ── 11. Score each category + compute weighted overall ───────────────
     emitProgress('Scoring results…', 92)
 
     const techScore = scoreTechnical({ findings: technical.findings, pages: crawledPages, robotsFound, sitemapFound })
@@ -212,9 +235,35 @@ export async function runAudit(
       `Scoring complete: tech=${techScore.value} local=${localScore.value} conv=${convScore.value} content=${contentScore.value} trust=${trustScore.value} overall=${scores.overall.value}`,
     )
 
-    // ── 10. Placeholder: Reports (Phase 7) ───────────────────────────────
+    // ── 10. Write JSON + HTML reports and persist to index ───────────────
     emitProgress('Building reports…', 97)
-    // Phase 7 report writers will save JSON + HTML to disk
+
+    const jsonPath = buildJsonPath(scanId)
+    const htmlPath = buildHtmlPath(scanId)
+
+    // Build a partial result with real scores so the report writers have complete data
+    const partialResult: AuditResult = {
+      id: scanId,
+      request,
+      scannedAt: new Date().toISOString(),
+      domain,
+      detectedBusinessType,
+      pages: crawledPages,
+      findings: allFindings,
+      scores,
+      quickWins: buildQuickWins(allFindings),
+      moneyLeaks: buildMoneyLeaks(allFindings),
+      artifacts: { jsonPath, htmlPath },
+    }
+
+    await Promise.all([
+      buildJsonReport(partialResult, jsonPath),
+      buildHtmlReport(partialResult, htmlPath),
+    ])
+
+    await saveScan(partialResult)
+    reportArtifacts = { jsonPath, htmlPath }
+    log.info(`Reports saved: ${jsonPath}`)
 
   } finally {
     await browser.close()
@@ -235,7 +284,8 @@ export async function runAudit(
     scores,
     quickWins: buildQuickWins(allFindings),
     moneyLeaks: buildMoneyLeaks(allFindings),
-    artifacts: {},
+    lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : undefined,
+    artifacts: reportArtifacts,
   }
 }
 

@@ -5,7 +5,7 @@
  */
 
 import type { Browser } from 'playwright'
-import * as cheerio from 'cheerio'
+import * as cheerio from 'cheerio/slim'
 import { fetchHtml, type FetchHtmlResult } from './fetchHtml'
 import { normalizeCrawlerUrl, shouldSkipUrl } from './normalizeUrl'
 import { isSameDomain } from '../utils/domain'

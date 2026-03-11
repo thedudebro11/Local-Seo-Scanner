@@ -8,7 +8,7 @@
  *   const signals = extractAllSignals(raw.html, raw.finalUrl)
  */
 
-import * as cheerio from 'cheerio'
+import * as cheerio from 'cheerio/slim'
 import { extractMeta } from './extractMeta'
 import { extractHeadings } from './extractHeadings'
 import { extractSchema } from './extractSchema'
