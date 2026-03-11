@@ -45,7 +45,7 @@ User fills ScanForm (URL, scan mode, business type, max pages)
 → ScanResultsPage reads latestResult, renders ScoreOverview + IssueList + QuickWins
 ```
 
-**Note:** `runAudit` is currently a stub. Steps 4–7 simulate work with `sleep(120ms)` per step and return a placeholder result. No real crawling, extraction, or scoring occurs yet.
+**Phase 5 note:** Crawl, extraction, and all 5 analyzers are real. Scoring (step 9) returns placeholder zeros until Phase 6.
 
 ---
 
@@ -67,9 +67,9 @@ User fills ScanForm (URL, scan mode, business type, max pages)
 | `src/engine/utils/` | `domain.ts` (URL helpers), `logger.ts` (structured console logger) |
 | `src/engine/storage/` | `pathResolver.ts` (artifact paths), `scanRepository.ts` (stub — returns `[]`) |
 | `src/engine/orchestrator/` | `runAudit.ts` — pipeline entry point (stub) |
-| `src/engine/crawl/` | **Empty** — Phase 3 |
-| `src/engine/extractors/` | **Empty** — Phase 4 |
-| `src/engine/analyzers/` | **Empty** — Phase 5 |
+| `src/engine/crawl/` | `fetchHtml`, `normalizeUrl`, `discoverUrls` (BFS), `classifyPage`, `robots`, `sitemap` |
+| `src/engine/extractors/` | `extractMeta`, `extractHeadings`, `extractSchema`, `extractContactSignals`, `extractLocalSignals`, `extractCTAs`, `extractTrustSignals`, `extractImages`, `extractTextStats`, `index` (barrel: `extractAllSignals`) |
+| `src/engine/analyzers/` | `types` (AnalyzerInput + helpers), `businessTypeDetector`, `technicalAnalyzer`, `localSeoAnalyzer`, `conversionAnalyzer`, `contentAnalyzer`, `trustAnalyzer` |
 | `src/engine/scoring/` | **Empty** — Phase 6 |
 | `src/engine/reports/` | **Empty** — Phase 7 |
 | `src/engine/lighthouse/` | **Empty** — Phase 8 |
@@ -118,9 +118,6 @@ Score weights: Technical 25%, Local SEO 30%, Conversion 25%, Content 10%, Trust 
 - Path resolver and scan ID generation
 
 **Not implemented yet (stub or empty)**
-- Crawler: `fetchHtml`, `discoverUrls`, `classifyPage`, `robots`, `sitemap`
-- Extractors: meta, headings, schema, contact, local signals, CTAs, trust, images
-- Analyzers: technical, local SEO, conversion, content, trust, business type detector
 - Lighthouse integration
 - Scoring: all category scorers, weighted final score, `prioritizeFindings`
 - Report generation: `buildJsonReport`, `buildHtmlReport`, `scanRepository` persistence
