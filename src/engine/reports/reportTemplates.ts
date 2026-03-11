@@ -67,7 +67,6 @@ export function renderBulletList(items: string[], emptyMsg = 'None detected.'): 
 export function categoryLabel(cat: string): string {
   const labels: Record<string, string> = {
     technical: 'Technical SEO',
-    local: 'Local SEO',
     localSeo: 'Local SEO',
     conversion: 'Conversion',
     content: 'Content',

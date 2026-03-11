@@ -1,6 +1,9 @@
 /**
- * Builds owner-friendly summary strings for the client-facing report.
- * Translates technical findings into plain-language business impact statements.
+ * Builds owner-friendly summary strings for the client-facing HTML report.
+ * Translates raw findings into plain-language business impact statements.
+ *
+ * This is NOT competitor analysis — it surfaces the scanned site's own issues
+ * in two buckets: visibility (Google ranking factors) and leads (conversion factors).
  */
 
 import type { AuditResult, Finding } from '../types/audit'
@@ -14,7 +17,7 @@ export interface ClientSummary {
   fastestWins: string[]
 }
 
-const VISIBILITY_CATEGORIES = new Set(['technical', 'local', 'content'])
+const VISIBILITY_CATEGORIES = new Set(['technical', 'localSeo', 'content'])
 const LEADS_CATEGORIES = new Set(['conversion', 'trust'])
 
 function toVisibilityStatement(f: Finding): string {

@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const electron = require("electron");
 const path = require("path");
 function registerScanHandlers(mainWindow2) {
@@ -10,7 +11,7 @@ function registerScanHandlers(mainWindow2) {
       }
     };
     try {
-      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-Cr1zITY2.js"));
+      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-B8AtEE2D.js"));
       const result = await runAudit(request, emitProgress);
       return result;
     } catch (err) {
@@ -21,7 +22,7 @@ function registerScanHandlers(mainWindow2) {
 }
 function registerFileHandlers() {
   electron.ipcMain.handle("file:list-scans", async () => {
-    const { listSavedScans } = await Promise.resolve().then(() => require("./chunks/scanRepository-ujTCPbcB.js")).then((n) => n.scanRepository);
+    const { listSavedScans } = await Promise.resolve().then(() => require("./chunks/scanRepository-CxNMbKnN.js")).then((n) => n.scanRepository);
     return listSavedScans();
   });
   electron.ipcMain.handle("file:open-report", async (_, reportPath) => {
@@ -31,7 +32,7 @@ function registerFileHandlers() {
     electron.shell.showItemInFolder(folderPath);
   });
   electron.ipcMain.handle("file:load-scan", async (_, scanId) => {
-    const { loadScanById } = await Promise.resolve().then(() => require("./chunks/scanRepository-ujTCPbcB.js")).then((n) => n.scanRepository);
+    const { loadScanById } = await Promise.resolve().then(() => require("./chunks/scanRepository-CxNMbKnN.js")).then((n) => n.scanRepository);
     return loadScanById(scanId);
   });
 }
@@ -43,10 +44,49 @@ function registerAppHandlers() {
     return process.platform;
   });
   electron.ipcMain.handle("app:reports-path", async () => {
-    const { getReportsDir } = await Promise.resolve().then(() => require("./chunks/pathResolver-DKtUPGKe.js"));
-    return getReportsDir();
+    const { getReportsDir: getReportsDir2 } = await Promise.resolve().then(() => pathResolver);
+    return getReportsDir2();
   });
 }
+let _reportsDir = null;
+function initReportsDir(userDataPath) {
+  _reportsDir = path.join(userDataPath, "reports");
+}
+function getReportsDir() {
+  if (!_reportsDir) {
+    throw new Error(
+      "pathResolver: initReportsDir() has not been called. Call it from the Electron main process before starting scans."
+    );
+  }
+  return _reportsDir;
+}
+function getScanArtifactsDir(scanId) {
+  return path.join(getReportsDir(), scanId);
+}
+function buildJsonPath(scanId) {
+  return path.join(getScanArtifactsDir(scanId), "report.json");
+}
+function buildHtmlPath(scanId) {
+  return path.join(getScanArtifactsDir(scanId), "report.html");
+}
+function getIndexPath() {
+  return path.join(getReportsDir(), "index.json");
+}
+function generateScanId(domain) {
+  const safeDomain = domain.replace(/[^a-z0-9.-]/gi, "_").slice(0, 40);
+  const ts = Date.now();
+  return `${safeDomain}_${ts}`;
+}
+const pathResolver = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  buildHtmlPath,
+  buildJsonPath,
+  generateScanId,
+  getIndexPath,
+  getReportsDir,
+  getScanArtifactsDir,
+  initReportsDir
+}, Symbol.toStringTag, { value: "Module" }));
 const isDev = process.env.NODE_ENV === "development";
 let mainWindow = null;
 function createWindow() {
@@ -82,6 +122,7 @@ function createWindow() {
   return win;
 }
 electron.app.whenReady().then(() => {
+  initReportsDir(electron.app.getPath("userData"));
   mainWindow = createWindow();
   registerScanHandlers(mainWindow);
   registerFileHandlers();
@@ -108,3 +149,7 @@ electron.app.on("web-contents-created", (_, contents) => {
     }
   });
 });
+exports.buildHtmlPath = buildHtmlPath;
+exports.buildJsonPath = buildJsonPath;
+exports.generateScanId = generateScanId;
+exports.getIndexPath = getIndexPath;

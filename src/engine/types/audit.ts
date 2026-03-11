@@ -28,7 +28,7 @@ export type PageType =
   | 'blog'
   | 'other'
 
-export type FindingCategory = 'technical' | 'local' | 'conversion' | 'content' | 'trust'
+export type FindingCategory = 'technical' | 'localSeo' | 'conversion' | 'content' | 'trust'
 
 export type Severity = 'high' | 'medium' | 'low'
 

@@ -40,10 +40,19 @@ export function getDomain(url: string): string {
 }
 
 /**
+ * Strip the leading "www." from a hostname so that example.com and
+ * www.example.com are treated as the same site.
+ */
+export function stripWww(hostname: string): string {
+  return hostname.startsWith('www.') ? hostname.slice(4) : hostname
+}
+
+/**
  * Check whether two URLs belong to the same domain.
+ * Treats www.example.com and example.com as identical.
  */
 export function isSameDomain(a: string, b: string): boolean {
-  return getDomain(a) === getDomain(b)
+  return stripWww(getDomain(a)) === stripWww(getDomain(b))
 }
 
 /**

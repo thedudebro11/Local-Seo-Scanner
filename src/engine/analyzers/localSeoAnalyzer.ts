@@ -21,7 +21,7 @@ export function analyzeLocalSeo(input: AnalyzerInput): AnalyzerOutput {
   if (home && home.phones.length === 0) {
     findings.push({
       id: 'local-no-phone-homepage',
-      category: 'local',
+      category: 'localSeo',
       severity: 'high',
       title: 'No phone number found on homepage',
       summary: `The homepage for ${domain} has no detectable phone number.`,
@@ -37,7 +37,7 @@ export function analyzeLocalSeo(input: AnalyzerInput): AnalyzerOutput {
   if (contactPages.length > 0 && contactWithNoPhone.length > 0) {
     findings.push({
       id: 'local-no-phone-contact',
-      category: 'local',
+      category: 'localSeo',
       severity: 'high',
       title: 'Contact page missing phone number',
       summary: 'The contact page has no visible phone number.',
@@ -53,7 +53,7 @@ export function analyzeLocalSeo(input: AnalyzerInput): AnalyzerOutput {
   if (home && !home.hasAddress) {
     findings.push({
       id: 'local-no-address-homepage',
-      category: 'local',
+      category: 'localSeo',
       severity: 'medium',
       title: 'No physical address detected on homepage',
       summary: `${domain} homepage does not appear to display a business address.`,
@@ -76,7 +76,7 @@ export function analyzeLocalSeo(input: AnalyzerInput): AnalyzerOutput {
   if (!hasLocalBusinessSchema) {
     findings.push({
       id: 'local-no-localbusiness-schema',
-      category: 'local',
+      category: 'localSeo',
       severity: 'high',
       title: 'No LocalBusiness structured data found',
       summary: 'The site has no LocalBusiness (or equivalent) JSON-LD schema markup.',
@@ -92,7 +92,7 @@ export function analyzeLocalSeo(input: AnalyzerInput): AnalyzerOutput {
   if (!hasAnyMap) {
     findings.push({
       id: 'local-no-map',
-      category: 'local',
+      category: 'localSeo',
       severity: 'medium',
       title: 'No map embed or directions link found',
       summary: 'No Google Maps embed or "Get Directions" link was detected anywhere on the site.',
@@ -108,7 +108,7 @@ export function analyzeLocalSeo(input: AnalyzerInput): AnalyzerOutput {
   if (!hasAnyHours) {
     findings.push({
       id: 'local-no-hours',
-      category: 'local',
+      category: 'localSeo',
       severity: 'medium',
       title: 'No business hours found on the site',
       summary: 'No business hours information was detected across all scanned pages.',
@@ -124,7 +124,7 @@ export function analyzeLocalSeo(input: AnalyzerInput): AnalyzerOutput {
   if (pages.length >= 5 && locationPages.length === 0) {
     findings.push({
       id: 'local-no-location-pages',
-      category: 'local',
+      category: 'localSeo',
       severity: 'medium',
       title: 'No location or service-area pages found',
       summary: 'The site appears to have no pages targeting specific cities or service areas.',

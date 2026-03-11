@@ -3,6 +3,7 @@ import { join } from 'path'
 import { registerScanHandlers } from './ipc/scanHandlers'
 import { registerFileHandlers } from './ipc/fileHandlers'
 import { registerAppHandlers } from './ipc/appHandlers'
+import { initReportsDir } from '../src/engine/storage/pathResolver'
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -47,6 +48,9 @@ function createWindow(): BrowserWindow {
 }
 
 app.whenReady().then(() => {
+  // Initialize engine storage path before any IPC handler can trigger a scan
+  initReportsDir(app.getPath('userData'))
+
   mainWindow = createWindow()
 
   // Register all IPC handlers

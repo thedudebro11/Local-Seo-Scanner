@@ -1,20 +1,32 @@
 /**
  * Resolves file-system paths for scan artifacts.
- * Runs in the Electron main process — uses app.getPath('userData').
+ * Pure Node.js — no Electron dependency.
+ *
+ * The Electron shell must call initReportsDir(app.getPath('userData')) once
+ * during app startup (before any scan runs) to set the base storage path.
  */
 
-import { app } from 'electron'
 import path from 'path'
 
 let _reportsDir: string | null = null
 
 /**
+ * Called once by the Electron main process to set the userData base path.
+ * Must be called before any scan starts.
+ */
+export function initReportsDir(userDataPath: string): void {
+  _reportsDir = path.join(userDataPath, 'reports')
+}
+
+/**
  * Root directory where all scan reports and artifacts are saved.
- * Uses Electron's userData path so it survives app updates.
  */
 export function getReportsDir(): string {
   if (!_reportsDir) {
-    _reportsDir = path.join(app.getPath('userData'), 'reports')
+    throw new Error(
+      'pathResolver: initReportsDir() has not been called. ' +
+      'Call it from the Electron main process before starting scans.',
+    )
   }
   return _reportsDir
 }

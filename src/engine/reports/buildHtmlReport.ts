@@ -33,7 +33,7 @@ function generateHtml(r: AuditResult): string {
   const date = formatDate(r.scannedAt)
 
   // Group findings by category order
-  const categoryOrder = ['local', 'technical', 'conversion', 'content', 'trust']
+  const categoryOrder = ['localSeo', 'technical', 'conversion', 'content', 'trust']
   const findingsByCategory = categoryOrder.map((cat) => ({
     cat,
     findings: r.findings.filter((f) => f.category === cat),

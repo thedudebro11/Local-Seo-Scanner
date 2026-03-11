@@ -1,7 +1,7 @@
 "use strict";
 const path = require("path");
 const fs = require("fs-extra");
-const pathResolver = require("./pathResolver-DKtUPGKe.js");
+const index = require("../index.js");
 const LEVELS = {
   debug: 0,
   info: 1,
@@ -40,7 +40,7 @@ function createLogger(prefix) {
 }
 const log = createLogger("scanRepository");
 function readIndex() {
-  const indexPath = pathResolver.getIndexPath();
+  const indexPath = index.getIndexPath();
   try {
     if (!fs.existsSync(indexPath)) return [];
     return fs.readJsonSync(indexPath);
@@ -50,7 +50,7 @@ function readIndex() {
   }
 }
 async function writeIndex(entries) {
-  const indexPath = pathResolver.getIndexPath();
+  const indexPath = index.getIndexPath();
   await fs.ensureDir(path.dirname(indexPath));
   await fs.writeJson(indexPath, entries, { spaces: 2 });
 }
@@ -60,7 +60,7 @@ function listSavedScans() {
   return entries.slice().reverse();
 }
 function loadScanById(scanId) {
-  const jsonPath = pathResolver.buildJsonPath(scanId);
+  const jsonPath = index.buildJsonPath(scanId);
   try {
     if (!fs.existsSync(jsonPath)) {
       log.warn(`loadScanById: file not found — ${jsonPath}`);
@@ -75,8 +75,8 @@ function loadScanById(scanId) {
   }
 }
 async function saveScan(result) {
-  const jsonPath = pathResolver.buildJsonPath(result.id);
-  const htmlPath = pathResolver.buildHtmlPath(result.id);
+  const jsonPath = index.buildJsonPath(result.id);
+  const htmlPath = index.buildHtmlPath(result.id);
   const meta = {
     id: result.id,
     domain: result.domain,

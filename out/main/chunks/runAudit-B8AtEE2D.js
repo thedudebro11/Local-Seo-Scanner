@@ -22,8 +22,8 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const pathResolver = require("./pathResolver-DKtUPGKe.js");
-const scanRepository = require("./scanRepository-ujTCPbcB.js");
+const index = require("../index.js");
+const scanRepository = require("./scanRepository-CxNMbKnN.js");
 const cheerio = require("cheerio/slim");
 const fs = require("fs-extra");
 const path = require("path");
@@ -66,8 +66,11 @@ function getDomain(url) {
     return "";
   }
 }
+function stripWww(hostname) {
+  return hostname.startsWith("www.") ? hostname.slice(4) : hostname;
+}
 function isSameDomain(a, b) {
-  return getDomain(a) === getDomain(b);
+  return stripWww(getDomain(a)) === stripWww(getDomain(b));
 }
 function isHttps(url) {
   try {
@@ -1061,7 +1064,7 @@ function analyzeLocalSeo(input) {
   if (home && home.phones.length === 0) {
     findings.push({
       id: "local-no-phone-homepage",
-      category: "local",
+      category: "localSeo",
       severity: "high",
       title: "No phone number found on homepage",
       summary: `The homepage for ${domain} has no detectable phone number.`,
@@ -1073,7 +1076,7 @@ function analyzeLocalSeo(input) {
   if (contactPages.length > 0 && contactWithNoPhone.length > 0) {
     findings.push({
       id: "local-no-phone-contact",
-      category: "local",
+      category: "localSeo",
       severity: "high",
       title: "Contact page missing phone number",
       summary: "The contact page has no visible phone number.",
@@ -1085,7 +1088,7 @@ function analyzeLocalSeo(input) {
   if (home && !home.hasAddress) {
     findings.push({
       id: "local-no-address-homepage",
-      category: "local",
+      category: "localSeo",
       severity: "medium",
       title: "No physical address detected on homepage",
       summary: `${domain} homepage does not appear to display a business address.`,
@@ -1110,7 +1113,7 @@ function analyzeLocalSeo(input) {
   if (!hasLocalBusinessSchema) {
     findings.push({
       id: "local-no-localbusiness-schema",
-      category: "local",
+      category: "localSeo",
       severity: "high",
       title: "No LocalBusiness structured data found",
       summary: "The site has no LocalBusiness (or equivalent) JSON-LD schema markup.",
@@ -1122,7 +1125,7 @@ function analyzeLocalSeo(input) {
   if (!hasAnyMap) {
     findings.push({
       id: "local-no-map",
-      category: "local",
+      category: "localSeo",
       severity: "medium",
       title: "No map embed or directions link found",
       summary: 'No Google Maps embed or "Get Directions" link was detected anywhere on the site.',
@@ -1134,7 +1137,7 @@ function analyzeLocalSeo(input) {
   if (!hasAnyHours) {
     findings.push({
       id: "local-no-hours",
-      category: "local",
+      category: "localSeo",
       severity: "medium",
       title: "No business hours found on the site",
       summary: "No business hours information was detected across all scanned pages.",
@@ -1146,7 +1149,7 @@ function analyzeLocalSeo(input) {
   if (pages.length >= 5 && locationPages.length === 0) {
     findings.push({
       id: "local-no-location-pages",
-      category: "local",
+      category: "localSeo",
       severity: "medium",
       title: "No location or service-area pages found",
       summary: "The site appears to have no pages targeting specific cities or service areas.",
@@ -1664,7 +1667,7 @@ function computeWeightedScore(scores) {
   return { value, label: scoreBand(value), rationale };
 }
 const CATEGORY_WEIGHT = {
-  local: 0.3,
+  localSeo: 0.3,
   technical: 0.25,
   conversion: 0.25,
   content: 0.1,
@@ -1748,7 +1751,6 @@ function renderBulletList(items, emptyMsg = "None detected.") {
 function categoryLabel(cat) {
   const labels = {
     technical: "Technical SEO",
-    local: "Local SEO",
     localSeo: "Local SEO",
     conversion: "Conversion",
     content: "Content",
@@ -1770,7 +1772,7 @@ function formatDate(iso) {
     return iso;
   }
 }
-const VISIBILITY_CATEGORIES = /* @__PURE__ */ new Set(["technical", "local", "content"]);
+const VISIBILITY_CATEGORIES = /* @__PURE__ */ new Set(["technical", "localSeo", "content"]);
 const LEADS_CATEGORIES = /* @__PURE__ */ new Set(["conversion", "trust"]);
 function toVisibilityStatement(f) {
   return `${f.title} — ${f.summary}`;
@@ -1800,7 +1802,7 @@ function generateHtml(r) {
   const overallColor = scoreColor(overall.value);
   const summary = buildClientSummary(r);
   const date = formatDate(r.scannedAt);
-  const categoryOrder = ["local", "technical", "conversion", "content", "trust"];
+  const categoryOrder = ["localSeo", "technical", "conversion", "content", "trust"];
   const findingsByCategory = categoryOrder.map((cat) => ({
     cat,
     findings: r.findings.filter((f) => f.category === cat)
@@ -2236,7 +2238,7 @@ async function runAudit(request, emitProgress) {
     throw new Error(`Invalid URL: ${request.url}`);
   }
   const domain = getDomain(normalizedUrl);
-  const scanId = pathResolver.generateScanId(domain);
+  const scanId = index.generateScanId(domain);
   log.info(`Normalized: ${normalizedUrl} | domain: ${domain} | id: ${scanId}`);
   emitProgress("Launching browser…", 5);
   const { chromium } = await import("playwright");
@@ -2370,8 +2372,8 @@ async function runAudit(request, emitProgress) {
       `Scoring complete: tech=${techScore.value} local=${localScore.value} conv=${convScore.value} content=${contentScore.value} trust=${trustScore.value} overall=${scores.overall.value}`
     );
     emitProgress("Building reports…", 97);
-    const jsonPath = pathResolver.buildJsonPath(scanId);
-    const htmlPath = pathResolver.buildHtmlPath(scanId);
+    const jsonPath = index.buildJsonPath(scanId);
+    const htmlPath = index.buildHtmlPath(scanId);
     const partialResult = {
       id: scanId,
       request,
