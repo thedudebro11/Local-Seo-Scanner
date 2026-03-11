@@ -116,17 +116,17 @@ function stripTrackingParams(url) {
     return url;
   }
 }
-const log$9 = scanRepository.createLogger("captureScreenshots");
+const log$b = scanRepository.createLogger("captureScreenshots");
 async function takeScreenshot(page, screenshotDir, label) {
   try {
     await fs.ensureDir(screenshotDir);
     const filename = `${label}.png`;
     const filepath = path.join(screenshotDir, filename);
     await page.screenshot({ path: filepath, fullPage: false });
-    log$9.info(`Screenshot saved: ${filepath}`);
+    log$b.info(`Screenshot saved: ${filepath}`);
     return filepath;
   } catch (err) {
-    log$9.warn(`Screenshot failed (${label}): ${err.message}`);
+    log$b.warn(`Screenshot failed (${label}): ${err.message}`);
     return void 0;
   }
 }
@@ -251,7 +251,7 @@ async function checkHeroClarity(page) {
     return { passed: false, detail: "Check could not run" };
   }
 }
-const log$8 = scanRepository.createLogger("visualAnalyzer");
+const log$a = scanRepository.createLogger("visualAnalyzer");
 const NAVIGATE_TIMEOUT = 15e3;
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 LocalSEOScanner/1.0";
 async function runVisualAnalysis(browser, crawledPages, screenshotDir) {
@@ -267,7 +267,7 @@ async function runVisualAnalysis(browser, crawledPages, screenshotDir) {
   if (contactPage) targets.push({ crawledPage: contactPage, label: "contact", runChecks: false });
   if (servicePage) targets.push({ crawledPage: servicePage, label: "service", runChecks: false });
   if (targets.length === 0) {
-    log$8.warn("No pages available for visual analysis");
+    log$a.warn("No pages available for visual analysis");
     return { result: { pagesAnalyzed: [] }, findings: [] };
   }
   const context = await browser.newContext({
@@ -299,7 +299,7 @@ async function runVisualAnalysis(browser, crawledPages, screenshotDir) {
               hasTrustSignalsVisible: trust,
               hasHeroClarity: hero
             };
-            log$8.info(
+            log$a.info(
               `Visual checks [${label}]: cta=${cta.passed} phone=${phone.passed} trust=${trust.passed} hero=${hero.passed}`
             );
           } else {
@@ -325,13 +325,13 @@ async function runVisualAnalysis(browser, crawledPages, screenshotDir) {
           await page.close();
         }
       } catch (err) {
-        log$8.warn(`Visual analysis failed for ${label} (${url}): ${err.message}`);
+        log$a.warn(`Visual analysis failed for ${label} (${url}): ${err.message}`);
       }
     }
   } finally {
     await context.close();
   }
-  log$8.info(
+  log$a.info(
     `Visual analysis complete: ${pagesAnalyzed.length} page(s) analyzed, ${findings.length} finding(s)`
   );
   return { result: { pagesAnalyzed }, findings };
@@ -389,7 +389,7 @@ function buildFindings(analysis) {
   }
   return out;
 }
-const log$7 = scanRepository.createLogger("robots");
+const log$9 = scanRepository.createLogger("robots");
 const FETCH_TIMEOUT_MS$1 = 1e4;
 async function fetchRobots(siteUrl) {
   let robotsUrl;
@@ -405,17 +405,17 @@ async function fetchRobots(siteUrl) {
       headers: { "User-Agent": "LocalSEOScanner/1.0" }
     });
     if (!response.ok) {
-      log$7.info(`robots.txt not found at ${robotsUrl} (${response.status})`);
+      log$9.info(`robots.txt not found at ${robotsUrl} (${response.status})`);
       return emptyResult();
     }
     const text = await response.text();
     const result = parseRobots(text);
-    log$7.info(
+    log$9.info(
       `robots.txt found: disallowed=${result.disallowedPaths.length}, sitemaps=${result.sitemapUrls.length}`
     );
     return result;
   } catch (err) {
-    log$7.warn(`Failed to fetch robots.txt: ${err.message}`);
+    log$9.warn(`Failed to fetch robots.txt: ${err.message}`);
     return emptyResult();
   }
 }
@@ -460,7 +460,7 @@ function parseRobots(text) {
 function emptyResult() {
   return { found: false, disallowedPaths: [], sitemapUrls: [], allowsGooglebot: true };
 }
-const log$6 = scanRepository.createLogger("sitemap");
+const log$8 = scanRepository.createLogger("sitemap");
 const FETCH_TIMEOUT_MS = 1e4;
 const CANDIDATE_PATHS = [
   "/sitemap.xml",
@@ -488,7 +488,7 @@ async function fetchSitemap(siteUrl, robotsSitemapUrls = []) {
     } catch {
     }
   }
-  log$6.info("No sitemap found");
+  log$8.info("No sitemap found");
   return { found: false, urls: [] };
 }
 async function trySitemap(sitemapUrl) {
@@ -500,7 +500,7 @@ async function trySitemap(sitemapUrl) {
   const text = await response.text();
   if (!text.trim().startsWith("<")) return { found: false, urls: [] };
   const urls = parseSitemapXml(text);
-  log$6.info(`Sitemap found at ${sitemapUrl}: ${urls.length} URLs`);
+  log$8.info(`Sitemap found at ${sitemapUrl}: ${urls.length} URLs`);
   return { found: true, urls, sitemapUrl };
 }
 function parseSitemapXml(xml) {
@@ -518,7 +518,7 @@ function parseSitemapXml(xml) {
   }
   return [...new Set(urls)];
 }
-const log$5 = scanRepository.createLogger("fetchHtml");
+const log$7 = scanRepository.createLogger("fetchHtml");
 const PAGE_TIMEOUT_MS = 3e4;
 async function fetchHtml(url, context) {
   const page = await context.newPage();
@@ -530,10 +530,10 @@ async function fetchHtml(url, context) {
     const statusCode = response?.status() ?? 0;
     const finalUrl = page.url();
     const html = await page.content();
-    log$5.info(`Fetched ${url} → ${finalUrl} [${statusCode}]`);
+    log$7.info(`Fetched ${url} → ${finalUrl} [${statusCode}]`);
     return { requestedUrl: url, finalUrl, statusCode, html };
   } catch (err) {
-    log$5.warn(`Failed to fetch ${url}: ${err.message}`);
+    log$7.warn(`Failed to fetch ${url}: ${err.message}`);
     return { requestedUrl: url, finalUrl: url, statusCode: 0, html: "" };
   } finally {
     await page.close();
@@ -574,7 +574,7 @@ function shouldSkipUrl(url) {
   }
   return false;
 }
-const log$4 = scanRepository.createLogger("discoverUrls");
+const log$6 = scanRepository.createLogger("discoverUrls");
 const CRAWLER_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 LocalSEOScanner/1.0";
 async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
   const context = await browser.newContext({
@@ -587,7 +587,7 @@ async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
   const queue = [startUrl];
   const fetchedPages = [];
   const internalLinkGraph = {};
-  log$4.info(`Starting BFS crawl from ${startUrl} (maxPages=${maxPages}, domain=${domain})`);
+  log$6.info(`Starting BFS crawl from ${startUrl} (maxPages=${maxPages}, domain=${domain})`);
   try {
     while (queue.length > 0 && fetchedPages.length < maxPages) {
       const url = queue.shift();
@@ -595,11 +595,11 @@ async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
       visited.add(url);
       const result = await fetchHtml(url, context);
       if (result.statusCode === 0 && result.html === "") {
-        log$4.warn(`Skipping failed fetch: ${url}`);
+        log$6.warn(`Skipping failed fetch: ${url}`);
         continue;
       }
       if (result.html.trim() && !result.html.trim().startsWith("<")) {
-        log$4.warn(`Skipping non-HTML response: ${url}`);
+        log$6.warn(`Skipping non-HTML response: ${url}`);
         continue;
       }
       fetchedPages.push(result);
@@ -617,7 +617,7 @@ async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
   } finally {
     await context.close();
   }
-  log$4.info(
+  log$6.info(
     `Crawl complete: ${fetchedPages.length} pages fetched, ${Object.keys(internalLinkGraph).length} nodes in link graph`
   );
   return { fetchedPages, internalLinkGraph };
@@ -1963,7 +1963,7 @@ function buildQuickWins(findings) {
 function buildMoneyLeaks(findings) {
   return prioritizeFindings(findings).filter((f) => f.severity === "high").slice(0, 5).map((f) => f.summary);
 }
-const log$3 = scanRepository.createLogger("buildJsonReport");
+const log$5 = scanRepository.createLogger("buildJsonReport");
 async function buildJsonReport(result, jsonPath) {
   await fs.ensureDir(path.dirname(jsonPath));
   const slim = {
@@ -1971,7 +1971,7 @@ async function buildJsonReport(result, jsonPath) {
     pages: result.pages.map(({ html: _html, textContent: _tc, ...rest }) => rest)
   };
   await fs.writeJson(jsonPath, slim, { spaces: 2 });
-  log$3.info(`JSON report written: ${jsonPath}`);
+  log$5.info(`JSON report written: ${jsonPath}`);
   return jsonPath;
 }
 function scoreColor(value) {
@@ -2045,6 +2045,58 @@ function formatDate(iso) {
     return iso;
   }
 }
+function renderCompetitorSection(comp) {
+  const successfulSites = comp.competitors.filter((c) => !c.crawlError);
+  const siteRows = comp.competitors.map((c) => {
+    const status = c.crawlError ? `<span style="color:#dc2626">Error: ${escHtml(c.crawlError)}</span>` : `<span style="color:#16a34a">${c.pageCount} pages</span>`;
+    const boolCell = (v) => v ? `<span style="color:#16a34a;font-weight:700">✓</span>` : `<span style="color:#9ca3af">—</span>`;
+    return `
+      <tr>
+        <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;font-size:12px;font-family:monospace;word-break:break-all">${escHtml(c.domain)}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;font-size:12px;text-align:center">${status}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;text-align:center">${boolCell(c.hasLocalBusinessSchema)}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;text-align:center">${boolCell(c.hasPhone)}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;text-align:center">${boolCell(c.hasMap)}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;text-align:center">${boolCell(c.hasHours)}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;text-align:center">${boolCell(c.hasForm)}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;text-align:center">${c.servicePageCount}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;text-align:center">${c.avgWordCount > 0 ? c.avgWordCount : "—"}</td>
+      </tr>`;
+  }).join("");
+  const gapItems = comp.gaps.length > 0 ? comp.gaps.map((g) => `
+      <div style="background:#fffbeb;border-left:4px solid #d97706;border-radius:6px;padding:12px 16px;margin-bottom:10px">
+        <div style="font-weight:600;font-size:14px;margin-bottom:4px">${escHtml(g.title)}</div>
+        <p style="font-size:13px;color:#374151;margin-bottom:6px">${escHtml(g.description)}</p>
+        <p style="font-size:13px;color:#374151"><strong>Action:</strong> ${escHtml(g.recommendation)}</p>
+        <div style="font-size:11px;color:#6b7280;margin-top:4px">Competitors ahead: ${g.competitorDomains.map(escHtml).join(", ")}</div>
+      </div>`).join("") : `<p style="color:#16a34a;font-size:14px">✓ No significant gaps found — you match or exceed competitors on all measured signals.</p>`;
+  return `
+  <div class="section">
+    <h2>🏆 Competitor Gap Analysis</h2>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:16px">${successfulSites.length} of ${comp.competitors.length} competitor site${comp.competitors.length !== 1 ? "s" : ""} crawled successfully. Gaps shown where ≥60% of competitors have an advantage.</p>
+
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:10px">Competitor Signal Summary</h3>
+    <div style="overflow-x:auto;margin-bottom:20px">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#f8fafc">
+          <th style="text-align:left;padding:8px 12px;border-bottom:1px solid #e5e7eb">Domain</th>
+          <th style="padding:8px 12px;border-bottom:1px solid #e5e7eb">Status</th>
+          <th style="padding:8px 12px;border-bottom:1px solid #e5e7eb">Schema</th>
+          <th style="padding:8px 12px;border-bottom:1px solid #e5e7eb">Phone</th>
+          <th style="padding:8px 12px;border-bottom:1px solid #e5e7eb">Map</th>
+          <th style="padding:8px 12px;border-bottom:1px solid #e5e7eb">Hours</th>
+          <th style="padding:8px 12px;border-bottom:1px solid #e5e7eb">Form</th>
+          <th style="padding:8px 12px;border-bottom:1px solid #e5e7eb">Svc Pages</th>
+          <th style="padding:8px 12px;border-bottom:1px solid #e5e7eb">Avg Words</th>
+        </tr></thead>
+        <tbody>${siteRows}</tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:10px">Gaps to Close</h3>
+    ${gapItems}
+  </div>`;
+}
 const VISUAL_CHECK_LABELS = {
   hasHeroClarity: "Hero headline clarity",
   hasAboveFoldCta: "CTA above the fold",
@@ -2108,12 +2160,12 @@ function buildClientSummary(result) {
   const fastestWins = result.quickWins.slice(0, 5);
   return { whatIsHurtingVisibility, whatMayBeHurtingLeads, fastestWins };
 }
-const log$2 = scanRepository.createLogger("buildHtmlReport");
+const log$4 = scanRepository.createLogger("buildHtmlReport");
 async function buildHtmlReport(result, htmlPath) {
   await fs.ensureDir(path.dirname(htmlPath));
   const html = generateHtml(result);
   await fs.writeFile(htmlPath, html, "utf8");
-  log$2.info(`HTML report written: ${htmlPath}`);
+  log$4.info(`HTML report written: ${htmlPath}`);
   return htmlPath;
 }
 function generateHtml(r) {
@@ -2325,6 +2377,9 @@ function generateHtml(r) {
   <!-- Visual UX Analysis -->
   ${r.visual && r.visual.pagesAnalyzed.length > 0 ? renderVisualSection(r.visual) : ""}
 
+  <!-- Competitor Gap Analysis -->
+  ${r.competitor && r.competitor.competitors.length > 0 ? renderCompetitorSection(r.competitor) : ""}
+
   <!-- All findings -->
   <div class="section">
     <h2>All Issues Found (${r.findings.length} total)</h2>
@@ -2361,7 +2416,7 @@ function generateHtml(r) {
 </body>
 </html>`;
 }
-const log$1 = scanRepository.createLogger("lighthouse");
+const log$3 = scanRepository.createLogger("lighthouse");
 const CHROME_FLAGS = [
   "--headless=new",
   "--no-sandbox",
@@ -2377,17 +2432,18 @@ async function runLighthouse(url, fallbackChromiumPath) {
       chrome = await launch({ chromeFlags: CHROME_FLAGS, logLevel: "silent" });
     } catch {
       if (!fallbackChromiumPath) {
-        log$1.warn("System Chrome not found and no fallback path provided — skipping Lighthouse");
+        log$3.warn("System Chrome not found and no fallback path provided — skipping Lighthouse");
         return null;
       }
-      log$1.info(`System Chrome not found, using Playwright Chromium: ${fallbackChromiumPath}`);
+      log$3.info(`System Chrome not found, using Playwright Chromium: ${fallbackChromiumPath}`);
       chrome = await launch({
         chromePath: fallbackChromiumPath,
         chromeFlags: CHROME_FLAGS,
         logLevel: "silent"
       });
     }
-    log$1.info(`Chrome launched on port ${chrome.port}, running Lighthouse on ${url}`);
+    if (!chrome) return null;
+    log$3.info(`Chrome launched on port ${chrome.port}, running Lighthouse on ${url}`);
     const runnerResult = await lighthouse(url, {
       port: chrome.port,
       output: "json",
@@ -2403,7 +2459,7 @@ async function runLighthouse(url, fallbackChromiumPath) {
       }
     });
     if (!runnerResult?.lhr) {
-      log$1.warn("Lighthouse returned no result");
+      log$3.warn("Lighthouse returned no result");
       return null;
     }
     const { lhr } = runnerResult;
@@ -2423,17 +2479,17 @@ async function runLighthouse(url, fallbackChromiumPath) {
       cumulativeLayoutShift: lhr.audits?.["cumulative-layout-shift"]?.numericValue,
       speedIndex: audit("speed-index")
     };
-    log$1.info(
+    log$3.info(
       `Lighthouse complete: perf=${metrics.performanceScore} seo=${metrics.seoScore} a11y=${metrics.accessibilityScore}`
     );
     return metrics;
   } catch (err) {
-    log$1.warn(`Lighthouse run failed: ${err.message}`);
+    log$3.warn(`Lighthouse run failed: ${err.message}`);
     return null;
   } finally {
     if (chrome) {
       try {
-        await chrome.kill();
+        chrome.kill();
       } catch {
       }
     }
@@ -2556,6 +2612,308 @@ function analyzeLighthouse(metrics) {
   }
   return findings;
 }
+const log$2 = scanRepository.createLogger("competitorCrawler");
+const MAX_COMPETITOR_PAGES = 5;
+async function crawlCompetitor(url, browser) {
+  let normalizedUrl;
+  try {
+    normalizedUrl = normalizeInputUrl(url);
+  } catch {
+    return { pages: [], crawlError: `Invalid URL: ${url}` };
+  }
+  const domain = getDomain(normalizedUrl);
+  try {
+    const { fetchedPages } = await discoverUrls(
+      normalizedUrl,
+      browser,
+      MAX_COMPETITOR_PAGES,
+      domain
+    );
+    if (fetchedPages.length === 0) {
+      return { pages: [], crawlError: `No pages fetched from ${domain}` };
+    }
+    const pages = fetchedPages.filter((r) => r.html && r.html.trim().length > 0).map((raw) => {
+      const signals = extractAllSignals(raw.html, raw.finalUrl);
+      const pageType = classifyPage(raw.finalUrl, signals.title, signals.h1s, signals.h2s);
+      return {
+        url: raw.requestedUrl,
+        finalUrl: raw.finalUrl,
+        statusCode: raw.statusCode,
+        pageType,
+        title: signals.title,
+        metaDescription: signals.metaDescription,
+        h1s: signals.h1s,
+        h2s: signals.h2s,
+        canonical: signals.canonical,
+        noindex: signals.noindex,
+        phones: signals.phones,
+        emails: signals.emails,
+        hasAddress: signals.hasAddress,
+        hasMap: signals.hasMap,
+        hasHours: signals.hasHours,
+        hasForm: signals.hasForm,
+        ctaTexts: signals.ctaTexts,
+        schemaTypes: signals.schemaTypes,
+        hasTrustSignals: signals.hasTrustSignals,
+        testimonialCount: signals.testimonialCount,
+        wordCount: signals.wordCount,
+        imageCount: signals.imageCount,
+        missingAltCount: signals.missingAltCount
+      };
+    });
+    log$2.info(`Competitor ${domain}: crawled ${pages.length} page(s)`);
+    return { pages };
+  } catch (err) {
+    log$2.warn(`Competitor crawl failed for ${domain}: ${err.message}`);
+    return { pages: [], crawlError: err.message };
+  }
+}
+const LOCAL_BUSINESS_SCHEMA_TYPES = /* @__PURE__ */ new Set([
+  "LocalBusiness",
+  "ProfessionalService",
+  "HomeAndConstructionBusiness",
+  "FoodEstablishment",
+  "HealthAndBeautyBusiness",
+  "MedicalOrganization",
+  "AutoRepair",
+  "Restaurant"
+]);
+const EMPTY_SITE = (url, crawlError) => ({
+  url,
+  domain: getDomain(url),
+  crawlError,
+  pageCount: 0,
+  hasLocalBusinessSchema: false,
+  schemaTypes: [],
+  servicePageCount: 0,
+  locationPageCount: 0,
+  hasGalleryPage: false,
+  hasAboutPage: false,
+  hasContactPage: false,
+  hasPhone: false,
+  hasAddress: false,
+  hasMap: false,
+  hasHours: false,
+  hasTrustSignals: false,
+  avgWordCount: 0,
+  ctaCoverage: 0,
+  hasForm: false
+});
+function analyzeCompetitor(url, pages, crawlError) {
+  if (pages.length === 0) return EMPTY_SITE(url, crawlError);
+  const allSchemaTypes = [...new Set(pages.flatMap((p) => p.schemaTypes))];
+  const hasLocalBusinessSchema = allSchemaTypes.some((t) => LOCAL_BUSINESS_SCHEMA_TYPES.has(t));
+  const pagesWithCta = pages.filter((p) => p.ctaTexts.length > 0).length;
+  const totalWordCount = pages.reduce((sum, p) => sum + (p.wordCount ?? 0), 0);
+  return {
+    url,
+    domain: getDomain(url),
+    crawlError,
+    pageCount: pages.length,
+    hasLocalBusinessSchema,
+    schemaTypes: allSchemaTypes,
+    servicePageCount: pages.filter((p) => p.pageType === "service").length,
+    locationPageCount: pages.filter((p) => p.pageType === "location").length,
+    hasGalleryPage: pages.some((p) => p.pageType === "gallery"),
+    hasAboutPage: pages.some((p) => p.pageType === "about"),
+    hasContactPage: pages.some((p) => p.pageType === "contact"),
+    hasPhone: pages.some((p) => p.phones.length > 0),
+    hasAddress: pages.some((p) => p.hasAddress),
+    hasMap: pages.some((p) => p.hasMap),
+    hasHours: pages.some((p) => p.hasHours),
+    hasTrustSignals: pages.some((p) => p.hasTrustSignals),
+    avgWordCount: Math.round(totalWordCount / pages.length),
+    ctaCoverage: pagesWithCta / pages.length,
+    hasForm: pages.some((p) => p.hasForm)
+  };
+}
+const LOCAL_BUSINESS_SCHEMA = /* @__PURE__ */ new Set([
+  "LocalBusiness",
+  "ProfessionalService",
+  "HomeAndConstructionBusiness",
+  "FoodEstablishment",
+  "HealthAndBeautyBusiness",
+  "MedicalOrganization",
+  "AutoRepair",
+  "Restaurant"
+]);
+const GAP_THRESHOLD_FRACTION = 0.6;
+function threshold(successfulCount) {
+  return Math.max(1, Math.ceil(successfulCount * GAP_THRESHOLD_FRACTION));
+}
+function deriveClientSignals(clientUrl, clientPages) {
+  if (clientPages.length === 0) {
+    return {
+      domain: getDomain(clientUrl),
+      servicePageCount: 0,
+      locationPageCount: 0,
+      hasLocalBusinessSchema: false,
+      hasTrustSignals: false,
+      hasGalleryPage: false,
+      hasMap: false,
+      hasHours: false,
+      hasForm: false,
+      avgWordCount: 0,
+      ctaCoverage: 0
+    };
+  }
+  const totalWords = clientPages.reduce((s, p) => s + (p.wordCount ?? 0), 0);
+  const pagesWithCta = clientPages.filter((p) => p.ctaTexts.length > 0).length;
+  return {
+    domain: getDomain(clientUrl),
+    servicePageCount: clientPages.filter((p) => p.pageType === "service").length,
+    locationPageCount: clientPages.filter((p) => p.pageType === "location").length,
+    hasLocalBusinessSchema: clientPages.some(
+      (p) => p.schemaTypes.some((t) => LOCAL_BUSINESS_SCHEMA.has(t))
+    ),
+    hasTrustSignals: clientPages.some((p) => p.hasTrustSignals),
+    hasGalleryPage: clientPages.some((p) => p.pageType === "gallery"),
+    hasMap: clientPages.some((p) => p.hasMap),
+    hasHours: clientPages.some((p) => p.hasHours),
+    hasForm: clientPages.some((p) => p.hasForm),
+    avgWordCount: Math.round(totalWords / clientPages.length),
+    ctaCoverage: pagesWithCta / clientPages.length
+  };
+}
+function analyzeGaps(clientUrl, clientPages, competitors) {
+  const successful = competitors.filter((c) => c.pageCount > 0);
+  if (successful.length === 0) return [];
+  const t = threshold(successful.length);
+  const client = deriveClientSignals(clientUrl, clientPages);
+  const gaps = [];
+  if (client.servicePageCount === 0) {
+    const with_ = successful.filter((c) => c.servicePageCount >= 1);
+    if (with_.length >= t) {
+      gaps.push({
+        id: "comp-no-service-pages",
+        title: "Competitors have dedicated service pages — this site does not",
+        description: `${with_.length} of ${successful.length} competitor(s) have dedicated service pages that help rank for "[service] in [city]" searches.`,
+        competitorDomains: with_.map((c) => c.domain),
+        recommendation: "Create individual pages for each service you offer. Each page should target a specific service keyword and mention your city/service area."
+      });
+    }
+  }
+  if (client.locationPageCount === 0) {
+    const with_ = successful.filter((c) => c.locationPageCount >= 1);
+    if (with_.length >= t) {
+      gaps.push({
+        id: "comp-no-location-pages",
+        title: "Competitors target specific locations — this site does not",
+        description: `${with_.length} of ${successful.length} competitor(s) have location or service-area pages that capture geo-targeted search traffic.`,
+        competitorDomains: with_.map((c) => c.domain),
+        recommendation: 'Create a page for each city or area you cover (e.g., "/roofing-dallas-tx/") targeting "[service] [city]" searches.'
+      });
+    }
+  }
+  if (!client.hasLocalBusinessSchema) {
+    const with_ = successful.filter((c) => c.hasLocalBusinessSchema);
+    if (with_.length >= t) {
+      gaps.push({
+        id: "comp-no-local-schema",
+        title: "Competitors implement LocalBusiness schema — this site does not",
+        description: `${with_.length} of ${successful.length} competitor(s) use LocalBusiness JSON-LD structured data, which helps Google surface their business in local results.`,
+        competitorDomains: with_.map((c) => c.domain),
+        recommendation: "Add a LocalBusiness JSON-LD block to your homepage with your name, address, phone, hours, and business type."
+      });
+    }
+  }
+  if (!client.hasTrustSignals) {
+    const with_ = successful.filter((c) => c.hasTrustSignals);
+    if (with_.length >= t) {
+      gaps.push({
+        id: "comp-no-trust-signals",
+        title: "Competitors display trust signals — this site does not",
+        description: `${with_.length} of ${successful.length} competitor(s) show reviews, ratings, or credibility indicators that build visitor confidence.`,
+        competitorDomains: with_.map((c) => c.domain),
+        recommendation: "Add a reviews section, star ratings, or trust badges (licensed, insured, years in business) to your homepage."
+      });
+    }
+  }
+  if (!client.hasMap) {
+    const with_ = successful.filter((c) => c.hasMap);
+    if (with_.length >= t) {
+      gaps.push({
+        id: "comp-no-map",
+        title: "Competitors provide maps or directions — this site does not",
+        description: `${with_.length} of ${successful.length} competitor(s) include map embeds or directions links that reinforce local relevance and help mobile visitors.`,
+        competitorDomains: with_.map((c) => c.domain),
+        recommendation: 'Embed a Google Maps iframe on your contact page and add a "Get Directions" link.'
+      });
+    }
+  }
+  if (!client.hasHours) {
+    const with_ = successful.filter((c) => c.hasHours);
+    if (with_.length >= t) {
+      gaps.push({
+        id: "comp-no-hours",
+        title: "Competitors display business hours — this site does not",
+        description: `${with_.length} of ${successful.length} competitor(s) prominently display their hours, which is a conversion factor for visitors deciding when to call.`,
+        competitorDomains: with_.map((c) => c.domain),
+        recommendation: "Display your business hours on the homepage, contact page, and in the footer."
+      });
+    }
+  }
+  if (!client.hasForm) {
+    const with_ = successful.filter((c) => c.hasForm);
+    if (with_.length >= t) {
+      gaps.push({
+        id: "comp-no-contact-form",
+        title: "Competitors offer online contact forms — this site does not",
+        description: `${with_.length} of ${successful.length} competitor(s) have contact or quote request forms, providing a low-friction conversion path for visitors who prefer not to call.`,
+        competitorDomains: with_.map((c) => c.domain),
+        recommendation: 'Add a simple "Request a Quote" or contact form to capture leads who prefer to inquire online.'
+      });
+    }
+  }
+  const compsWithDeepContent = successful.filter(
+    (c) => c.avgWordCount > Math.max(client.avgWordCount * 1.5, 300)
+  );
+  if (compsWithDeepContent.length >= t && client.avgWordCount < 300) {
+    const competitorAvg = Math.round(
+      compsWithDeepContent.reduce((s, c) => s + c.avgWordCount, 0) / compsWithDeepContent.length
+    );
+    gaps.push({
+      id: "comp-thin-content",
+      title: "Competitor pages contain significantly more content",
+      description: `${compsWithDeepContent.length} of ${successful.length} competitor(s) average ${competitorAvg} words per page vs ${client.avgWordCount} on this site. Thinner pages are harder to rank for competitive keywords.`,
+      competitorDomains: compsWithDeepContent.map((c) => c.domain),
+      recommendation: "Expand your page content with detailed service descriptions, FAQs, and location information. Aim for 300–600 words per key page."
+    });
+  }
+  return gaps;
+}
+const log$1 = scanRepository.createLogger("competitorAnalysis");
+const MAX_COMPETITORS = 3;
+async function runCompetitorAnalysis(browser, clientUrl, clientPages, competitorUrls) {
+  const urls = [...new Set(competitorUrls)].slice(0, MAX_COMPETITORS);
+  log$1.info(`Starting competitor analysis: ${urls.length} competitor(s)`);
+  const results = await Promise.allSettled(
+    urls.map(async (url) => {
+      const { pages, crawlError } = await crawlCompetitor(url, browser);
+      let normalizedUrl = url;
+      try {
+        normalizedUrl = normalizeInputUrl(url);
+      } catch {
+      }
+      return analyzeCompetitor(normalizedUrl, pages, crawlError);
+    })
+  );
+  const competitors = results.map((result, i) => {
+    if (result.status === "fulfilled") return result.value;
+    const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
+    log$1.warn(`Competitor ${urls[i]} failed: ${reason}`);
+    return analyzeCompetitor(urls[i], [], reason);
+  });
+  const gaps = analyzeGaps(clientUrl, clientPages, competitors);
+  log$1.info(
+    `Competitor analysis complete: ${competitors.length} site(s) analyzed, ${competitors.filter((c) => c.pageCount > 0).length} successful, ${gaps.length} gap(s) found`
+  );
+  return {
+    analyzedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    competitors,
+    gaps
+  };
+}
 const log = scanRepository.createLogger("runAudit");
 async function runAudit(request, emitProgress) {
   log.info(`Starting audit for ${request.url}`);
@@ -2583,6 +2941,7 @@ async function runAudit(request, emitProgress) {
   let reportArtifacts = {};
   let lighthouseMetrics = [];
   let visualResult;
+  let competitorResult;
   let detectedBusinessType = request.businessType !== "auto" ? request.businessType : "other";
   try {
     emitProgress("Loading robots.txt…", 8);
@@ -2722,6 +3081,20 @@ async function runAudit(request, emitProgress) {
     log.info(
       `Scoring complete: tech=${techScore.value} local=${localScore.value} conv=${convScore.value} content=${contentScore.value} trust=${trustScore.value} overall=${scores.overall.value}`
     );
+    emitProgress("Analyzing competitors…", 94);
+    if (request.competitorUrls && request.competitorUrls.length > 0) {
+      try {
+        competitorResult = await runCompetitorAnalysis(
+          browser,
+          normalizedUrl,
+          crawledPages,
+          request.competitorUrls.slice(0, 3)
+        );
+        log.info(`Competitor analysis: ${competitorResult.competitors.length} sites, ${competitorResult.gaps.length} gaps`);
+      } catch (cErr) {
+        log.warn(`Competitor analysis skipped: ${cErr.message}`);
+      }
+    }
     emitProgress("Building reports…", 97);
     const jsonPath = index.buildJsonPath(scanId);
     const htmlPath = index.buildHtmlPath(scanId);
@@ -2738,6 +3111,7 @@ async function runAudit(request, emitProgress) {
       moneyLeaks: buildMoneyLeaks(allFindings),
       lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : void 0,
       visual: visualResult,
+      competitor: competitorResult,
       artifacts: { jsonPath, htmlPath, screenshotPaths: reportArtifacts.screenshotPaths }
     };
     await Promise.all([
@@ -2766,6 +3140,7 @@ async function runAudit(request, emitProgress) {
     moneyLeaks: buildMoneyLeaks(allFindings),
     lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : void 0,
     visual: visualResult,
+    competitor: competitorResult,
     artifacts: reportArtifacts
   };
 }

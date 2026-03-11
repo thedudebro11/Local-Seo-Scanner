@@ -14604,21 +14604,21 @@ function Badge({ variant = "default", children, style }) {
 }
 const CATEGORY_ORDER = [
   "technical",
-  "local",
+  "localSeo",
   "conversion",
   "content",
   "trust"
 ];
 const CATEGORY_LABELS = {
   technical: "Technical SEO",
-  local: "Local SEO",
+  localSeo: "Local SEO",
   conversion: "Conversion",
   content: "Content",
   trust: "Trust"
 };
 const CATEGORY_EMOJIS = {
   technical: "⚙",
-  local: "📍",
+  localSeo: "📍",
   conversion: "⚡",
   content: "📝",
   trust: "🛡"
@@ -14678,7 +14678,7 @@ function IssueList({ findings }) {
       acc[cat] = findings.filter((f2) => f2.category === cat);
       return acc;
     },
-    { technical: [], local: [], conversion: [], content: [], trust: [] }
+    { technical: [], localSeo: [], conversion: [], content: [], trust: [] }
   );
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.wrapper, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$5.sectionTitle, children: "Findings" }),

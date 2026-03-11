@@ -10,7 +10,7 @@ import type { AuditResult } from '../types/audit'
 import { createLogger } from '../utils/logger'
 import {
   scoreColor, renderScoreCard, renderFinding, renderBulletList,
-  categoryLabel, escHtml, formatDate, renderVisualSection,
+  categoryLabel, escHtml, formatDate, renderVisualSection, renderCompetitorSection,
 } from './reportTemplates'
 import { buildClientSummary } from './buildClientSummary'
 
@@ -240,6 +240,9 @@ function generateHtml(r: AuditResult): string {
 
   <!-- Visual UX Analysis -->
   ${r.visual && r.visual.pagesAnalyzed.length > 0 ? renderVisualSection(r.visual) : ''}
+
+  <!-- Competitor Gap Analysis -->
+  ${r.competitor && r.competitor.competitors.length > 0 ? renderCompetitorSection(r.competitor) : ''}
 
   <!-- All findings -->
   <div class="section">

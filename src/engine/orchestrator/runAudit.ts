@@ -7,9 +7,10 @@
  * Phase 5: All analyzers + businessTypeDetector → real findings.
  * Phase 6+: Scoring and report generation wired here.
  * Phase 9: Visual UX analysis (screenshots + above-the-fold checks).
+ * Phase 10: Competitor gap analysis (optional, manually provided URLs).
  */
 
-import type { AuditRequest, AuditResult, AuditScores, CrawledPage, VisualAnalysisResult } from '../types/audit'
+import type { AuditRequest, AuditResult, AuditScores, CrawledPage, VisualAnalysisResult, CompetitorAnalysisResult } from '../types/audit'
 import { normalizeInputUrl, getDomain } from '../utils/domain'
 import { generateScanId, getScreenshotsDir } from '../storage/pathResolver'
 import { runVisualAnalysis } from '../visual/visualAnalyzer'
@@ -39,6 +40,7 @@ import { saveScan } from '../storage/scanRepository'
 import { buildJsonPath, buildHtmlPath } from '../storage/pathResolver'
 import { runLighthouse } from '../lighthouse/runLighthouse'
 import { analyzeLighthouse } from '../lighthouse/lighthouseAnalyzer'
+import { runCompetitorAnalysis } from '../competitor'
 
 const log = createLogger('runAudit')
 
@@ -86,6 +88,7 @@ export async function runAudit(
   let reportArtifacts: AuditResult['artifacts'] = {}
   let lighthouseMetrics: import('../types/audit').LighthouseMetrics[] = []
   let visualResult: VisualAnalysisResult | undefined
+  let competitorResult: CompetitorAnalysisResult | undefined
   // Narrowed to non-auto; detectBusinessType() is guaranteed never to return 'auto'
   let detectedBusinessType = (
     request.businessType !== 'auto' ? request.businessType : 'other'
@@ -262,6 +265,22 @@ export async function runAudit(
       `Scoring complete: tech=${techScore.value} local=${localScore.value} conv=${convScore.value} content=${contentScore.value} trust=${trustScore.value} overall=${scores.overall.value}`,
     )
 
+    // ── 12. Competitor gap analysis (optional, best-effort) ───────────────
+    emitProgress('Analyzing competitors…', 94)
+    if (request.competitorUrls && request.competitorUrls.length > 0) {
+      try {
+        competitorResult = await runCompetitorAnalysis(
+          browser,
+          normalizedUrl,
+          crawledPages,
+          request.competitorUrls.slice(0, 3),
+        )
+        log.info(`Competitor analysis: ${competitorResult.competitors.length} sites, ${competitorResult.gaps.length} gaps`)
+      } catch (cErr) {
+        log.warn(`Competitor analysis skipped: ${(cErr as Error).message}`)
+      }
+    }
+
     // ── 10. Write JSON + HTML reports and persist to index ───────────────
     emitProgress('Building reports…', 97)
 
@@ -282,6 +301,7 @@ export async function runAudit(
       moneyLeaks: buildMoneyLeaks(allFindings),
       lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : undefined,
       visual: visualResult,
+      competitor: competitorResult,
       artifacts: { jsonPath, htmlPath, screenshotPaths: reportArtifacts.screenshotPaths },
     }
 
@@ -315,6 +335,7 @@ export async function runAudit(
     moneyLeaks: buildMoneyLeaks(allFindings),
     lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : undefined,
     visual: visualResult,
+    competitor: competitorResult,
     artifacts: reportArtifacts,
   }
 }

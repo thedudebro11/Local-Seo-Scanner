@@ -39,6 +39,8 @@ export interface AuditRequest {
   scanMode: ScanMode
   businessType: BusinessType
   maxPages: number
+  /** Up to 3 competitor URLs for gap analysis. Optional — main scan runs without them. */
+  competitorUrls?: string[]
 }
 
 // ─── Crawl ────────────────────────────────────────────────────────────────────
@@ -139,6 +141,7 @@ export interface AuditResult {
   moneyLeaks: string[]       // high-impact revenue issues
   lighthouse?: LighthouseMetrics[]
   visual?: VisualAnalysisResult
+  competitor?: CompetitorAnalysisResult
   artifacts: {
     jsonPath?: string
     htmlPath?: string
@@ -178,6 +181,51 @@ export interface VisualPageAnalysis {
 
 export interface VisualAnalysisResult {
   pagesAnalyzed: VisualPageAnalysis[]
+}
+
+// ─── Competitor Analysis ──────────────────────────────────────────────────────
+
+/**
+ * Signals extracted from a single competitor's crawled pages.
+ * crawlError is set (and all counts are 0) when the crawl failed completely.
+ */
+export interface CompetitorSite {
+  url: string
+  domain: string
+  crawlError?: string
+  pageCount: number
+  hasLocalBusinessSchema: boolean
+  schemaTypes: string[]
+  servicePageCount: number
+  locationPageCount: number
+  hasGalleryPage: boolean
+  hasAboutPage: boolean
+  hasContactPage: boolean
+  hasPhone: boolean
+  hasAddress: boolean
+  hasMap: boolean
+  hasHours: boolean
+  hasTrustSignals: boolean
+  avgWordCount: number
+  /** Fraction of crawled pages that contain CTA text (0–1) */
+  ctaCoverage: number
+  hasForm: boolean
+}
+
+/** A single opportunity the client site is missing relative to competitors. */
+export interface CompetitorGap {
+  id: string
+  title: string
+  description: string
+  /** Domains of competitors that have this advantage */
+  competitorDomains: string[]
+  recommendation: string
+}
+
+export interface CompetitorAnalysisResult {
+  analyzedAt: string
+  competitors: CompetitorSite[]
+  gaps: CompetitorGap[]
 }
 
 // ─── Analyzer output ─────────────────────────────────────────────────────────
