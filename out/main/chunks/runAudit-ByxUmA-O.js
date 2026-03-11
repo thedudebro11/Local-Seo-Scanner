@@ -23,10 +23,10 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const index = require("../index.js");
+const path = require("path");
+const fs = require("fs-extra");
 const scanRepository = require("./scanRepository-CxNMbKnN.js");
 const cheerio = require("cheerio/slim");
-const fs = require("fs-extra");
-const path = require("path");
 require("electron");
 function _interopNamespaceDefault(e) {
   const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
@@ -115,6 +115,279 @@ function stripTrackingParams(url) {
   } catch {
     return url;
   }
+}
+const log$9 = scanRepository.createLogger("captureScreenshots");
+async function takeScreenshot(page, screenshotDir, label) {
+  try {
+    await fs.ensureDir(screenshotDir);
+    const filename = `${label}.png`;
+    const filepath = path.join(screenshotDir, filename);
+    await page.screenshot({ path: filepath, fullPage: false });
+    log$9.info(`Screenshot saved: ${filepath}`);
+    return filepath;
+  } catch (err) {
+    log$9.warn(`Screenshot failed (${label}): ${err.message}`);
+    return void 0;
+  }
+}
+async function checkAboveFoldCta(page) {
+  try {
+    return await page.evaluate(() => {
+      const foldY = window.innerHeight;
+      const ctaRe = /\b(call now?|call today|book now?|book online|schedule|request (a )?quote|get (a )?(free )?quote|order now|contact us|get directions|get started|free estimate|speak to us|talk to us)\b/i;
+      const candidates = Array.from(
+        document.querySelectorAll('a[href], button, [role="button"]')
+      );
+      for (const el of candidates) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top >= foldY || rect.bottom <= 0) continue;
+        if (rect.width === 0 || rect.height === 0) continue;
+        const text = (el.innerText || el.textContent || "").trim();
+        if (ctaRe.test(text)) {
+          return { passed: true, detail: `CTA found: "${text.slice(0, 60)}"` };
+        }
+      }
+      return { passed: false, detail: "No strong CTA button or link above the fold" };
+    });
+  } catch {
+    return { passed: false, detail: "Check could not run" };
+  }
+}
+async function checkPhoneVisible(page) {
+  try {
+    return await page.evaluate(() => {
+      const foldY = window.innerHeight;
+      const phoneRe = /\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/;
+      const telLinks = Array.from(document.querySelectorAll('a[href^="tel:"]'));
+      for (const el of telLinks) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < foldY && rect.bottom > 0 && rect.width > 0 && rect.height > 0) {
+          return { passed: true, detail: "Phone tel: link visible above the fold" };
+        }
+      }
+      const containers = Array.from(
+        document.querySelectorAll(
+          'header, [class*="header"], [class*="top-bar"], [class*="topbar"], [class*="banner"], nav'
+        )
+      );
+      for (const el of containers) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top >= foldY || rect.bottom <= 0) continue;
+        const text = el.innerText || "";
+        if (phoneRe.test(text)) {
+          return { passed: true, detail: "Phone number visible in header/nav area" };
+        }
+      }
+      const all = Array.from(document.querySelectorAll("*"));
+      for (const el of all.slice(0, 300)) {
+        if (el.children.length > 0) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.top >= foldY || rect.bottom <= 0) continue;
+        if (rect.width === 0 || rect.height === 0) continue;
+        const text = (el.innerText || el.textContent || "").trim();
+        if (phoneRe.test(text) && text.length < 100) {
+          return { passed: true, detail: "Phone number text visible above the fold" };
+        }
+      }
+      return { passed: false, detail: "No phone number visible in first viewport" };
+    });
+  } catch {
+    return { passed: false, detail: "Check could not run" };
+  }
+}
+async function checkTrustSignals(page) {
+  try {
+    return await page.evaluate(() => {
+      const cutoffY = window.innerHeight * 2.5;
+      const trustRe = /\b(review|testimonial|\d[\d,]*\s*star|rated\s+\d|licensed|insured|bonded|guarantee|family[- ]owned|\d+\s*years?\s*(of\s*)?experience|certified|award|trusted|bbb|accredited)\b/i;
+      const all = Array.from(document.querySelectorAll("*"));
+      for (const el of all.slice(0, 500)) {
+        if (el.children.length > 2) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.top >= cutoffY || rect.bottom <= 0) continue;
+        if (rect.width === 0 || rect.height === 0) continue;
+        const text = (el.innerText || el.textContent || "").trim();
+        if (text.length > 400 || text.length === 0) continue;
+        if (trustRe.test(text)) {
+          const match = text.match(trustRe);
+          return { passed: true, detail: `Trust signal found: "${match?.[0]}"` };
+        }
+      }
+      return { passed: false, detail: "No trust signal keywords near top of page" };
+    });
+  } catch {
+    return { passed: false, detail: "Check could not run" };
+  }
+}
+async function checkHeroClarity(page) {
+  try {
+    return await page.evaluate(() => {
+      const foldY = window.innerHeight;
+      const h1List = Array.from(document.querySelectorAll("h1"));
+      for (const h of h1List) {
+        const rect = h.getBoundingClientRect();
+        if (rect.bottom <= 0 || rect.top >= foldY) continue;
+        const text = (h.innerText || h.textContent || "").trim();
+        const words2 = text.split(/\s+/).filter(Boolean).length;
+        if (words2 >= 3) {
+          return { passed: true, detail: `H1 above fold: "${text.slice(0, 80)}"` };
+        }
+        return {
+          passed: false,
+          detail: `H1 is too brief (${words2} word${words2 === 1 ? "" : "s"}): "${text.slice(0, 60)}"`
+        };
+      }
+      if (h1List.length === 0) {
+        return { passed: false, detail: "No H1 heading found on page" };
+      }
+      const h1Text = (h1List[0].innerText || h1List[0].textContent || "").trim();
+      const words = h1Text.split(/\s+/).filter(Boolean).length;
+      if (words >= 3) {
+        return { passed: false, detail: `H1 exists but is below the fold: "${h1Text.slice(0, 60)}"` };
+      }
+      return { passed: false, detail: `H1 is below the fold and too brief: "${h1Text.slice(0, 60)}"` };
+    });
+  } catch {
+    return { passed: false, detail: "Check could not run" };
+  }
+}
+const log$8 = scanRepository.createLogger("visualAnalyzer");
+const NAVIGATE_TIMEOUT = 15e3;
+const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 LocalSEOScanner/1.0";
+async function runVisualAnalysis(browser, crawledPages, screenshotDir) {
+  const pagesAnalyzed = [];
+  const findings = [];
+  const homepage2 = crawledPages.find((p) => p.pageType === "home") ?? crawledPages[0];
+  const contactPage = crawledPages.find((p) => p.pageType === "contact");
+  const servicePage = crawledPages.find(
+    (p) => ["service", "menu", "location"].includes(p.pageType)
+  );
+  const targets = [];
+  if (homepage2) targets.push({ crawledPage: homepage2, label: "homepage", runChecks: true });
+  if (contactPage) targets.push({ crawledPage: contactPage, label: "contact", runChecks: false });
+  if (servicePage) targets.push({ crawledPage: servicePage, label: "service", runChecks: false });
+  if (targets.length === 0) {
+    log$8.warn("No pages available for visual analysis");
+    return { result: { pagesAnalyzed: [] }, findings: [] };
+  }
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+    userAgent: USER_AGENT,
+    ignoreHTTPSErrors: true,
+    extraHTTPHeaders: { Accept: "text/html,application/xhtml+xml,*/*;q=0.8" }
+  });
+  try {
+    for (const { crawledPage, label, runChecks } of targets) {
+      const url = crawledPage.finalUrl;
+      try {
+        const page = await context.newPage();
+        try {
+          await page.goto(url, { waitUntil: "domcontentloaded", timeout: NAVIGATE_TIMEOUT });
+          const screenshotPath = await takeScreenshot(page, screenshotDir, label);
+          const screenshotFile = screenshotPath ? path.basename(screenshotPath) : void 0;
+          let checks;
+          if (runChecks) {
+            const [cta, phone, trust, hero] = await Promise.all([
+              checkAboveFoldCta(page),
+              checkPhoneVisible(page),
+              checkTrustSignals(page),
+              checkHeroClarity(page)
+            ]);
+            checks = {
+              hasAboveFoldCta: cta,
+              hasPhoneVisible: phone,
+              hasTrustSignalsVisible: trust,
+              hasHeroClarity: hero
+            };
+            log$8.info(
+              `Visual checks [${label}]: cta=${cta.passed} phone=${phone.passed} trust=${trust.passed} hero=${hero.passed}`
+            );
+          } else {
+            checks = {
+              hasAboveFoldCta: { passed: true, detail: "Not checked (homepage only)" },
+              hasPhoneVisible: { passed: true, detail: "Not checked (homepage only)" },
+              hasTrustSignalsVisible: { passed: true, detail: "Not checked (homepage only)" },
+              hasHeroClarity: { passed: true, detail: "Not checked (homepage only)" }
+            };
+          }
+          const analysis = {
+            url,
+            pageType: label,
+            screenshotPath,
+            screenshotFile,
+            checks
+          };
+          pagesAnalyzed.push(analysis);
+          if (runChecks) {
+            findings.push(...buildFindings(analysis));
+          }
+        } finally {
+          await page.close();
+        }
+      } catch (err) {
+        log$8.warn(`Visual analysis failed for ${label} (${url}): ${err.message}`);
+      }
+    }
+  } finally {
+    await context.close();
+  }
+  log$8.info(
+    `Visual analysis complete: ${pagesAnalyzed.length} page(s) analyzed, ${findings.length} finding(s)`
+  );
+  return { result: { pagesAnalyzed }, findings };
+}
+function buildFindings(analysis) {
+  const out = [];
+  const { checks, url } = analysis;
+  if (!checks.hasHeroClarity.passed) {
+    out.push({
+      id: "visual-no-hero-clarity",
+      category: "conversion",
+      severity: "medium",
+      title: "Hero section does not clearly communicate what the business offers",
+      summary: checks.hasHeroClarity.detail ?? "The above-the-fold headline is missing or too vague to tell visitors what to expect.",
+      whyItMatters: "Visitors decide whether to stay or leave within seconds. A clear H1 headline stating what you do, where you do it, and what to do next dramatically reduces bounce rates from local searches.",
+      recommendation: 'Write an H1 that answers three questions: What do you do? Where do you serve? What should the visitor do? Example: "Expert Roof Repairs in Dallas, TX — Call for a Free Estimate."',
+      affectedUrls: [url]
+    });
+  }
+  if (!checks.hasAboveFoldCta.passed) {
+    out.push({
+      id: "visual-no-above-fold-cta",
+      category: "conversion",
+      severity: "medium",
+      title: "No clear call-to-action visible above the fold",
+      summary: checks.hasAboveFoldCta.detail ?? "No prominent CTA button or link was detected in the first viewport.",
+      whyItMatters: "Visitors from local search are ready to act immediately. Without a visible CTA above the fold they must scroll or hunt for a way to contact you — most won't.",
+      recommendation: 'Place a high-contrast "Call Now" or "Book Online" button in the hero section, visible without scrolling. On mobile it should be large, tap-friendly, and linked to a tel: number.',
+      affectedUrls: [url]
+    });
+  }
+  if (!checks.hasPhoneVisible.passed) {
+    out.push({
+      id: "visual-no-phone-above-fold",
+      category: "conversion",
+      severity: "medium",
+      title: "Phone number not visible in the initial viewport",
+      summary: checks.hasPhoneVisible.detail ?? "No phone number was detected in the first screenful of the homepage.",
+      whyItMatters: "Mobile searchers expect to see a phone number immediately. If they have to scroll to find it, many will hit back and call a competitor.",
+      recommendation: "Add your phone number to the site header so it is always visible. Use a `tel:` link so mobile visitors can tap to call directly.",
+      affectedUrls: [url]
+    });
+  }
+  if (!checks.hasTrustSignalsVisible.passed) {
+    out.push({
+      id: "visual-no-trust-signals-visible",
+      category: "trust",
+      severity: "medium",
+      title: "No visible trust signals near the top of the homepage",
+      summary: checks.hasTrustSignalsVisible.detail ?? "No reviews, ratings, or credibility indicators were detected near the top of the page.",
+      whyItMatters: 'Trust signals (star ratings, review counts, "Licensed & Insured") reduce hesitation for first-time visitors. Their absence makes the site feel less credible than competitors who display them prominently.',
+      recommendation: "Add a trust bar below the hero section: number of Google reviews + star rating, years in business, license/insurance status, and any industry certifications.",
+      affectedUrls: [url]
+    });
+  }
+  return out;
 }
 const log$7 = scanRepository.createLogger("robots");
 const FETCH_TIMEOUT_MS$1 = 1e4;
@@ -1772,6 +2045,52 @@ function formatDate(iso) {
     return iso;
   }
 }
+const VISUAL_CHECK_LABELS = {
+  hasHeroClarity: "Hero headline clarity",
+  hasAboveFoldCta: "CTA above the fold",
+  hasPhoneVisible: "Phone visible above fold",
+  hasTrustSignalsVisible: "Trust signals near top"
+};
+function renderVisualSection(visual) {
+  const homepage2 = visual.pagesAnalyzed.find((p) => p.pageType === "homepage");
+  const screenshotCards = visual.pagesAnalyzed.filter((p) => p.screenshotFile).map((p) => {
+    const label = p.pageType.charAt(0).toUpperCase() + p.pageType.slice(1);
+    return `
+      <div class="screenshot-card">
+        <img class="screenshot-img" src="screenshots/${escHtml(p.screenshotFile)}"
+             alt="${label} screenshot"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <div class="screenshot-missing" style="display:none">Screenshot unavailable</div>
+        <div class="screenshot-label">${escHtml(label)}</div>
+      </div>`;
+  }).join("");
+  const checksRows = homepage2 ? Object.entries(homepage2.checks).map(([key, res]) => {
+    const label = VISUAL_CHECK_LABELS[key] ?? key;
+    const icon = res.passed ? "✓" : "✗";
+    const color = res.passed ? "#16a34a" : "#dc2626";
+    return `
+        <tr>
+          <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9">${escHtml(label)}</td>
+          <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;font-weight:700;color:${color}">${icon} ${res.passed ? "Pass" : "Fail"}</td>
+          <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#6b7280">${escHtml(res.detail ?? "")}</td>
+        </tr>`;
+  }).join("") : "";
+  return `
+  <div class="section">
+    <h2>🖥️ Visual UX Analysis</h2>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Above-the-fold checks on the homepage at 1280×800px. Screenshots are saved alongside this report.</p>
+    ${screenshotCards ? `<div class="screenshot-row">${screenshotCards}</div>` : ""}
+    ${checksRows ? `
+    <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:${screenshotCards ? "20px" : "0"}">
+      <thead><tr style="background:#f8fafc">
+        <th style="text-align:left;padding:8px 12px;border-bottom:1px solid #e5e7eb">Check</th>
+        <th style="text-align:left;padding:8px 12px;border-bottom:1px solid #e5e7eb">Result</th>
+        <th style="text-align:left;padding:8px 12px;border-bottom:1px solid #e5e7eb">Detail</th>
+      </tr></thead>
+      <tbody>${checksRows}</tbody>
+    </table>` : ""}
+  </div>`;
+}
 const VISIBILITY_CATEGORIES = /* @__PURE__ */ new Set(["technical", "localSeo", "content"]);
 const LEADS_CATEGORIES = /* @__PURE__ */ new Set(["conversion", "trust"]);
 function toVisibilityStatement(f) {
@@ -1898,6 +2217,13 @@ function generateHtml(r) {
     .lh-pill-val { font-size: 36px; font-weight: 800; line-height: 1; }
     .lh-pill-label { font-size: 12px; font-weight: 600; color: #6b7280; margin-top: 4px; }
 
+    /* Visual analysis screenshots */
+    .screenshot-row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .screenshot-card { flex: 1; min-width: 180px; max-width: 300px; }
+    .screenshot-img { width: 100%; border: 1px solid #e5e7eb; border-radius: 6px; display: block; }
+    .screenshot-missing { font-size: 12px; color: #9ca3af; font-style: italic; padding: 40px 0; text-align: center; border: 1px dashed #e5e7eb; border-radius: 6px; }
+    .screenshot-label { font-size: 12px; font-weight: 600; color: #374151; margin-top: 6px; text-align: center; }
+
     @media print {
       body { background: #fff; }
       .container { padding: 16px; }
@@ -1995,6 +2321,9 @@ function generateHtml(r) {
     </table>
   </div>`;
   })() : ""}
+
+  <!-- Visual UX Analysis -->
+  ${r.visual && r.visual.pagesAnalyzed.length > 0 ? renderVisualSection(r.visual) : ""}
 
   <!-- All findings -->
   <div class="section">
@@ -2253,6 +2582,7 @@ async function runAudit(request, emitProgress) {
   let scores = buildPlaceholderScores();
   let reportArtifacts = {};
   let lighthouseMetrics = [];
+  let visualResult;
   let detectedBusinessType = request.businessType !== "auto" ? request.businessType : "other";
   try {
     emitProgress("Loading robots.txt…", 8);
@@ -2340,6 +2670,27 @@ async function runAudit(request, emitProgress) {
     log.info(
       `Analyzers complete: ${allFindings.length} findings (tech=${technical.findings.length}, local=${localSeo.findings.length}, conv=${conversion.findings.length}, content=${content.findings.length}, trust=${trust.findings.length})`
     );
+    emitProgress("Capturing visual screenshots…", 89);
+    try {
+      const screenshotDir = index.getScreenshotsDir(scanId);
+      const { result: vResult, findings: vFindings } = await runVisualAnalysis(
+        browser,
+        crawledPages,
+        screenshotDir
+      );
+      visualResult = vResult;
+      allFindings = [...allFindings, ...vFindings];
+      const screenshotPaths = {};
+      for (const p of vResult.pagesAnalyzed) {
+        if (p.screenshotPath) screenshotPaths[p.pageType] = p.screenshotPath;
+      }
+      if (Object.keys(screenshotPaths).length > 0) {
+        reportArtifacts = { ...reportArtifacts, screenshotPaths };
+      }
+      log.info(`Visual analysis: ${vResult.pagesAnalyzed.length} page(s), ${vFindings.length} finding(s)`);
+    } catch (vErr) {
+      log.warn(`Visual analysis skipped: ${vErr.message}`);
+    }
     emitProgress("Running performance audit…", 90);
     try {
       const chromiumPath = chromium.executablePath();
@@ -2385,14 +2736,16 @@ async function runAudit(request, emitProgress) {
       scores,
       quickWins: buildQuickWins(allFindings),
       moneyLeaks: buildMoneyLeaks(allFindings),
-      artifacts: { jsonPath, htmlPath }
+      lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : void 0,
+      visual: visualResult,
+      artifacts: { jsonPath, htmlPath, screenshotPaths: reportArtifacts.screenshotPaths }
     };
     await Promise.all([
       buildJsonReport(partialResult, jsonPath),
       buildHtmlReport(partialResult, htmlPath)
     ]);
     await scanRepository.saveScan(partialResult);
-    reportArtifacts = { jsonPath, htmlPath };
+    reportArtifacts = { jsonPath, htmlPath, screenshotPaths: reportArtifacts.screenshotPaths };
     log.info(`Reports saved: ${jsonPath}`);
   } finally {
     await browser.close();
@@ -2412,6 +2765,7 @@ async function runAudit(request, emitProgress) {
     quickWins: buildQuickWins(allFindings),
     moneyLeaks: buildMoneyLeaks(allFindings),
     lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : void 0,
+    visual: visualResult,
     artifacts: reportArtifacts
   };
 }

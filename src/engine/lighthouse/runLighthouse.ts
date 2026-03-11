@@ -9,6 +9,7 @@
  * Returns null on any failure — callers treat Lighthouse as a best-effort step.
  */
 
+import type { LaunchedChrome } from 'chrome-launcher'
 import type { LighthouseMetrics } from '../types/audit'
 import { createLogger } from '../utils/logger'
 
@@ -34,7 +35,7 @@ export async function runLighthouse(
   const { launch } = await import('chrome-launcher') as typeof import('chrome-launcher')
   const { default: lighthouse } = await import('lighthouse') as { default: Function }
 
-  let chrome: { port: number; kill: () => Promise<void> } | null = null
+  let chrome: LaunchedChrome | null = null
 
   try {
     // Try auto-detecting system Chrome first; fall back to Playwright's Chromium
@@ -52,6 +53,10 @@ export async function runLighthouse(
         logLevel: 'silent',
       })
     }
+
+    // At this point chrome is always set: every non-null path above either assigned
+    // it or returned/threw. The explicit guard satisfies the type checker.
+    if (!chrome) return null
 
     log.info(`Chrome launched on port ${chrome.port}, running Lighthouse on ${url}`)
 
@@ -106,7 +111,7 @@ export async function runLighthouse(
     return null
   } finally {
     if (chrome) {
-      try { await chrome.kill() } catch { /* ignore */ }
+      try { chrome.kill() } catch { /* ignore */ }
     }
   }
 }

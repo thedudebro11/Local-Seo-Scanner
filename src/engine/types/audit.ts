@@ -138,10 +138,46 @@ export interface AuditResult {
   quickWins: string[]        // owner-friendly top action items (fast/easy)
   moneyLeaks: string[]       // high-impact revenue issues
   lighthouse?: LighthouseMetrics[]
+  visual?: VisualAnalysisResult
   artifacts: {
     jsonPath?: string
     htmlPath?: string
+    screenshotPaths?: Record<string, string>
   }
+}
+
+// ─── Visual Analysis ──────────────────────────────────────────────────────────
+
+export interface VisualCheckResult {
+  /** Whether the check passed (positive UX signal present). */
+  passed: boolean
+  /** Human-readable detail about what was found or not found. */
+  detail?: string
+}
+
+export interface VisualPageChecks {
+  /** Strong CTA button/link visible in first viewport */
+  hasAboveFoldCta: VisualCheckResult
+  /** Phone number or tel: link visible in first viewport */
+  hasPhoneVisible: VisualCheckResult
+  /** Trust keywords visible near top of page */
+  hasTrustSignalsVisible: VisualCheckResult
+  /** H1 / hero headline is present and descriptive above the fold */
+  hasHeroClarity: VisualCheckResult
+}
+
+export interface VisualPageAnalysis {
+  url: string
+  pageType: string
+  /** Absolute disk path of the captured screenshot */
+  screenshotPath?: string
+  /** Filename only (used for relative references in the HTML report) */
+  screenshotFile?: string
+  checks: VisualPageChecks
+}
+
+export interface VisualAnalysisResult {
+  pagesAnalyzed: VisualPageAnalysis[]
 }
 
 // ─── Analyzer output ─────────────────────────────────────────────────────────

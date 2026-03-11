@@ -26,7 +26,7 @@ export const SEVERITY_IMPACT: Record<Severity, number> = {
  */
 export const CATEGORY_WEIGHTS: Record<FindingCategory, number> = {
   technical:  0.25,
-  local:      0.30,
+  localSeo:      0.30,
   conversion: 0.25,
   content:    0.10,
   trust:      0.10,

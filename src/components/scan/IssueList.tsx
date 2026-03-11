@@ -9,12 +9,12 @@ interface Props {
 }
 
 const CATEGORY_ORDER: FindingCategory[] = [
-  'technical', 'local', 'conversion', 'content', 'trust',
+  'technical', 'localSeo', 'conversion', 'content', 'trust',
 ]
 
 const CATEGORY_LABELS: Record<FindingCategory, string> = {
   technical:  'Technical SEO',
-  local:      'Local SEO',
+  localSeo:   'Local SEO',
   conversion: 'Conversion',
   content:    'Content',
   trust:      'Trust',
@@ -22,7 +22,7 @@ const CATEGORY_LABELS: Record<FindingCategory, string> = {
 
 const CATEGORY_EMOJIS: Record<FindingCategory, string> = {
   technical:  '⚙',
-  local:      '📍',
+  localSeo:   '📍',
   conversion: '⚡',
   content:    '📝',
   trust:      '🛡',
@@ -106,7 +106,7 @@ export function IssueList({ findings }: Props): JSX.Element {
       acc[cat] = findings.filter((f) => f.category === cat)
       return acc
     },
-    { technical: [], local: [], conversion: [], content: [], trust: [] },
+    { technical: [], localSeo: [], conversion: [], content: [], trust: [] },
   )
 
   return (

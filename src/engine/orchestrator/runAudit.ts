@@ -6,11 +6,13 @@
  * Phase 4: All extractors (extractAllSignals).
  * Phase 5: All analyzers + businessTypeDetector → real findings.
  * Phase 6+: Scoring and report generation wired here.
+ * Phase 9: Visual UX analysis (screenshots + above-the-fold checks).
  */
 
-import type { AuditRequest, AuditResult, AuditScores, CrawledPage } from '../types/audit'
+import type { AuditRequest, AuditResult, AuditScores, CrawledPage, VisualAnalysisResult } from '../types/audit'
 import { normalizeInputUrl, getDomain } from '../utils/domain'
-import { generateScanId } from '../storage/pathResolver'
+import { generateScanId, getScreenshotsDir } from '../storage/pathResolver'
+import { runVisualAnalysis } from '../visual/visualAnalyzer'
 import { createLogger } from '../utils/logger'
 import { fetchRobots } from '../crawl/robots'
 import { fetchSitemap } from '../crawl/sitemap'
@@ -83,6 +85,7 @@ export async function runAudit(
   let scores: AuditScores = buildPlaceholderScores()
   let reportArtifacts: AuditResult['artifacts'] = {}
   let lighthouseMetrics: import('../types/audit').LighthouseMetrics[] = []
+  let visualResult: VisualAnalysisResult | undefined
   // Narrowed to non-auto; detectBusinessType() is guaranteed never to return 'auto'
   let detectedBusinessType = (
     request.businessType !== 'auto' ? request.businessType : 'other'
@@ -196,6 +199,30 @@ export async function runAudit(
       `Analyzers complete: ${allFindings.length} findings (tech=${technical.findings.length}, local=${localSeo.findings.length}, conv=${conversion.findings.length}, content=${content.findings.length}, trust=${trust.findings.length})`,
     )
 
+    // ── 8.5. Visual UX analysis (best-effort, non-blocking) ──────────────
+    emitProgress('Capturing visual screenshots…', 89)
+    try {
+      const screenshotDir = getScreenshotsDir(scanId)
+      const { result: vResult, findings: vFindings } = await runVisualAnalysis(
+        browser,
+        crawledPages,
+        screenshotDir,
+      )
+      visualResult = vResult
+      allFindings = [...allFindings, ...vFindings]
+      // Collect screenshot paths for artifact storage
+      const screenshotPaths: Record<string, string> = {}
+      for (const p of vResult.pagesAnalyzed) {
+        if (p.screenshotPath) screenshotPaths[p.pageType] = p.screenshotPath
+      }
+      if (Object.keys(screenshotPaths).length > 0) {
+        reportArtifacts = { ...reportArtifacts, screenshotPaths }
+      }
+      log.info(`Visual analysis: ${vResult.pagesAnalyzed.length} page(s), ${vFindings.length} finding(s)`)
+    } catch (vErr) {
+      log.warn(`Visual analysis skipped: ${(vErr as Error).message}`)
+    }
+
     // ── 9. Lighthouse performance audit (best-effort, non-blocking) ───────
     emitProgress('Running performance audit…', 90)
     try {
@@ -253,7 +280,9 @@ export async function runAudit(
       scores,
       quickWins: buildQuickWins(allFindings),
       moneyLeaks: buildMoneyLeaks(allFindings),
-      artifacts: { jsonPath, htmlPath },
+      lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : undefined,
+      visual: visualResult,
+      artifacts: { jsonPath, htmlPath, screenshotPaths: reportArtifacts.screenshotPaths },
     }
 
     await Promise.all([
@@ -262,7 +291,7 @@ export async function runAudit(
     ])
 
     await saveScan(partialResult)
-    reportArtifacts = { jsonPath, htmlPath }
+    reportArtifacts = { jsonPath, htmlPath, screenshotPaths: reportArtifacts.screenshotPaths }
     log.info(`Reports saved: ${jsonPath}`)
 
   } finally {
@@ -285,6 +314,7 @@ export async function runAudit(
     quickWins: buildQuickWins(allFindings),
     moneyLeaks: buildMoneyLeaks(allFindings),
     lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : undefined,
+    visual: visualResult,
     artifacts: reportArtifacts,
   }
 }

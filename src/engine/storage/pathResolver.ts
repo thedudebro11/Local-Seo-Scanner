@@ -39,6 +39,13 @@ export function getScanArtifactsDir(scanId: string): string {
 }
 
 /**
+ * Directory where visual analysis screenshots are saved for a scan.
+ */
+export function getScreenshotsDir(scanId: string): string {
+  return path.join(getScanArtifactsDir(scanId), 'screenshots')
+}
+
+/**
  * Full path for the raw JSON report file.
  */
 export function buildJsonPath(scanId: string): string {

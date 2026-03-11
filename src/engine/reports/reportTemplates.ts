@@ -3,7 +3,7 @@
  * All functions return raw HTML strings — no external dependencies.
  */
 
-import type { Finding, CategoryScore } from '../types/audit'
+import type { Finding, CategoryScore, VisualAnalysisResult } from '../types/audit'
 
 // ─── Score colors ─────────────────────────────────────────────────────────────
 
@@ -93,4 +93,64 @@ export function formatDate(iso: string): string {
   } catch {
     return iso
   }
+}
+
+// ─── Visual Analysis section ───────────────────────────────────────────────────
+
+const VISUAL_CHECK_LABELS: Record<string, string> = {
+  hasHeroClarity:           'Hero headline clarity',
+  hasAboveFoldCta:          'CTA above the fold',
+  hasPhoneVisible:          'Phone visible above fold',
+  hasTrustSignalsVisible:   'Trust signals near top',
+}
+
+export function renderVisualSection(visual: VisualAnalysisResult): string {
+  const homepage = visual.pagesAnalyzed.find((p) => p.pageType === 'homepage')
+
+  const screenshotCards = visual.pagesAnalyzed
+    .filter((p) => p.screenshotFile)
+    .map((p) => {
+      const label = p.pageType.charAt(0).toUpperCase() + p.pageType.slice(1)
+      return `
+      <div class="screenshot-card">
+        <img class="screenshot-img" src="screenshots/${escHtml(p.screenshotFile!)}"
+             alt="${label} screenshot"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <div class="screenshot-missing" style="display:none">Screenshot unavailable</div>
+        <div class="screenshot-label">${escHtml(label)}</div>
+      </div>`
+    })
+    .join('')
+
+  const checksRows = homepage
+    ? Object.entries(homepage.checks)
+        .map(([key, res]) => {
+          const label = VISUAL_CHECK_LABELS[key] ?? key
+          const icon  = res.passed ? '✓' : '✗'
+          const color = res.passed ? '#16a34a' : '#dc2626'
+          return `
+        <tr>
+          <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9">${escHtml(label)}</td>
+          <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;font-weight:700;color:${color}">${icon} ${res.passed ? 'Pass' : 'Fail'}</td>
+          <td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#6b7280">${escHtml(res.detail ?? '')}</td>
+        </tr>`
+        })
+        .join('')
+    : ''
+
+  return `
+  <div class="section">
+    <h2>🖥️ Visual UX Analysis</h2>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Above-the-fold checks on the homepage at 1280×800px. Screenshots are saved alongside this report.</p>
+    ${screenshotCards ? `<div class="screenshot-row">${screenshotCards}</div>` : ''}
+    ${checksRows ? `
+    <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:${screenshotCards ? '20px' : '0'}">
+      <thead><tr style="background:#f8fafc">
+        <th style="text-align:left;padding:8px 12px;border-bottom:1px solid #e5e7eb">Check</th>
+        <th style="text-align:left;padding:8px 12px;border-bottom:1px solid #e5e7eb">Result</th>
+        <th style="text-align:left;padding:8px 12px;border-bottom:1px solid #e5e7eb">Detail</th>
+      </tr></thead>
+      <tbody>${checksRows}</tbody>
+    </table>` : ''}
+  </div>`
 }

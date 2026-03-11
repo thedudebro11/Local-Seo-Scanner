@@ -11,7 +11,7 @@ function registerScanHandlers(mainWindow2) {
       }
     };
     try {
-      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-B8AtEE2D.js"));
+      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-ByxUmA-O.js"));
       const result = await runAudit(request, emitProgress);
       return result;
     } catch (err) {
@@ -63,6 +63,9 @@ function getReportsDir() {
 function getScanArtifactsDir(scanId) {
   return path.join(getReportsDir(), scanId);
 }
+function getScreenshotsDir(scanId) {
+  return path.join(getScanArtifactsDir(scanId), "screenshots");
+}
 function buildJsonPath(scanId) {
   return path.join(getScanArtifactsDir(scanId), "report.json");
 }
@@ -85,6 +88,7 @@ const pathResolver = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.define
   getIndexPath,
   getReportsDir,
   getScanArtifactsDir,
+  getScreenshotsDir,
   initReportsDir
 }, Symbol.toStringTag, { value: "Module" }));
 const isDev = process.env.NODE_ENV === "development";
@@ -153,3 +157,4 @@ exports.buildHtmlPath = buildHtmlPath;
 exports.buildJsonPath = buildJsonPath;
 exports.generateScanId = generateScanId;
 exports.getIndexPath = getIndexPath;
+exports.getScreenshotsDir = getScreenshotsDir;

@@ -10,7 +10,7 @@ import type { AuditResult } from '../types/audit'
 import { createLogger } from '../utils/logger'
 import {
   scoreColor, renderScoreCard, renderFinding, renderBulletList,
-  categoryLabel, escHtml, formatDate,
+  categoryLabel, escHtml, formatDate, renderVisualSection,
 } from './reportTemplates'
 import { buildClientSummary } from './buildClientSummary'
 
@@ -132,6 +132,13 @@ function generateHtml(r: AuditResult): string {
     .lh-pill-val { font-size: 36px; font-weight: 800; line-height: 1; }
     .lh-pill-label { font-size: 12px; font-weight: 600; color: #6b7280; margin-top: 4px; }
 
+    /* Visual analysis screenshots */
+    .screenshot-row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .screenshot-card { flex: 1; min-width: 180px; max-width: 300px; }
+    .screenshot-img { width: 100%; border: 1px solid #e5e7eb; border-radius: 6px; display: block; }
+    .screenshot-missing { font-size: 12px; color: #9ca3af; font-style: italic; padding: 40px 0; text-align: center; border: 1px dashed #e5e7eb; border-radius: 6px; }
+    .screenshot-label { font-size: 12px; font-weight: 600; color: #374151; margin-top: 6px; text-align: center; }
+
     @media print {
       body { background: #fff; }
       .container { padding: 16px; }
@@ -230,6 +237,9 @@ function generateHtml(r: AuditResult): string {
     </table>
   </div>`
   })() : ''}
+
+  <!-- Visual UX Analysis -->
+  ${r.visual && r.visual.pagesAnalyzed.length > 0 ? renderVisualSection(r.visual) : ''}
 
   <!-- All findings -->
   <div class="section">
