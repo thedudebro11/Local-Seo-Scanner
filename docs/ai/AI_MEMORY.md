@@ -4,7 +4,7 @@ Compact reference for AI assistants. Read this first when picking up any task in
 
 ## System Overview
 
-Desktop app: Electron 28 + React 18 + Vite 5 + TypeScript 5. Audits local business websites for SEO and conversion issues. Entry: user submits URL → Playwright crawls site → extractors parse HTML → analyzers generate findings → visual UX checks run → Lighthouse runs → impact enrichment → scoring → competitor analysis (optional) → JSON + HTML reports saved → results shown in UI.
+Desktop app: Electron 28 + React 18 + Vite 5 + TypeScript 5. Audits local business websites for SEO and conversion issues. Entry: user submits URL → `runAudit` (thin wrapper) → `runScanJob` pipeline (12 named stages) → crawl → extract → analyze → visual checks → Lighthouse → score → competitor (optional) → confidence → roadmap → revenue → reports saved → results shown in UI.
 
 ## Architecture Invariants (never violate these)
 
@@ -24,39 +24,41 @@ electron/preload.ts → out/preload/index.js   (CJS, Node externalized)
 src/index.html      → out/renderer/          (ESM browser bundle)
 ```
 
-## Scan Pipeline Summary (numbered steps)
+## Scan Pipeline Summary (12 stages in runScanJob.ts)
 
 ```
-1.  normalizeInputUrl(url)                   → 2%
-2.  chromium.launch()                        → 5%
-3.  fetchRobots(url)                         → 8%
-4.  fetchSitemap(url, robotsSitemapUrls)     → 12%
-5.  discoverUrls BFS (Playwright)            → 16–65%
-6.  extractAllSignals + classifyPage         → 66%
-7.  detectBusinessType                       → 72%
-8.  analyze* x5                              → 76–88%
-8.5 runVisualAnalysis (best-effort)          → 89%
-9.  runLighthouse (best-effort)              → 90%
-10. score* x5 + computeWeightedScore         → 92%
-10.5 enrichFindingsWithImpact + penalty      → (in step 10)
-11. prioritizeFindings                       → (in step 10)
-12. runCompetitorAnalysis (optional)         → 94%
-13. buildJsonReport + buildHtmlReport        → 97%
-14. saveScan (index.json)                    → 97%
-15. return AuditResult                       → 100%
+Stage 1:  validateStage       normalizeInputUrl, getDomain, generateScanId    → 2%
+Stage 2:  crawlStage          browser launch, robots, sitemap, BFS crawl      → 5–65%
+Stage 3:  extractStage        extractAllSignals, classifyPage, detectBizType  → 66–72%
+Stage 4:  analysisStage       5 analyzers → categoryFindings + allFindings    → 76–88%
+Stage 5:  visualStage*        screenshots + above-the-fold checks             → 89%
+Stage 6:  impactStage*        Lighthouse + enrichFindingsWithImpact + sort    → 90%
+Stage 7:  scoreStage          5 scorers + weighted overall (NO penalty)       → 92%
+Stage 8:  competitorStage*    runCompetitorAnalysis (skipped if no URLs)      → 94%
+Stage 9:  confidenceStage*    computeScoreConfidence                          → 95%
+Stage 10: roadmapStage*       buildFixRoadmap (up to 10 items)                → 96%
+Stage 11: revenueStage*       estimateRevenueImpact                           → 96%
+Stage 12: reportStage         buildJsonReport + buildHtmlReport + saveScan    → 97%
+          complete            browser.close() in finally block                → 100%
 ```
+*optional — failure is caught by runOptional(); scan completes with reduced output
 
 ## Key Files
 
 | File | Purpose |
 |---|---|
-| `src/engine/orchestrator/runAudit.ts` | Engine entry point |
-| `src/engine/types/audit.ts` | All core interfaces |
+| `src/engine/orchestrator/runAudit.ts` | Engine public API — thin wrapper around runScanJob |
+| `src/engine/pipeline/runScanJob.ts` | Pipeline orchestrator — 12 stages, browser lifecycle |
+| `src/engine/pipeline/types.ts` | ScanJobContext, createScanJobContext() |
+| `src/engine/types/audit.ts` | All core interfaces (incl. ScoreConfidence, FixRoadmapItem, RevenueImpactEstimate) |
 | `src/engine/types/ipc.ts` | IPC channels + ElectronAPI |
 | `src/engine/extractors/index.ts` | cheerio loaded once, all extractors run |
 | `src/engine/scoring/scoreHelpers.ts` | PENALTY constants, computeScore, scoreBand |
 | `src/engine/scoring/weightedFinalScore.ts` | Weights: tech 25%, local 30%, conv 25%, content 10%, trust 10% |
 | `src/engine/scoring/prioritizeFindings.ts` | impactScore = categoryWeight × severityWeight |
+| `src/engine/scoring/scoreConfidence.ts` | Scan completeness confidence (High/Medium/Low) |
+| `src/engine/roadmap/buildFixRoadmap.ts` | Priority fix roadmap builder |
+| `src/engine/revenue/estimateRevenueImpact.ts` | Heuristic revenue loss estimator |
 | `src/engine/storage/pathResolver.ts` | ONLY engine file importing Electron |
 | `src/features/scans/state/useScanStore.ts` | Zustand store — scan lifecycle |
 | `electron/ipc/scanHandlers.ts` | scan:start handler, emitProgress → webContents.send |
@@ -66,10 +68,13 @@ src/index.html      → out/renderer/          (ESM browser bundle)
 - Start at 100, deduct: high=20, medium=10, low=4
 - Bands: 85+ Strong, 70+ Solid, 55+ Needs Work, <55 Leaking Opportunity
 - Category weights (overall): tech 25%, localSeo 30%, conversion 25%, content 10%, trust 10%
+- Overall score = weighted category average — NO impact penalty applied (was removed; caused double-penalization)
 - prioritizeFindings sort key: CATEGORY_WEIGHT['localSeo'|'technical'|...] × SEVERITY_WEIGHT[severity]
-- Impact penalty: CRITICAL −12, HIGH −8, MEDIUM −4, LOW −1; capped at −30; applied to overall score only
 - quickWins: top 5 high/medium findings → `.recommendation`
 - moneyLeaks: top 5 high findings → `.summary`
+- scoreConfidence: High/Medium/Low based on completeness signals (page count, Lighthouse, visual, competitor)
+- roadmap: up to 10 FixRoadmapItem objects (cluster findings into strategic action items)
+- revenueImpact: heuristic lead/revenue loss range; confidence always 'Medium'
 
 ## All Finding Categories and IDs
 
@@ -107,4 +112,4 @@ src/index.html      → out/renderer/          (ESM browser bundle)
 
 ## Implementation Status
 
-All phases complete including Phase 9 (visual analysis), Phase 9+ (impact engine), Phase 10 (competitor analysis). Not implemented: Google APIs, international phone formats, sitemap seeding into BFS, auto-loading old scan results from disk in UI, competitor auto-discovery (stub only).
+All phases complete including Phase 9 (visual analysis), Phase 9+ (impact engine), Phase 10 (competitor analysis), Score Confidence, Priority Fix Roadmap, Revenue Impact Estimator, and Pipeline/Job Architecture Refactor. Not implemented: Google APIs, international phone formats, sitemap seeding into BFS, auto-loading old scan results from disk in UI, competitor auto-discovery (stub only).

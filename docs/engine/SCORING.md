@@ -223,17 +223,49 @@ Returns `{ impactLevel, impactReason, estimatedBusinessEffect }`. Rules are keye
 
 ### enrichFindingsWithImpact
 
-Spreads impact fields onto every Finding (non-destructive — returns new array). Called in `runAudit.ts` after all analyzers and Lighthouse have run but before `prioritizeFindings`.
+Spreads impact fields onto every Finding (non-destructive — returns new array). Called in `impactStage.ts` after all analyzers and Lighthouse have run but before `prioritizeFindings`.
 
-### computeImpactPenalty
+### computeImpactPenalty — REMOVED
+
+`computeImpactPenalty` was removed because it caused double-penalization of findings.
+
+**Root cause**: Category scores already reflect findings via the deduction model (start at 100, subtract per finding severity). Applying an additional impact penalty on top of the weighted overall score deducted the same issues twice. A site with category scores averaging ~89 but with CRITICAL/HIGH findings would see its overall score drop to ~59.
+
+**Fix**: The overall score is now the straight weighted category average with no additional penalty. Impact data still enriches every finding for display (impact badge, `impactLevel` field) and feeds the revenue estimator — it no longer adjusts the score.
+
+## Score Confidence
+
+`src/engine/scoring/scoreConfidence.ts` — computes `ScoreConfidence` metadata explaining how reliable the scan data is.
 
 ```typescript
-const IMPACT_PENALTY: Record<ImpactLevel, number> = {
-  CRITICAL: 12,
-  HIGH:      8,
-  MEDIUM:    4,
-  LOW:       1,
-}
+export function computeScoreConfidence(input: {
+  pages: CrawledPage[]
+  lighthouse?: LighthouseMetrics[]
+  visual?: VisualAnalysisResult
+  competitor?: CompetitorAnalysisResult
+}): ScoreConfidence
 ```
 
-Sums penalties across all enriched findings. Capped at −30 to prevent extreme score collapse. Applied only to `scores.overall.value` — category scores are not affected. This ensures the overall score reflects real business damage and not just issue count.
+Returns `{ level: 'High' | 'Medium' | 'Low', reason: string }`.
+
+| Signal | Points |
+|---|---|
+| 5+ pages crawled | 2 (1 if 2–4 pages, 0 if only 1 page) |
+| Homepage found | +1 |
+| Key secondary pages (contact/service/location) | 0–2 |
+| Lighthouse ran | +1 |
+| No error pages | +1 |
+| Visual analysis ran | +1 |
+| Competitor analysis ran | +1 |
+
+Thresholds: **High** ≥ 6 pts, **Medium** 3–5 pts, **Low** < 3 pts.
+
+## Priority Fix Roadmap
+
+`src/engine/roadmap/buildFixRoadmap.ts` — converts enriched findings into up to 10 `FixRoadmapItem` objects using 14 cluster definitions.
+
+Item score = `IMPACT_WEIGHT[impactLevel] + SEVERITY_SCORE[severity] + moneyLeak bonus + URL spread bonus`. Capped at 10 items.
+
+## Revenue Impact Estimator
+
+`src/engine/revenue/estimateRevenueImpact.ts` — translates issue severity into a heuristic lead/revenue loss estimate using a per-`BusinessType` lead value config table. Confidence is always capped at 'Medium'. Output always includes `assumptions[]` disclaimers.

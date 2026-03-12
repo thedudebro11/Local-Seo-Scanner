@@ -11,10 +11,12 @@
 5. Runs a Lighthouse performance audit
 6. Scores each category using a deduction-based model
 7. Enriches each finding with business impact estimation (impactLevel, impactReason, estimatedBusinessEffect)
-8. Applies an impact-weighted penalty to the overall score
-9. Optionally crawls up to 3 competitor sites and identifies gaps
-10. Writes JSON and HTML reports to disk
-11. Returns a complete `AuditResult`
+8. Optionally crawls up to 3 competitor sites and identifies gaps
+9. Computes scan confidence metadata (High/Medium/Low) based on completeness signals
+10. Builds a plain-English priority fix roadmap from enriched findings
+11. Estimates heuristic revenue/lead loss from detected issues
+12. Writes JSON and HTML reports to disk
+13. Returns a complete `AuditResult`
 
 ## What the Engine Does NOT Do
 
@@ -27,7 +29,9 @@
 
 ## Engine Entry Point
 
-`src/engine/orchestrator/runAudit.ts`
+**Public API**: `src/engine/orchestrator/runAudit.ts` — thin 24-line wrapper. Calls `runScanJob` from the pipeline.
+
+**Pipeline orchestrator**: `src/engine/pipeline/runScanJob.ts` — executes 12 named stages in order, manages browser lifecycle, and handles optional stage failures.
 
 ```typescript
 export async function runAudit(
@@ -40,77 +44,82 @@ The `emitProgress` callback is injected by the IPC handler. In the Electron cont
 
 ## Full Pipeline in Code Form
 
+The pipeline runs as 12 named stages. Required stages abort on failure; optional stages are wrapped in `runOptional()`.
+
 ```typescript
-// 1. Normalize URL
+// ── Required stages ──────────────────────────────────────────────────────
+// validateStage (2%)
 normalizedUrl = normalizeInputUrl(request.url)
 domain        = getDomain(normalizedUrl)
 scanId        = generateScanId(domain)
 
-// 2. Launch browser
-browser = await chromium.launch(...)
-
-// 3. Fetch robots.txt
-robotsResult = await fetchRobots(normalizedUrl)
-
-// 4. Fetch sitemap
+// crawlStage (5–65%)
+browser = await chromium.launch(...)        // stores chromiumPath for Lighthouse
+robotsResult  = await fetchRobots(normalizedUrl)
 sitemapResult = await fetchSitemap(normalizedUrl, robotsResult.sitemapUrls)
-
-// 5. BFS crawl
 { fetchedPages } = await discoverUrls(normalizedUrl, browser, maxPages, domain)
 
-// 6. Extract + classify
+// extractStage (66–72%)
 crawledPages = fetchedPages.map(raw => {
   const signals  = extractAllSignals(raw.html, raw.finalUrl)
   const pageType = classifyPage(raw.finalUrl, signals.title, signals.h1s, signals.h2s)
   return { ...raw, ...signals, pageType }
 })
-
-// 7. Detect business type
 detectedBusinessType = detectBusinessType(crawledPages, request.businessType)
 
-// 8. Run analyzers
+// analysisStage (76–88%)
 const analyzerInput = { pages: crawledPages, domain, robotsFound, sitemapFound, detectedBusinessType }
-technical = analyzeTechnical(analyzerInput)
-localSeo  = analyzeLocalSeo(analyzerInput)
-conversion= analyzeConversion(analyzerInput)
-content   = analyzeContent(analyzerInput)
-trust     = analyzeTrust(analyzerInput)
-allFindings = [...technical.findings, ...localSeo.findings, ...]
+categoryFindings = {
+  technical: analyzeTechnical(analyzerInput).findings,
+  localSeo:  analyzeLocalSeo(analyzerInput).findings,
+  conversion:analyzeConversion(analyzerInput).findings,
+  content:   analyzeContent(analyzerInput).findings,
+  trust:     analyzeTrust(analyzerInput).findings,
+}
+allFindings = [...all categoryFindings merged]
 
-// 8.5. Visual UX analysis (best-effort)
-{ result: visualResult, findings: vFindings } = await runVisualAnalysis(browser, crawledPages, screenshotDir)
+// ── Optional stages (browser still open) ─────────────────────────────────
+// visualStage (89%, optional)
+{ visualResult, findings: vFindings } = await runVisualAnalysis(browser, crawledPages, screenshotDir)
 allFindings = [...allFindings, ...vFindings]
 
-// 9. Lighthouse (best-effort)
-lhMetric = await runLighthouse(normalizedUrl, chromiumPath)
+// impactStage (90%, optional)
+lhMetric = await runLighthouse(normalizedUrl, chromiumPath)   // inner try/catch
 if (lhMetric) allFindings.push(...analyzeLighthouse(lhMetric))
-
-// 10. Score
-techScore    = scoreTechnical(...)
-localScore   = scoreLocalSeo(...)
-convScore    = scoreConversion(...)
-contentScore = scoreContent(...)
-trustScore   = scoreTrust(...)
-scores.overall = computeWeightedScore({ technical, localSeo, conversion, content, trust })
-
-// 10.5. Impact enrichment + score adjustment
 allFindings = enrichFindingsWithImpact(allFindings, detectedBusinessType)
-scores.overall.value -= computeImpactPenalty(allFindings)  // capped at -30
-
-// 11. Prioritize
 allFindings = prioritizeFindings(allFindings)
 
-// 12. Competitor analysis (optional, best-effort)
+// ── Required (score must succeed) ────────────────────────────────────────
+// scoreStage (92%)
+// NOTE: Scores use categoryFindings (NOT allFindings) — category scorers
+// must not see Lighthouse/visual findings from other categories.
+scores.overall = computeWeightedScore({ technical, localSeo, conversion, content, trust })
+// No impact penalty applied — the deduction model already reflects findings.
+
+// ── Optional (browser still open for competitor) ──────────────────────────
+// competitorStage (94%, optional)
 if (request.competitorUrls?.length) {
   competitorResult = await runCompetitorAnalysis(browser, normalizedUrl, crawledPages, competitorUrls)
 }
 
-// 13. Reports
+// ── Optional (browser no longer needed after competitorStage) ────────────
+// confidenceStage (95%, optional)
+scoreConfidence = computeScoreConfidence({ pages, lighthouse, visual, competitor })
+
+// roadmapStage (96%, optional)
+roadmap = buildFixRoadmap({ findings: allFindings, moneyLeaks })
+
+// revenueStage (96%, optional)
+revenueImpact = estimateRevenueImpact({ findings: allFindings, detectedBusinessType, scoreConfidence })
+
+// ── Required (write files) ────────────────────────────────────────────────
+// reportStage (97%)
 await buildJsonReport(result, jsonPath)
 await buildHtmlReport(result, htmlPath)
 await saveScan(result)
 
-// 14. Return
+// Complete (100%)
+browser.close()   // always in finally block
 return AuditResult
 ```
 
@@ -126,7 +135,7 @@ The `extractors` and `crawl` modules import `* as cheerio from 'cheerio/slim'` r
 
 ### Browser lifecycle ownership
 
-`runAudit` creates the Playwright browser and passes it to `discoverUrls`. The browser is always closed in a `finally` block in `runAudit`, regardless of whether the crawl or any later step threw an error.
+`crawlStage` creates the Playwright browser and stores it on `ScanJobContext`. The browser is always closed in a `finally` block in the pipeline orchestrator (`runScanJob.ts`), regardless of which stage succeeded or failed. The browser must remain open through `competitorStage` (the last stage to use it).
 
 ### Analyzer runs are synchronous
 

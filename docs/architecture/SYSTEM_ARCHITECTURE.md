@@ -42,26 +42,20 @@ Local SEO Scanner is a three-process Electron application. The renderer (React U
 │                                                                     │
 │  ENGINE  (src/engine/ — dynamic import, main process only)          │
 │                                                                     │
-│  orchestrator/runAudit.ts                                           │
-│    1. normalizeInputUrl          (utils/domain)                     │
-│    2. chromium.launch            (playwright)                       │
-│    3. fetchRobots                (crawl/robots)                     │
-│    4. fetchSitemap               (crawl/sitemap)                    │
-│    5. discoverUrls BFS           (crawl/discoverUrls)               │
-│    6. extractAllSignals          (extractors/index)                 │
-│    7. classifyPage               (crawl/classifyPage)               │
-│    8. detectBusinessType         (analyzers/businessTypeDetector)   │
-│    9. analyze* x5                (analyzers/*)                      │
-│   9.5 runVisualAnalysis          (visual/visualAnalyzer)            │
-│   10. runLighthouse              (lighthouse/runLighthouse)         │
-│   11. score* x5 + weighted       (scoring/*)                       │
-│   11.5 enrichFindingsWithImpact  (impactAnalyzer)                   │
-│   11.6 computeImpactPenalty      (impactAnalyzer)                   │
-│   12. prioritizeFindings         (scoring/prioritizeFindings)       │
-│   13. runCompetitorAnalysis      (competitor/index)                 │
-│   14. buildJsonReport            (reports/buildJsonReport)          │
-│   15. buildHtmlReport            (reports/buildHtmlReport)          │
-│   16. saveScan                   (storage/scanRepository)           │
+│  orchestrator/runAudit.ts  ──► pipeline/runScanJob.ts               │
+│    Stage 1:  validateStage       (utils/domain)                     │
+│    Stage 2:  crawlStage          (crawl/* + playwright)             │
+│    Stage 3:  extractStage        (extractors/* + analyzers/biz)     │
+│    Stage 4:  analysisStage       (analyzers/*)                      │
+│    Stage 5:  visualStage*        (visual/visualAnalyzer)            │
+│    Stage 6:  impactStage*        (lighthouse/* + impactAnalyzer)    │
+│    Stage 7:  scoreStage          (scoring/*)                        │
+│    Stage 8:  competitorStage*    (competitor/index)                 │
+│    Stage 9:  confidenceStage*    (scoring/scoreConfidence)          │
+│    Stage 10: roadmapStage*       (roadmap/buildFixRoadmap)          │
+│    Stage 11: revenueStage*       (revenue/estimateRevenueImpact)    │
+│    Stage 12: reportStage         (reports/* + storage/*)            │
+│    * optional — failure logged, scan continues                      │
 │                                                                     │
 │  STORAGE  (~/.../userData/reports/)                                 │
 │    index.json                    ─ SavedScanMeta[]                  │

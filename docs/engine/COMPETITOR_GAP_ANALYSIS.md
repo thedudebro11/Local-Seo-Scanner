@@ -89,23 +89,29 @@ interface CompetitorSite {
 
 ---
 
-## Wiring in runAudit.ts
+## Wiring in competitorStage.ts
+
+Competitor analysis runs as an optional stage in the pipeline (`src/engine/pipeline/stages/competitorStage.ts`):
 
 ```typescript
-// ── 12. Competitor gap analysis (optional, best-effort) ───────────────
-emitProgress('Analyzing competitors…', 94)
-if (request.competitorUrls && request.competitorUrls.length > 0) {
-  try {
-    competitorResult = await runCompetitorAnalysis(
-      browser, normalizedUrl, crawledPages, request.competitorUrls.slice(0, 3),
-    )
-  } catch (cErr) {
-    log.warn(`Competitor analysis skipped: ${(cErr as Error).message}`)
+// Stage 8 — competitorStage (94%) — optional
+export async function competitorStage(ctx, emit) {
+  if (!ctx.request.competitorUrls || ctx.request.competitorUrls.length === 0) {
+    log.info('Competitor stage skipped — no competitor URLs provided')
+    return
   }
+  if (!ctx.browser) {
+    log.warn('Competitor stage skipped — browser not available')
+    return
+  }
+  emit('Analyzing competitors…', 94)
+  ctx.competitorResult = await runCompetitorAnalysis(
+    ctx.browser, ctx.normalizedUrl, ctx.pages, ctx.request.competitorUrls.slice(0, 3),
+  )
 }
 ```
 
-The entire step is wrapped in try/catch. If it fails, `competitorResult` remains `undefined` and the report omits the section.
+The stage is wrapped by `runOptional()` in the orchestrator. If it throws, `ctx.competitorResult` remains `undefined` and the report omits the section.
 
 ---
 

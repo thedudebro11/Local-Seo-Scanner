@@ -95,7 +95,7 @@ Local Seo Engine/
 │       │   ├── contentAnalyzer.ts    Thin pages, service pages, location pages, content gaps
 │       │   └── trustAnalyzer.ts      HTTPS, testimonials, about page, gallery, trust language
 │       │
-│       ├── impactAnalyzer.ts     Business impact estimation — 38-rule engine, enrichFindingsWithImpact, computeImpactPenalty
+│       ├── impactAnalyzer.ts     Business impact estimation — 38-rule engine, enrichFindingsWithImpact
 │       │
 │       ├── scoring/
 │       │   ├── scoreHelpers.ts       PENALTY constants, computeScore, scoreBand, makeScore
@@ -105,11 +105,18 @@ Local Seo Engine/
 │       │   ├── scoreContent.ts       Content scorer with positive signals
 │       │   ├── scoreTrust.ts         Trust scorer with positive signals
 │       │   ├── weightedFinalScore.ts Combines 5 category scores with fixed weights
-│       │   └── prioritizeFindings.ts Sorts by impact, buildQuickWins, buildMoneyLeaks
+│       │   ├── prioritizeFindings.ts Sorts by impact, buildQuickWins, buildMoneyLeaks
+│       │   └── scoreConfidence.ts    Scan completeness confidence level (High/Medium/Low)
+│       │
+│       ├── roadmap/
+│       │   └── buildFixRoadmap.ts    Priority fix roadmap — clusters findings into strategic action items
+│       │
+│       ├── revenue/
+│       │   └── estimateRevenueImpact.ts  Heuristic lead/revenue loss estimate by business type
 │       │
 │       ├── reports/
 │       │   ├── buildJsonReport.ts    Writes AuditResult JSON (strips html/textContent)
-│       │   ├── buildHtmlReport.ts    Generates self-contained HTML report (13 sections)
+│       │   ├── buildHtmlReport.ts    Generates self-contained HTML report (16 sections)
 │       │   ├── reportTemplates.ts    HTML helpers: scoreColor, renderFinding, renderImpactSummarySection, renderCompetitorSection, renderVisualSection, escHtml
 │       │   └── buildClientSummary.ts Translates findings into plain-language summary sections (owner-focused, not competitor analysis)
 │       │
@@ -134,8 +141,25 @@ Local Seo Engine/
 │       │   ├── pathResolver.ts       initReportsDir, getReportsDir, getScreenshotsDir, buildJsonPath, buildHtmlPath, generateScanId (no Electron import — uses initReportsDir setter)
 │       │   └── scanRepository.ts     listSavedScans, loadScanById, saveScan, deleteScan
 │       │
+│       ├── pipeline/
+│       │   ├── runScanJob.ts         Pipeline orchestrator — 12 named stages, browser lifecycle, optional stage handling
+│       │   ├── types.ts              ScanJobContext, ScanStageResult<T>, createScanJobContext()
+│       │   └── stages/
+│       │       ├── validateStage.ts  Normalise URL, generate scanId (2%)
+│       │       ├── crawlStage.ts     Browser launch, robots, sitemap, BFS crawl (5–65%)
+│       │       ├── extractStage.ts   extractAllSignals, classifyPage, detectBusinessType (66–72%)
+│       │       ├── analysisStage.ts  5 analyzers → categoryFindings + allFindings (76–88%)
+│       │       ├── visualStage.ts    Screenshots + above-the-fold checks (89%, optional)
+│       │       ├── impactStage.ts    Lighthouse + enrichFindingsWithImpact + prioritize (90%, optional)
+│       │       ├── scoreStage.ts     5 scorers + weighted overall (92%, required)
+│       │       ├── competitorStage.ts Competitor crawl + gap analysis (94%, optional)
+│       │       ├── confidenceStage.ts Score confidence level (95%, optional)
+│       │       ├── roadmapStage.ts   Priority fix roadmap (96%, optional)
+│       │       ├── revenueStage.ts   Revenue impact estimate (96%, optional)
+│       │       └── reportStage.ts    JSON + HTML reports + saveScan + buildAuditResult (97%, required)
+│       │
 │       └── orchestrator/
-│           └── runAudit.ts           Engine entry point — full 15-step pipeline
+│           └── runAudit.ts           Engine public API — thin wrapper around runScanJob
 │
 ├── docs/                             All project documentation (this directory)
 │   ├── architecture/

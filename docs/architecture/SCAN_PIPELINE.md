@@ -2,17 +2,59 @@
 
 This document traces the complete journey from URL input to AuditResult returned to the UI.
 
-## Entry Point
+## Entry Points
 
-`src/engine/orchestrator/runAudit.ts` — `runAudit(request: AuditRequest, emitProgress: ProgressEmitter): Promise<AuditResult>`
+**Public API**: `src/engine/orchestrator/runAudit.ts` — thin 24-line wrapper. Calls `runScanJob` and re-exports `ProgressEmitter`.
+
+**Pipeline orchestrator**: `src/engine/pipeline/runScanJob.ts` — executes all 12 named stages in order, manages browser lifecycle, and assembles the final `AuditResult`.
+
+```typescript
+export async function runAudit(
+  request: AuditRequest,
+  emitProgress: ProgressEmitter,
+): Promise<AuditResult>
+```
 
 `emitProgress` is provided by the IPC scan handler (`electron/ipc/scanHandlers.ts`) and calls `mainWindow.webContents.send('scan:progress', event)` to push progress events to the renderer.
 
 ---
 
-## Step 1 — Validate and Normalize URL (2%)
+## Stage Architecture
 
-`emitProgress('Validating URL…', 2)`
+Each stage is a named async function in `src/engine/pipeline/stages/`:
+
+```
+src/engine/pipeline/
+├── runScanJob.ts          ← Orchestrator: required vs optional stage handling
+├── types.ts               ← ScanJobContext, ScanStageResult<T>, createScanJobContext()
+└── stages/
+    ├── validateStage.ts
+    ├── crawlStage.ts
+    ├── extractStage.ts
+    ├── analysisStage.ts
+    ├── visualStage.ts
+    ├── impactStage.ts
+    ├── scoreStage.ts
+    ├── competitorStage.ts
+    ├── confidenceStage.ts
+    ├── roadmapStage.ts
+    ├── revenueStage.ts
+    └── reportStage.ts
+```
+
+`ScanJobContext` is the mutable accumulator threaded through every stage. Required stages abort the job on failure; optional stages are wrapped in `runOptional()` — they log on failure and the scan completes with reduced output.
+
+### Required stages
+`validate → crawl → extract → analysis → score → report`
+
+### Optional stages
+`visual → impact → competitor → confidence → roadmap → revenue`
+
+---
+
+## Stage 1 — validateStage (2%)
+
+`emit('Validating URL…', 2)`
 
 Calls `normalizeInputUrl(request.url)` from `src/engine/utils/domain.ts`.
 
@@ -20,15 +62,15 @@ Calls `normalizeInputUrl(request.url)` from `src/engine/utils/domain.ts`.
 - Lowercases hostname
 - Strips trailing slash from pathname
 
-Throws `Error('Invalid URL: ...')` if the URL cannot be parsed. This propagates back to the renderer as a rejected IPC invoke.
+Also calls `getDomain(normalizedUrl)` and `generateScanId(domain)`. Stores `scanId`, `normalizedUrl`, `domain` on context.
 
-Also calls `getDomain(normalizedUrl)` and `generateScanId(domain)` to create the scan identifier.
+Throws `Error('Invalid URL: ...')` if the URL cannot be parsed. Propagates back to the renderer as a rejected IPC invoke.
 
 ---
 
-## Step 2 — Launch Playwright Browser (5%)
+## Stage 2 — crawlStage (5% → 65%)
 
-`emitProgress('Launching browser…', 5)`
+`emit('Launching browser…', 5)`
 
 Dynamic import of `playwright` (kept out of renderer bundle):
 
@@ -37,121 +79,43 @@ const { chromium } = await import('playwright')
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', ...] })
 ```
 
-**Can fail if**: Playwright Chromium is not installed. Playwright installs it on `npm install` via the `postinstall` script, but if `node_modules` was manually pruned this step will throw.
+Stores `browser` and `chromiumPath` on context. `chromiumPath` is used later by Lighthouse which runs in a separate Chrome process.
 
-The browser instance is closed in a `finally` block regardless of what happens in later steps.
+Then runs in sequence:
+- `fetchRobots(normalizedUrl)` (8%)
+- `fetchSitemap(normalizedUrl, robotsSitemapUrls)` (12%)
+- `discoverUrls BFS` (16–65%)
 
----
+**Can fail if**: Playwright Chromium is not installed.
 
-## Step 3 — Fetch robots.txt (8%)
-
-`emitProgress('Loading robots.txt…', 8)`
-
-`fetchRobots(normalizedUrl)` in `src/engine/crawl/robots.ts`.
-
-- Fetches `<origin>/robots.txt` using Node.js global `fetch` with a 10-second timeout
-- Parses `User-agent: *` and `User-agent: Googlebot` sections
-- Extracts `Disallow:` paths and `Sitemap:` URLs
-- Returns `{ found: boolean, disallowedPaths, sitemapUrls, allowsGooglebot }`
-
-**On failure**: Returns `{ found: false, ... }` — never throws. A missing robots.txt becomes a low-severity finding in the technical analyzer.
+The browser instance is created here and closed in the orchestrator's `finally` block regardless of which stage succeeds.
 
 ---
 
-## Step 4 — Discover Sitemap (12%)
+## Stage 3 — extractStage (66%)
 
-`emitProgress('Loading sitemap…', 12)`
-
-`fetchSitemap(normalizedUrl, robotsResult.sitemapUrls)` in `src/engine/crawl/sitemap.ts`.
-
-- Tries URLs from robots.txt Sitemap: directives first
-- Falls back to common paths: `/sitemap.xml`, `/sitemap_index.xml`, `/sitemap.php`, `/wp-sitemap.xml`, `/sitemap-index.xml`
-- Parses both `<urlset>` (regular sitemap) and `<sitemapindex>` (sitemap index) formats using `cheerio/slim` in XML mode
-- For sitemap index files, returns the child sitemap URLs (does not recursively fetch them)
-- Returns `{ found: boolean, urls: string[], sitemapUrl?: string }`
-
-**On failure**: Returns `{ found: false, urls: [] }`. A missing sitemap becomes a medium-severity finding.
-
----
-
-## Step 5 — BFS Crawl (16% → 65%)
-
-`emitProgress('Fetching homepage…', 16)`
-
-`discoverUrls(normalizedUrl, browser, request.maxPages, domain, onProgress)` in `src/engine/crawl/discoverUrls.ts`.
-
-The crawler creates a single `BrowserContext` (shared across all pages) with:
-- Custom user agent string identifying the scanner
-- `ignoreHTTPSErrors: true`
-- Media/font loading not disabled (headers only hint at preference)
-
-**BFS algorithm**:
-1. Start queue with `[startUrl]`
-2. While `queue.length > 0` and `fetchedPages.length < maxPages`:
-   a. Dequeue next URL, skip if already visited
-   b. `fetchHtml(url, context)` — Playwright page.goto with 30-second timeout, `waitUntil: 'domcontentloaded'`
-   c. Skip if statusCode 0 and empty HTML (network error)
-   d. Skip if response does not start with `<` (not HTML)
-   e. Push to `fetchedPages`
-   f. Extract internal links from HTML using `cheerio/slim`
-   g. Filter links via `normalizeCrawlerUrl` + `isSameDomain` + `shouldSkipUrl`
-   h. Add unseen links to queue
-
-**Link filtering** (`src/engine/crawl/normalizeUrl.ts`):
-- Resolves relative hrefs against the page's final URL
-- Strips tracking params (utm_*, fbclid, gclid, etc.)
-- Skips file extensions: pdf, jpg, png, gif, webp, svg, css, js, json, etc.
-- Skips path segments: /wp-admin, /wp-json, /cart, /checkout, /account, /login, /feed, /tag/, /author/, /page/
-
-**Same-domain check** (`isSameDomain`): Compares `new URL(a).hostname` to `new URL(b).hostname`. This is a strict hostname equality check, meaning `www.example.com` and `example.com` are treated as DIFFERENT domains. This is a known limitation — see [CURRENT_LIMITATIONS.md](../status/CURRENT_LIMITATIONS.md).
-
-Progress callback maps crawl progress to the 16–65% range:
-```typescript
-const ratio = Math.min(fetched / Math.max(request.maxPages, 1), 1)
-const pct = Math.round(16 + ratio * 49)
-```
-
-**Returns**: `{ fetchedPages: FetchHtmlResult[], internalLinkGraph: Record<string, string[]> }`
-
----
-
-## Step 6 — Extract Signals and Classify Pages (66%)
-
-`emitProgress('Extracting signals…', 66)`
+`emit('Extracting signals…', 66)` → `emit('Detecting business type…', 72)`
 
 For each `FetchHtmlResult` from the crawler:
-
-1. `extractAllSignals(raw.html, raw.finalUrl)` — loads `cheerio/slim` once, runs all 9 extractors, returns `ExtractedSignals`
+1. `extractAllSignals(raw.html, raw.finalUrl)` — loads `cheerio/slim` once, runs all 9 extractors
 2. `classifyPage(raw.finalUrl, signals.title, signals.h1s, signals.h2s)` — returns `PageType`
-3. Constructs a `CrawledPage` object combining crawl metadata, signals, and page type
 
-The resulting `crawledPages: CrawledPage[]` is used for all downstream analysis.
+Then `detectBusinessType(crawledPages, request.businessType)`.
 
----
-
-## Step 7 — Detect Business Type (72%)
-
-`emitProgress('Detecting business type…', 72)`
-
-`detectBusinessType(crawledPages, request.businessType)` in `src/engine/analyzers/businessTypeDetector.ts`.
-
-- If user selected anything other than `'auto'`, returns that selection immediately
-- If `'auto'`, builds a corpus from homepage title, H1s, URL, then all page titles/H1s, then first 1000 characters of homepage text content
-- Tests corpus against 6 regex rules in priority order: restaurant, salon, roofer, auto_shop, contractor, dentist
-- Returns `'other'` if no rule matches
+Stores `pages: CrawledPage[]` and `detectedBusinessType` on context.
 
 ---
 
-## Step 8 — Run All Five Analyzers (76% → 88%)
+## Stage 4 — analysisStage (76% → 88%)
 
 ```
-emitProgress('Analyzing technical SEO…', 76)
-emitProgress('Analyzing local SEO…', 80)
-emitProgress('Analyzing conversions…', 84)
-emitProgress('Analyzing content & trust…', 88)
+emit('Analyzing technical SEO…', 76)
+emit('Analyzing local SEO…', 80)
+emit('Analyzing conversions…', 84)
+emit('Analyzing content & trust…', 88)
 ```
 
-All five analyzers run synchronously (no async work needed — they operate on the already-crawled pages):
+All five analyzers run synchronously:
 
 ```typescript
 const [technical, localSeo, conversion, content, trust] = [
@@ -163,154 +127,175 @@ const [technical, localSeo, conversion, content, trust] = [
 ]
 ```
 
-Each returns `{ findings: Finding[], notes: string[] }`.
-
-The analyzer input is `AnalyzerInput`:
-```typescript
-{ pages, domain, robotsFound, sitemapFound, detectedBusinessType }
-```
-
-All findings are merged into `allFindings`.
+Stores `categoryFindings` (per-category arrays, used by scoreStage) and `allFindings` (merged, appended to by later stages) on context.
 
 ---
 
-## Step 8.5 — Visual UX Analysis (89%) — best-effort
+## Stage 5 — visualStage (89%) — optional
 
-`emitProgress('Capturing visual screenshots…', 89)`
+`emit('Capturing visual screenshots…', 89)`
 
 `runVisualAnalysis(browser, crawledPages, screenshotDir)` in `src/engine/visual/visualAnalyzer.ts`.
 
-Runs after analyzers while the Playwright browser is still open. Identifies the homepage and up to one contact/service page from `crawledPages`. For each target:
-1. Opens a fresh page at 1280×800px
-2. Takes a full-page screenshot saved to `<scanId>/screenshots/<label>.png`
-3. On the homepage only, runs four DOM checks via `page.evaluate()` (each self-contained, no Node.js closures):
-   - `checkAboveFoldCta` — looks for CTA button/link text above the fold
-   - `checkPhoneVisible` — looks for `tel:` link or phone number text above the fold
-   - `checkTrustSignals` — looks for trust keywords near the top
-   - `checkHeroClarity` — looks for a non-empty H1 above the fold
+Requires `ctx.browser` (still open at this point). Opens the homepage and up to one contact/service page at 1280×800px, takes full-page screenshots, and runs four DOM checks on the homepage:
+- `checkAboveFoldCta` — CTA button/link text above the fold
+- `checkPhoneVisible` — `tel:` link or phone number above the fold
+- `checkTrustSignals` — trust keywords near the top
+- `checkHeroClarity` — non-empty H1 above the fold
 
-Visual findings generated (all `severity: 'medium'`):
-- `visual-no-hero-clarity` (category: `conversion`)
-- `visual-no-above-fold-cta` (category: `conversion`)
-- `visual-no-phone-above-fold` (category: `conversion`)
-- `visual-no-trust-signals-visible` (category: `trust`)
+Visual findings (category `conversion` or `trust`, severity `medium`) are appended to `allFindings`. Stores `visualResult` and `screenshotPaths` on context.
 
-**This step is best-effort**: wrapped in try/catch. Any failure is logged and the scan continues without visual data.
-
-**Returns**: `{ result: VisualAnalysisResult, findings: Finding[] }`
+**Optional**: failure is caught by orchestrator; scan continues without visual data.
 
 ---
 
-## Step 9 — Lighthouse Performance Audit (90%)
+## Stage 6 — impactStage (90%) — optional
 
-`emitProgress('Running performance audit…', 90)`
+`emit('Running performance audit…', 90)`
 
-`runLighthouse(normalizedUrl, chromiumPath)` in `src/engine/lighthouse/runLighthouse.ts`.
+Two things run in this stage:
 
-- Both `lighthouse` and `chrome-launcher` are ESM-only packages — loaded via dynamic `import()`
-- Tries to launch system Chrome first; falls back to Playwright's bundled Chromium path
-- Audits performance, SEO, and accessibility categories on mobile form factor (412×823)
-- Returns `LighthouseMetrics | null`
+1. **Lighthouse** (inner try/catch): `runLighthouse(normalizedUrl, chromiumPath)`. If it succeeds, `analyzeLighthouse(metrics)` produces additional findings appended to `allFindings`. Stores result in `lighthouseMetrics`.
 
-**This step is best-effort**: any error is caught and logged as a warning. If Lighthouse fails or no Chrome is found, the scan continues without performance data.
+2. **Impact enrichment**: `enrichFindingsWithImpact(allFindings, detectedBusinessType)` adds three fields to every finding: `impactLevel` (CRITICAL / HIGH / MEDIUM / LOW), `impactReason`, `estimatedBusinessEffect`. Uses 38 specific finding-ID rules with category × severity fallback.
 
-If Lighthouse succeeds, `analyzeLighthouse(metrics)` converts metric values into additional `Finding` objects (with category `'technical'`):
-- `lh-performance-poor` / `lh-performance-needs-work` (perf score < 50 / < 70)
-- `lh-lcp-slow` / `lh-lcp-needs-work` (LCP > 4000ms / > 2500ms)
-- `lh-tbt-high` / `lh-tbt-medium` (TBT > 600ms / > 200ms)
-- `lh-cls-high` / `lh-cls-medium` (CLS > 0.25 / > 0.1)
-- `lh-seo-low` (SEO score < 80)
+3. **Prioritization**: `prioritizeFindings(allFindings)` sorts findings by `categoryWeight × severityWeight`, highest first.
 
-These findings are appended to `allFindings`.
+**Optional**: any failure is caught by orchestrator.
 
 ---
 
-## Step 10 — Score All Categories and Compute Overall (92%)
+## Stage 7 — scoreStage (92%) — required
 
-`emitProgress('Scoring results…', 92)`
+`emit('Scoring results…', 92)`
 
-Five category scorers run against their respective finding sets and the crawled pages:
+Five category scorers run against `ctx.categoryFindings` (NOT `allFindings`) to maintain scoring model accuracy:
 
 ```typescript
-const techScore    = scoreTechnical({ findings: technical.findings, pages, robotsFound, sitemapFound })
-const localScore   = scoreLocalSeo({ findings: localSeo.findings, pages })
-const convScore    = scoreConversion({ findings: conversion.findings, pages })
-const contentScore = scoreContent({ findings: content.findings, pages })
-const trustScore   = scoreTrust({ findings: trust.findings, pages, domain })
+const techScore    = scoreTechnical({ findings: categoryFindings.technical, pages, robotsFound, sitemapFound })
+const localScore   = scoreLocalSeo({ findings: categoryFindings.localSeo, pages })
+const convScore    = scoreConversion({ findings: categoryFindings.conversion, pages })
+const contentScore = scoreContent({ findings: categoryFindings.content, pages })
+const trustScore   = scoreTrust({ findings: categoryFindings.trust, pages, domain })
 ```
 
-Each scorer uses `makeScore(findings, positives)` from `scoreHelpers.ts`:
-- `computeScore`: starts at 100, deducts 20/10/4 per high/medium/low finding
-- `scoreBand`: maps value to 'Strong' / 'Solid' / 'Needs Work' / 'Leaking Opportunity'
+`computeWeightedScore(categoryScores)` combines with weights: Technical 25%, Local SEO 30%, Conversion 25%, Content 10%, Trust 10%.
 
-`computeWeightedScore(categoryScores)` combines the five scores with weights: Technical 25%, Local SEO 30%, Conversion 25%, Content 10%, Trust 10%.
+Also computes `quickWins` (top 5 recommendations from high/medium findings) and `moneyLeaks` (top 5 summaries from high findings).
 
-`enrichFindingsWithImpact(allFindings, detectedBusinessType)` in `src/engine/impactAnalyzer.ts` adds three fields to every finding: `impactLevel` (CRITICAL / HIGH / MEDIUM / LOW), `impactReason`, and `estimatedBusinessEffect`. Rules are keyed on 38 specific finding IDs with a category × severity fallback. This step runs before prioritization.
-
-`prioritizeFindings(allFindings)` sorts the enriched finding list by `categoryWeight × severityWeight` (highest first). Returns a new array.
-
-`computeImpactPenalty(allFindings)` sums impact-level deductions (CRITICAL −12, HIGH −8, MEDIUM −4, LOW −1), capped at −30 total, and subtracts the result from `scores.overall.value` only. Category scores are not affected.
+**Note**: The overall score is the weighted category average only. No impact penalty is applied — category scores already reflect findings via the deduction model.
 
 ---
 
----
+## Stage 8 — competitorStage (94%) — optional
 
-## Step 12 — Competitor Gap Analysis (94%) — optional, best-effort
+`emit('Analyzing competitors…', 94)`
 
-`emitProgress('Analyzing competitors…', 94)`
+Skipped when `request.competitorUrls` is empty or absent.
 
-Runs only if `request.competitorUrls` is non-empty. `runCompetitorAnalysis(browser, normalizedUrl, crawledPages, competitorUrls.slice(0,3))` in `src/engine/competitor/index.ts`.
+`runCompetitorAnalysis(browser, normalizedUrl, pages, competitorUrls.slice(0, 3))` in `src/engine/competitor/index.ts`.
 
-- Each competitor is crawled with `discoverUrls` (maxPages=5) — same BFS, different start URL
-- `analyzeCompetitor(url, pages)` converts each crawl into a `CompetitorSite` signal object
-- `analyzeGaps(clientUrl, clientPages, competitors)` identifies gaps where ≥ 60% of successful crawls have an advantage
-- `Promise.allSettled` isolates per-competitor failures
+Requires `ctx.browser` (still open at this point — this is the last stage to use the browser). Each competitor is crawled with `discoverUrls` (maxPages=5). `Promise.allSettled` isolates per-competitor failures.
 
-Result stored in `competitorResult: CompetitorAnalysisResult | undefined`.
+Stores `competitorResult` on context.
 
-**This step is best-effort**: wrapped in try/catch.
+**Optional**: failure is caught by orchestrator.
 
 ---
 
-## Step 13 — Build and Save Reports (97%)
+## Stage 9 — confidenceStage (95%) — optional
 
-`emitProgress('Building reports…', 97)`
+`emit('Computing score confidence…', 95)`
 
-Three things happen in parallel:
+`computeScoreConfidence({ pages, lighthouse, visual, competitor })` in `src/engine/scoring/scoreConfidence.ts`.
 
-1. `buildJsonReport(result, jsonPath)` — writes AuditResult as JSON with `html` and `textContent` stripped from pages (to keep file size reasonable)
+Computes a `ScoreConfidence` object with a `level` ('High' / 'Medium' / 'Low') and plain-English `reason` explaining how complete and reliable the scan data is.
+
+Scoring signals: page count (0–2 pts), homepage found (+1), key secondary pages (0–2 pts), Lighthouse ran (+1), no error pages (+1), visual analysis ran (+1), competitor analysis ran (+1). High ≥ 6, Medium 3–5, Low < 3.
+
+Stores `scoreConfidence` on context.
+
+**Optional**: failure is caught by orchestrator.
+
+---
+
+## Stage 10 — roadmapStage (96%) — optional
+
+`emit('Building fix roadmap…', 96)`
+
+`buildFixRoadmap({ findings, moneyLeaks })` in `src/engine/roadmap/buildFixRoadmap.ts`.
+
+Converts enriched findings into up to 10 `FixRoadmapItem` objects. Each item has a `title`, `whyItMatters`, `plainEnglishFix`, `impact` ('Critical'/'High'/'Medium'/'Low'), `effort` ('Low'/'Medium'/'High'), `category`, `affectedUrls`, and `sourceFindingIds`.
+
+14 cluster definitions group related findings into strategic action items. Items are ranked by `IMPACT_WEIGHT[impactLevel] + SEVERITY_SCORE[severity] + moneyLeak bonus + URL spread bonus`. Ungrouped high-scoring findings become individual items.
+
+Stores `roadmap: FixRoadmapItem[]` on context.
+
+**Optional**: failure is caught by orchestrator.
+
+---
+
+## Stage 11 — revenueStage (96%) — optional
+
+`emit('Estimating revenue impact…', 96)`
+
+`estimateRevenueImpact({ findings, detectedBusinessType, scoreConfidence })` in `src/engine/revenue/estimateRevenueImpact.ts`.
+
+Translates issue severity into a heuristic business impact estimate using a per-`BusinessType` lead value table (e.g., roofer: $800–$3000/lead, salon: $40–$200/lead). Returns:
+- `estimatedLeadLossRange` — low/high monthly lead loss estimate
+- `estimatedRevenueLossRange` — low/high monthly revenue loss (leadLoss × leadValue × conversion rate)
+- `impactDrivers` — top finding titles driving the estimate
+- `confidence` — always capped at 'Medium' by design
+- `assumptions` — 7 honesty disclaimers
+
+Stores `revenueImpact` on context.
+
+**Optional**: failure is caught by orchestrator.
+
+---
+
+## Stage 12 — reportStage (97%) — required
+
+`emit('Building reports…', 97)`
+
+Three things happen:
+
+1. `buildJsonReport(result, jsonPath)` — writes AuditResult as JSON with `html` and `textContent` stripped from pages
 2. `buildHtmlReport(result, htmlPath)` — writes a self-contained HTML report
 3. `saveScan(result)` — updates `index.json` with the new `SavedScanMeta` entry
 
-Paths are determined by `pathResolver.ts`:
-- `jsonPath` = `<userData>/reports/<scanId>/report.json`
-- `htmlPath` = `<userData>/reports/<scanId>/report.html`
+Paths: `<userData>/reports/<scanId>/report.json` and `<userData>/reports/<scanId>/report.html`
+
+Stores `artifacts` on context.
+
+**Required**: throws on failure.
 
 ---
 
-## Step 14 — Complete (100%)
+## Complete (100%)
 
-`emitProgress('Complete.', 100)`
+`emit('Complete.', 100)`
 
-The browser is closed (in the `finally` block) and `runAudit` returns the full `AuditResult`.
-
-The IPC invoke resolves in `scanHandlers.ts`, which resolves the `ipcRenderer.invoke` promise in `useScanStore.startScan`. The store sets `latestResult` and `isScanning: false`. The `NewScanPage` `useEffect` detects `latestResult` and navigates to `/scan/results/:id`.
+Browser is closed in the orchestrator's `finally` block (after all stages, regardless of failures). `buildAuditResult(ctx, jsonPath, htmlPath)` assembles and returns the final `AuditResult`.
 
 ---
 
 ## Error Handling Summary
 
-| Step | What happens on failure |
-|---|---|
-| URL validation | Throws — scan aborted, error shown in UI |
-| Browser launch | Throws — scan aborted |
-| robots.txt fetch | Returns safe default, continues |
-| Sitemap fetch | Returns safe default, continues |
-| Page fetch (individual) | Returns statusCode 0, skipped in crawl |
-| Signal extraction | Returns empty signals if HTML is empty |
-| Analyzers | Synchronous — TypeScript errors would surface at build time |
-| Lighthouse | Caught, logged as warning, skipped — scan continues |
-| Visual analysis | Caught, logged as warning, skipped — scan continues without visual data |
-| Competitor analysis | Caught, logged as warning, skipped — scan continues without competitor data |
-| Report writing | Throws — would propagate but browser is already closed |
-| Scan index write | Throws — would propagate |
+| Stage | Required? | What happens on failure |
+|---|---|---|
+| validate | Required | Throws — scan aborted, error shown in UI |
+| crawl (browser launch) | Required | Throws — scan aborted |
+| crawl (robots/sitemap) | — | Returns safe default, continues |
+| crawl (individual page) | — | Returns statusCode 0, skipped |
+| extract | Required | Throws — scan aborted |
+| analysis | Required | Throws — scan aborted |
+| visual | Optional | Logged as warning — scan continues without visual data |
+| impact (Lighthouse) | Optional | Inner try/catch — scan continues without Lighthouse data |
+| impact (enrichment) | Optional | Logged as warning — findings lose impact fields |
+| score | Required | Throws — scan aborted |
+| competitor | Optional | Logged as warning — scan continues without competitor data |
+| confidence | Optional | Logged as warning — scan completes without confidence metadata |
+| roadmap | Optional | Logged as warning — scan completes without roadmap |
+| revenue | Optional | Logged as warning — scan completes without revenue estimate |
+| report | Required | Throws — would propagate (browser already closed) |

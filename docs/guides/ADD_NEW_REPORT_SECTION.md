@@ -18,7 +18,7 @@ export interface AuditResult {
 }
 ```
 
-Then populate it in `runAudit.ts` before the `return` statement.
+Then populate it in a new pipeline stage (or extend an existing optional stage) in `src/engine/pipeline/stages/`.
 
 For this guide, we assume the data already exists in the crawled pages (e.g., `page.hasFacebook` added by a new extractor).
 
@@ -54,6 +54,7 @@ Sections are concatenated in the main template literal. Find the appropriate ins
 ```
 Header
 Overall score block
+Score Confidence block
 Category score cards
 What's Holding This Business Back   ← insert before or after here
 Revenue-Impacting Issues
@@ -62,6 +63,8 @@ Revenue-Impacting Issues
 ⚡ Page Speed & Core Web Vitals
 🖥️ Visual UX Analysis
 🏆 Competitor Gap Analysis
+💰 Revenue Impact Estimator
+🗺️ Priority Fix Roadmap
 All Issues Found                    ← or here
 Score Breakdown Detail
 Footer

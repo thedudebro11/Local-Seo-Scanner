@@ -1,6 +1,6 @@
 # Implementation Status
 
-All phases are complete, including three additional phases added after the original plan.
+All phases are complete, including additional phases added after the original plan.
 
 ## Phase Summary
 
@@ -17,6 +17,9 @@ All phases are complete, including three additional phases added after the origi
 | Phase 9 | Visual UX Analysis — Playwright screenshots + above-the-fold DOM checks | Done |
 | Phase 9+ | Impact Engine — business impact estimation layer for all findings | Done |
 | Phase 10 | Competitor Gap Analysis — crawl up to 3 competitors, identify gaps | Done |
+| Post-10a | Score Confidence + Priority Fix Roadmap + Revenue Impact Estimator | Done |
+| Post-10b | Pipeline/Job Architecture Refactor — named stages, ScanJobContext | Done |
+| Bug fix | Removed computeImpactPenalty — was double-penalizing findings in overall score | Done |
 
 ### Phase 9 — Visual UX Analysis
 
@@ -54,6 +57,30 @@ I implemented a full competitor crawl and gap analysis system in `src/engine/com
 - `gapAnalysis.ts` runs 8 gap checks; a gap fires when ≥ 60% of successful competitor crawls have an advantage the client lacks
 - Results appear in `AuditResult.competitor` and in the **🏆 Competitor Gap Analysis** HTML report section
 - If no URLs are provided the step is skipped entirely
+
+### Post-10a — Score Confidence + Priority Fix Roadmap + Revenue Impact Estimator
+
+Three new optional output layers added after Phase 10:
+
+- **Score Confidence** (`src/engine/scoring/scoreConfidence.ts`): `ScoreConfidence { level, reason }` — explains how reliable the scan data is based on completeness signals (page count, Lighthouse, visual, competitor). Added to `AuditResult.scoreConfidence`.
+
+- **Priority Fix Roadmap** (`src/engine/roadmap/buildFixRoadmap.ts`): Up to 10 `FixRoadmapItem` objects — clusters related findings into strategic plain-English action items ranked by impact score. Added to `AuditResult.roadmap`.
+
+- **Revenue Impact Estimator** (`src/engine/revenue/estimateRevenueImpact.ts`): `RevenueImpactEstimate` — heuristic lead/revenue loss estimate using per-business-type lead value config. Confidence always capped at 'Medium'. Added to `AuditResult.revenueImpact`.
+
+The HTML report gains three new sections: **Score Confidence block** (below overall score), **💰 Revenue Impact Estimator** section, and **🗺️ Priority Fix Roadmap** section.
+
+Also fixed a scoring bug: `computeImpactPenalty` was removed because it double-penalized findings — category scores already reflect findings via the deduction model, and applying an additional -30 to the overall was causing a ~89 weighted average to appear as ~59.
+
+### Post-10b — Pipeline/Job Architecture Refactor
+
+`runAudit.ts` was refactored from a monolithic 250-line function into a staged pipeline:
+
+- `src/engine/pipeline/runScanJob.ts` — orchestrator with required vs optional stage handling
+- `src/engine/pipeline/types.ts` — `ScanJobContext` mutable accumulator + `createScanJobContext()`
+- `src/engine/pipeline/stages/` — 12 named stage modules (validate, crawl, extract, analysis, visual, impact, score, competitor, confidence, roadmap, revenue, report)
+
+`runAudit.ts` is now a 24-line thin wrapper calling `runScanJob`. The public API is unchanged.
 
 ## Feature-Level Status
 
@@ -111,8 +138,11 @@ I implemented a full competitor crawl and gap analysis system in `src/engine/com
 | Trust scorer | Done | `src/engine/scoring/scoreTrust.ts` | |
 | Weighted final score | Done | `src/engine/scoring/weightedFinalScore.ts` | |
 | Finding prioritization | Done | `src/engine/scoring/prioritizeFindings.ts` | quickWins, moneyLeaks |
+| Score confidence | Done | `src/engine/scoring/scoreConfidence.ts` | High/Medium/Low + reason |
+| Fix roadmap builder | Done | `src/engine/roadmap/buildFixRoadmap.ts` | 14 clusters, up to 10 items |
+| Revenue impact estimator | Done | `src/engine/revenue/estimateRevenueImpact.ts` | Per-business-type lead value table |
 | JSON report builder | Done | `src/engine/reports/buildJsonReport.ts` | |
-| HTML report builder | Done | `src/engine/reports/buildHtmlReport.ts` | Self-contained, print-friendly |
+| HTML report builder | Done | `src/engine/reports/buildHtmlReport.ts` | Self-contained, print-friendly, 16 sections |
 | Report templates | Done | `src/engine/reports/reportTemplates.ts` | |
 | Client summary builder | Done | `src/engine/reports/buildClientSummary.ts` | |
 | Lighthouse runner | Done | `src/engine/lighthouse/runLighthouse.ts` | Best-effort, skips if no Chrome |
@@ -126,7 +156,9 @@ I implemented a full competitor crawl and gap analysis system in `src/engine/com
 | ScanForm competitor inputs | Done | `src/components/scan/ScanForm.tsx` | 3 optional URL fields |
 | Path resolver | Done | `src/engine/storage/pathResolver.ts` | Uses Electron userData |
 | Scan repository | Done | `src/engine/storage/scanRepository.ts` | list, load, save, delete |
-| Audit orchestrator | Done | `src/engine/orchestrator/runAudit.ts` | Full 15-step pipeline |
+| Pipeline orchestrator | Done | `src/engine/pipeline/runScanJob.ts` | 12 named stages, ScanJobContext |
+| Pipeline stage modules | Done | `src/engine/pipeline/stages/` | validate, crawl, extract, analysis, visual, impact, score, competitor, confidence, roadmap, revenue, report |
+| Audit entry point | Done | `src/engine/orchestrator/runAudit.ts` | Thin wrapper around runScanJob |
 
 ## Not Implemented
 

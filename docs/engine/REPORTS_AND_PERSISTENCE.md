@@ -68,27 +68,33 @@ The report renders in this order:
 
 2. **Overall score block** — Large numeric score with color, band label, and finding count summary
 
-3. **Category score cards** — 5 cards in a grid: Local SEO, Technical SEO, Conversion, Content, Trust
+3. **Score Confidence block** (conditional — shown if `scoreConfidence` is present) — Inline badge showing High/Medium/Low with plain-English reason
 
-4. **What's Holding This Business Back** (conditional) — Two-column grid: "Hurting Google Visibility" / "Hurting Lead Capture". Built by `buildClientSummary()`
+4. **Category score cards** — 5 cards in a grid: Local SEO, Technical SEO, Conversion, Content, Trust
 
-5. **Revenue-Impacting Issues** (conditional) — Red-bordered section with top 5 money leak summaries
+5. **What's Holding This Business Back** (conditional) — Two-column grid: "Hurting Google Visibility" / "Hurting Lead Capture". Built by `buildClientSummary()`
 
-6. **🚨 Revenue Impact Summary** (conditional — shown if any finding has an `impactLevel`) — Purple-bordered section. Groups all findings by impact level (CRITICAL / HIGH / MEDIUM / LOW) with counts and top issue descriptions. Built by `renderImpactSummarySection()`
+6. **Revenue-Impacting Issues** (conditional) — Red-bordered section with top 5 money leak summaries
 
-7. **✅ Quick Wins** (conditional) — Green-bordered section with the top 5 quick win recommendations
+7. **🚨 Revenue Impact Summary** (conditional — shown if any finding has an `impactLevel`) — Purple-bordered section. Groups all findings by impact level (CRITICAL / HIGH / MEDIUM / LOW) with counts and top issue descriptions. Built by `renderImpactSummarySection()`
 
-8. **⚡ Page Speed & Core Web Vitals** (conditional — shown if Lighthouse ran) — Performance, SEO, Accessibility scores; FCP, LCP, TBT, CLS, Speed Index table
+8. **✅ Quick Wins** (conditional) — Green-bordered section with the top 5 quick win recommendations
 
-9. **🖥️ Visual UX Analysis** (conditional — shown if visual analysis ran) — Screenshot row + above-the-fold check results table. Built by `renderVisualSection()`
+9. **⚡ Page Speed & Core Web Vitals** (conditional — shown if Lighthouse ran) — Performance, SEO, Accessibility scores; FCP, LCP, TBT, CLS, Speed Index table
 
-10. **🏆 Competitor Gap Analysis** (conditional — shown if competitor URLs were provided) — Signal comparison table per competitor + gaps list. Built by `renderCompetitorSection()`
+10. **🖥️ Visual UX Analysis** (conditional — shown if visual analysis ran) — Screenshot row + above-the-fold check results table. Built by `renderVisualSection()`
 
-11. **All Issues Found** — All findings grouped by category. Each finding card now shows severity badge, title, summary, "Why it matters", "What to do", affected URLs, **and an impact badge with reason and business effect**
+11. **🏆 Competitor Gap Analysis** (conditional — shown if competitor URLs were provided) — Signal comparison table per competitor + gaps list. Built by `renderCompetitorSection()`
 
-12. **Score Breakdown Detail** — All 5 category scores with rationale bullet points
+12. **💰 Revenue Impact Estimator** (conditional — shown if `revenueImpact` is present) — Estimated monthly lead/revenue loss range, impact drivers, and assumptions list. Built by `renderRevenueImpact()`
 
-13. **Footer** — Generator credit, date, scan ID
+13. **🗺️ Priority Fix Roadmap** (conditional — shown if `roadmap` is present) — Up to 10 numbered action items with title, impact badge, effort badge, plain-English fix, and affected URLs. Built by `renderRoadmapItem()`
+
+14. **All Issues Found** — All findings grouped by category. Each finding card shows severity badge, title, summary, "Why it matters", "What to do", affected URLs, **and an impact badge with reason and business effect**
+
+15. **Score Breakdown Detail** — All 5 category scores with rationale bullet points
+
+16. **Footer** — Generator credit, date, scan ID
 
 ### reportTemplates.ts
 
@@ -106,6 +112,8 @@ Helper functions used by `buildHtmlReport`:
 | `renderImpactSummarySection(findings)` | Returns the Revenue Impact Summary section HTML |
 | `renderCompetitorSection(comp)` | Returns the Competitor Gap Analysis section HTML |
 | `renderVisualSection(visual)` | Returns the Visual UX Analysis section HTML |
+| `renderRevenueImpact(estimate)` | Returns the Revenue Impact Estimator section HTML |
+| `renderRoadmapItem(item)` | Returns HTML for one Priority Fix Roadmap item |
 | `categoryLabel(cat)` | Maps category key to display name |
 | `escHtml(s)` | Escapes &, <, >, " for safe HTML insertion |
 | `formatDate(iso)` | Formats ISO timestamp as "March 10, 2026" |

@@ -20,7 +20,7 @@ All phases are complete — the original 8 plus Phase 9 (Visual UX Analysis), Ph
 
 ## Architecture in One Paragraph
 
-Three-process Electron app. Renderer (React + Zustand) talks to the main process via a contextBridge preload. All audit logic runs in `src/engine/` which is a self-contained Node.js library — no Electron/React imports except `pathResolver.ts`. Engine is dynamically imported by IPC handlers so it never enters the renderer bundle. Crawler uses Playwright BFS. Extractors use cheerio/slim. Lighthouse runs best-effort after the crawl. Reports are written to `userData/reports/`. Scan index is in `userData/reports/index.json`.
+Three-process Electron app. Renderer (React + Zustand) talks to the main process via a contextBridge preload. All audit logic runs in `src/engine/` which is a self-contained Node.js library — no Electron/React imports except `pathResolver.ts`. Engine is dynamically imported by IPC handlers so it never enters the renderer bundle. Crawler uses Playwright BFS. Extractors use cheerio/slim. Lighthouse runs best-effort after the crawl. The audit pipeline is 12 named stages in `src/engine/pipeline/`; `runAudit.ts` is a thin wrapper. Reports are written to `userData/reports/`. Scan index is in `userData/reports/index.json`.
 
 ---
 
@@ -31,12 +31,16 @@ Full pipeline:
 - www vs non-www mismatch fixed (`stripWww` in `isSameDomain`)
 - 9 extractors (meta, headings, schema, contact, local signals, CTAs, trust, images, text stats)
 - 5 analyzers producing ~40 finding types across `technical`, `localSeo`, `conversion`, `content`, `trust`
-- 5 category scorers + weighted overall score
+- 5 category scorers + weighted overall score (no impact penalty — was double-penalizing; removed)
 - **Phase 9**: Visual UX analysis — Playwright screenshots + 4 above-the-fold DOM checks (`src/engine/visual/`)
-- **Phase 9+**: Impact Engine — 38-rule impact estimation layer, revenue impact HTML section, impact-weighted score penalty (`src/engine/impactAnalyzer.ts`)
+- **Phase 9+**: Impact Engine — 38-rule impact estimation layer, impact badges in HTML report (`src/engine/impactAnalyzer.ts`)
 - Lighthouse integration (performance, SEO, accessibility, 9 finding types)
 - **Phase 10**: Competitor gap analysis — crawl up to 3 URLs, 8 gap checks, HTML report section (`src/engine/competitor/`)
-- JSON + HTML report generation (self-contained, print-friendly, 11 sections)
+- **Score Confidence**: `computeScoreConfidence()` → `AuditResult.scoreConfidence` (`src/engine/scoring/scoreConfidence.ts`)
+- **Priority Fix Roadmap**: `buildFixRoadmap()` → `AuditResult.roadmap` up to 10 items (`src/engine/roadmap/buildFixRoadmap.ts`)
+- **Revenue Impact Estimator**: `estimateRevenueImpact()` → `AuditResult.revenueImpact` (`src/engine/revenue/estimateRevenueImpact.ts`)
+- **Pipeline refactor**: 12 named stage modules in `src/engine/pipeline/`; `runAudit.ts` is a thin wrapper
+- JSON + HTML report generation (self-contained, print-friendly, 16 sections)
 - Scan repository (index.json, load/save/delete)
 - React UI with all pages: dashboard, new scan, results, saved scans, settings
 - ScanForm has 3 optional competitor URL inputs
@@ -49,7 +53,7 @@ Full pipeline:
 
 `fetchSitemap` returns `sitemapResult.urls` but `discoverUrls` ignores these. Deep pages linked only from the sitemap (not from other pages) are never crawled.
 
-**Location**: `src/engine/orchestrator/runAudit.ts` around line 107
+**Location**: `src/engine/pipeline/stages/crawlStage.ts`
 **Fix**: Pass `sitemapResult.urls` as initial queue hints to `discoverUrls`.
 
 ### Enhancement: Load Old Scans from Disk in UI
@@ -89,7 +93,7 @@ Full pipeline:
 2. Export interface + function accepting `CheerioAPI`
 3. Add to barrel `src/engine/extractors/index.ts`: import, re-export type, add to `ExtractedSignals`, call in `extractAllSignals`, add to `emptySignals`
 4. Add field to `CrawledPage` in `src/engine/types/audit.ts`
-5. Wire field in `runAudit.ts` CrawledPage construction
+5. Wire field in `extractStage.ts` CrawledPage construction
 6. Use in analyzer if desired
 
 ### New IPC Channel
@@ -115,7 +119,7 @@ Full pipeline:
 
 3. **"Score is always 0"** — `buildPlaceholderScores()` initializes scores at 0 before the scan runs. If the scoring step throws an exception (check for TypeScript errors in scorer files), the placeholder values are never replaced.
 
-4. **"Only 1 page is crawled"** — The www vs non-www bug. User should enter the www URL. Or apply the `isSameDomain` fix.
+4. **"Only 1 page is crawled"** — www vs non-www: this was fixed via `stripWww()` in `isSameDomain`. If you see it again, check `src/engine/utils/domain.ts`.
 
 5. **"The renderer can't see my new engine function"** — Engine functions must be called from the main process via IPC handlers, never imported directly in renderer code.
 
@@ -163,10 +167,15 @@ src/engine/         ← Pure Node.js audit engine
   crawl/            ← Playwright crawler
   extractors/       ← cheerio/slim extractors
   analyzers/        ← Finding generators
-  scoring/          ← Score calculators
+  scoring/          ← Score calculators + scoreConfidence.ts
+  roadmap/          ← buildFixRoadmap.ts
+  revenue/          ← estimateRevenueImpact.ts
   reports/          ← Report writers
   lighthouse/       ← Performance auditor
+  visual/           ← Screenshot + above-the-fold checks
+  competitor/       ← Competitor crawl + gap analysis
   storage/          ← File I/O
-  orchestrator/     ← runAudit.ts entry point
+  pipeline/         ← runScanJob.ts orchestrator + 12 stage modules
+  orchestrator/     ← runAudit.ts (thin wrapper around runScanJob)
 docs/               ← All documentation
 ```
