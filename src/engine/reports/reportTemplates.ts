@@ -3,7 +3,7 @@
  * All functions return raw HTML strings — no external dependencies.
  */
 
-import type { Finding, CategoryScore, VisualAnalysisResult, CompetitorAnalysisResult } from '../types/audit'
+import type { Finding, CategoryScore, ImpactLevel, VisualAnalysisResult, CompetitorAnalysisResult } from '../types/audit'
 
 // ─── Score colors ─────────────────────────────────────────────────────────────
 
@@ -26,6 +26,13 @@ export function severityBg(severity: Finding['severity']): string {
   return '#f9fafb'
 }
 
+export function impactColor(level: ImpactLevel): string {
+  if (level === 'CRITICAL') return '#7c3aed'
+  if (level === 'HIGH')     return '#dc2626'
+  if (level === 'MEDIUM')   return '#d97706'
+  return '#6b7280'
+}
+
 // ─── Section builders ─────────────────────────────────────────────────────────
 
 export function renderScoreCard(label: string, score: CategoryScore): string {
@@ -44,6 +51,13 @@ export function renderFinding(f: Finding): string {
   const affectedHtml = f.affectedUrls && f.affectedUrls.length > 0
     ? `<div class="affected-urls"><strong>Affected:</strong> ${f.affectedUrls.slice(0, 3).map(u => `<code>${u}</code>`).join(', ')}${f.affectedUrls.length > 3 ? ` +${f.affectedUrls.length - 3} more` : ''}</div>`
     : ''
+  const impactHtml = f.impactLevel
+    ? `<div class="finding-impact" style="border-top:1px solid ${color}22;margin-top:8px;padding-top:8px">
+        <span class="impact-badge" style="background:${impactColor(f.impactLevel)}">${f.impactLevel}</span>
+        <span style="font-size:12px;color:#4b5563">${escHtml(f.impactReason ?? '')}</span>
+        ${f.estimatedBusinessEffect ? `<div style="font-size:12px;color:#6b7280;margin-top:3px"><strong>Business effect:</strong> ${escHtml(f.estimatedBusinessEffect)}</div>` : ''}
+      </div>`
+    : ''
   return `
     <div class="finding" style="background:${bg};border-left:4px solid ${color}">
       <div class="finding-header">
@@ -56,6 +70,7 @@ export function renderFinding(f: Finding): string {
         <p><strong>What to do:</strong> ${escHtml(f.recommendation)}</p>
       </div>
       ${affectedHtml}
+      ${impactHtml}
     </div>`
 }
 
@@ -93,6 +108,53 @@ export function formatDate(iso: string): string {
   } catch {
     return iso
   }
+}
+
+// ─── Revenue Impact Summary section ───────────────────────────────────────────
+
+const IMPACT_ORDER: ImpactLevel[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
+
+const IMPACT_LABEL: Record<ImpactLevel, string> = {
+  CRITICAL: '🚨 CRITICAL',
+  HIGH:     '🔴 HIGH',
+  MEDIUM:   '🟡 MEDIUM',
+  LOW:      '🔵 LOW',
+}
+
+export function renderImpactSummarySection(findings: Finding[]): string {
+  const withImpact = findings.filter((f) => f.impactLevel)
+  if (withImpact.length === 0) return ''
+
+  const counts = IMPACT_ORDER.reduce<Partial<Record<ImpactLevel, Finding[]>>>((acc, lvl) => {
+    const group = withImpact.filter((f) => f.impactLevel === lvl)
+    if (group.length > 0) acc[lvl] = group
+    return acc
+  }, {})
+
+  const rows = IMPACT_ORDER.filter((lvl) => counts[lvl])
+    .map((lvl) => {
+      const group = counts[lvl]!
+      const color = impactColor(lvl)
+      const topFindings = group.slice(0, 3).map((f) =>
+        `<li style="font-size:13px;color:#374151;margin-bottom:3px">${escHtml(f.title)}${f.estimatedBusinessEffect ? ` — <span style="color:#6b7280">${escHtml(f.estimatedBusinessEffect)}</span>` : ''}</li>`
+      ).join('')
+      const more = group.length > 3 ? `<li style="font-size:12px;color:#9ca3af">+${group.length - 3} more</li>` : ''
+      return `
+      <div style="display:flex;gap:16px;align-items:flex-start;padding:14px 0;border-bottom:1px solid #f1f5f9">
+        <div style="min-width:110px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:${color};line-height:1">${group.length}</div>
+          <div style="font-size:11px;font-weight:700;color:${color};margin-top:2px;letter-spacing:0.5px">${IMPACT_LABEL[lvl]}</div>
+        </div>
+        <ul style="list-style:none;padding:0;margin:0;flex:1">${topFindings}${more}</ul>
+      </div>`
+    }).join('')
+
+  return `
+  <div class="section impact-summary">
+    <h2>🚨 Revenue Impact Summary</h2>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Issues ranked by estimated business damage — fix CRITICAL and HIGH items first for the fastest return.</p>
+    ${rows}
+  </div>`
 }
 
 // ─── Competitor Gap Analysis section ──────────────────────────────────────────

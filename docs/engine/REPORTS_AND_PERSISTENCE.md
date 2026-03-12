@@ -7,10 +7,14 @@ All scan artifacts are stored under Electron's `userData` directory:
 ```
 <userData>/
   reports/
-    index.json                    ← SavedScanMeta[] — all scans list
+    index.json                       ← SavedScanMeta[] — all scans list
     <scanId>/
-      report.json                 ← Full AuditResult (html/textContent stripped)
-      report.html                 ← Self-contained HTML report
+      report.json                    ← Full AuditResult (html/textContent stripped)
+      report.html                    ← Self-contained HTML report
+      screenshots/
+        homepage.png                 ← Full-page screenshot (if visual analysis ran)
+        contact.png                  ← Contact page screenshot (if found)
+        service.png                  ← Service page screenshot (if found)
 ```
 
 Platform-specific `userData` paths:
@@ -20,12 +24,14 @@ Platform-specific `userData` paths:
 
 ## pathResolver.ts
 
-`src/engine/storage/pathResolver.ts` — the only engine file that imports from Electron.
+`src/engine/storage/pathResolver.ts` — **does not import Electron**. Instead, `electron/main.ts` calls `initReportsDir(app.getPath('userData'))` once on startup, which sets the internal `_reportsDir` variable. If the engine is called before `initReportsDir`, it throws a clear error.
 
 | Function | Returns |
 |---|---|
-| `getReportsDir()` | `<userData>/reports` (cached after first call) |
+| `initReportsDir(userDataPath)` | Setter — call once from `electron/main.ts` |
+| `getReportsDir()` | `<userData>/reports` (throws if not initialized) |
 | `getScanArtifactsDir(scanId)` | `<userData>/reports/<scanId>` |
+| `getScreenshotsDir(scanId)` | `<userData>/reports/<scanId>/screenshots` |
 | `buildJsonPath(scanId)` | `<userData>/reports/<scanId>/report.json` |
 | `buildHtmlPath(scanId)` | `<userData>/reports/<scanId>/report.html` |
 | `getIndexPath()` | `<userData>/reports/index.json` |
@@ -62,24 +68,27 @@ The report renders in this order:
 
 2. **Overall score block** — Large numeric score with color, band label, and finding count summary
 
-3. **Category score cards** — 5 cards in a grid: Local SEO, Technical SEO, Conversion, Content, Trust. Each shows score/100, category name, and band label.
+3. **Category score cards** — 5 cards in a grid: Local SEO, Technical SEO, Conversion, Content, Trust
 
-4. **What's Holding This Business Back** (conditional) — Two-column grid:
-   - "Hurting Google Visibility" — high/medium technical, local, content findings
-   - "Hurting Lead Capture" — high/medium conversion, trust findings
-   Built by `buildClientSummary()` from `buildClientSummary.ts`
+4. **What's Holding This Business Back** (conditional) — Two-column grid: "Hurting Google Visibility" / "Hurting Lead Capture". Built by `buildClientSummary()`
 
-5. **Revenue-Impacting Issues** (conditional — shown if `moneyLeaks.length > 0`) — Red-bordered section with the top 5 money leak summaries
+5. **Revenue-Impacting Issues** (conditional) — Red-bordered section with top 5 money leak summaries
 
-6. **Quick Wins** (conditional — shown if `quickWins.length > 0`) — Green-bordered section with the top 5 quick win recommendations
+6. **🚨 Revenue Impact Summary** (conditional — shown if any finding has an `impactLevel`) — Purple-bordered section. Groups all findings by impact level (CRITICAL / HIGH / MEDIUM / LOW) with counts and top issue descriptions. Built by `renderImpactSummarySection()`
 
-7. **Page Speed & Core Web Vitals** (conditional — shown if Lighthouse ran) — Performance, SEO, and Accessibility scores as color-coded pills; FCP, LCP, TBT, CLS, Speed Index in a table with target values
+7. **✅ Quick Wins** (conditional) — Green-bordered section with the top 5 quick win recommendations
 
-8. **All Issues Found** — All findings grouped by category (local, technical, conversion, content, trust). Each finding shows severity badge, title, summary, "Why it matters", "What to do", and affected URLs (up to 3 shown, rest counted)
+8. **⚡ Page Speed & Core Web Vitals** (conditional — shown if Lighthouse ran) — Performance, SEO, Accessibility scores; FCP, LCP, TBT, CLS, Speed Index table
 
-9. **Score Breakdown Detail** — All 5 category scores with their rationale bullet points (positive and negative signals)
+9. **🖥️ Visual UX Analysis** (conditional — shown if visual analysis ran) — Screenshot row + above-the-fold check results table. Built by `renderVisualSection()`
 
-10. **Footer** — Generator credit, date, scan ID
+10. **🏆 Competitor Gap Analysis** (conditional — shown if competitor URLs were provided) — Signal comparison table per competitor + gaps list. Built by `renderCompetitorSection()`
+
+11. **All Issues Found** — All findings grouped by category. Each finding card now shows severity badge, title, summary, "Why it matters", "What to do", affected URLs, **and an impact badge with reason and business effect**
+
+12. **Score Breakdown Detail** — All 5 category scores with rationale bullet points
+
+13. **Footer** — Generator credit, date, scan ID
 
 ### reportTemplates.ts
 
@@ -87,13 +96,17 @@ Helper functions used by `buildHtmlReport`:
 
 | Function | Purpose |
 |---|---|
-| `scoreColor(value)` | Returns CSS color string for a score value |
+| `scoreColor(value)` | Returns CSS color for a score value |
 | `severityColor(severity)` | Returns CSS color for severity badge |
 | `severityBg(severity)` | Returns background CSS color for finding card |
-| `renderScoreCard(label, score)` | Returns HTML string for one score card |
-| `renderFinding(finding)` | Returns HTML string for one finding card |
+| `impactColor(level)` | Returns CSS color for impact level badge (purple/red/amber/gray) |
+| `renderScoreCard(label, score)` | Returns HTML for one score card |
+| `renderFinding(finding)` | Returns HTML for one finding card, including impact badge if present |
 | `renderBulletList(items, emptyMsg?)` | Returns `<ul>` or empty message |
-| `categoryLabel(cat)` | Maps category key to display name (handles both `'local'` and `'localSeo'`) |
+| `renderImpactSummarySection(findings)` | Returns the Revenue Impact Summary section HTML |
+| `renderCompetitorSection(comp)` | Returns the Competitor Gap Analysis section HTML |
+| `renderVisualSection(visual)` | Returns the Visual UX Analysis section HTML |
+| `categoryLabel(cat)` | Maps category key to display name |
 | `escHtml(s)` | Escapes &, <, >, " for safe HTML insertion |
 | `formatDate(iso)` | Formats ISO timestamp as "March 10, 2026" |
 

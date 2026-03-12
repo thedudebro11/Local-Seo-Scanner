@@ -43,17 +43,18 @@ Assigned by `classifyPage()`. Used by analyzers to select which pages to check (
 ### FindingCategory
 
 ```typescript
-type FindingCategory = 'technical' | 'local' | 'conversion' | 'content' | 'trust'
+type FindingCategory = 'technical' | 'localSeo' | 'conversion' | 'content' | 'trust'
 ```
 
-**IMPORTANT INCONSISTENCY**: `FindingCategory` uses `'local'` for local SEO findings. However, `AuditScores` uses `'localSeo'` as the key name for the local SEO score. This means:
-- All findings from `localSeoAnalyzer` have `category: 'local'`
-- The score for those findings is stored in `scores.localSeo`
-- `categoryLabel('local')` and `categoryLabel('localSeo')` both map to `'Local SEO'` in `reportTemplates.ts`
-- `CATEGORY_WEIGHT` in `prioritizeFindings.ts` uses `'local': 0.30`
-- `WEIGHTS` in `weightedFinalScore.ts` uses `'localSeo': 0.30`
+`FindingCategory` uses `'localSeo'` throughout — in findings, in `AuditScores`, in `CATEGORY_WEIGHT` in `prioritizeFindings.ts`, and in `WEIGHTS` in `weightedFinalScore.ts`. The earlier inconsistency where findings used `'local'` and scores used `'localSeo'` was resolved in a cleanup pass.
 
-Do not change either key without updating both the findings and scores sides simultaneously.
+### ImpactLevel
+
+```typescript
+type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+```
+
+Added in the Phase 9+ Impact Engine. Represents the estimated business damage of a finding. Set by `impactAnalyzer.ts` after all findings are assembled.
 
 ### Severity
 
@@ -65,10 +66,11 @@ type Severity = 'high' | 'medium' | 'low'
 
 ```typescript
 interface AuditRequest {
-  url: string           // Raw URL entered by user (may lack https://)
-  scanMode: ScanMode    // 'quick' | 'full'
-  businessType: BusinessType  // User's selection (may be 'auto')
-  maxPages: number      // Hard limit on pages to crawl
+  url: string                  // Raw URL entered by user (may lack https://)
+  scanMode: ScanMode           // 'quick' | 'full'
+  businessType: BusinessType   // User's selection (may be 'auto')
+  maxPages: number             // Hard limit on pages to crawl
+  competitorUrls?: string[]    // Up to 3 competitor URLs for gap analysis (Phase 10)
 }
 ```
 
@@ -125,14 +127,18 @@ Note: `CrawlResult` is defined in `audit.ts` but `runAudit` does not use this ty
 
 ```typescript
 interface Finding {
-  id: string                  // Unique identifier e.g. 'local-no-phone-homepage'
-  category: FindingCategory   // 'technical' | 'local' | 'conversion' | 'content' | 'trust'
-  severity: Severity          // 'high' | 'medium' | 'low'
-  title: string               // Short, scannable title
-  summary: string             // One-sentence description of the issue
-  whyItMatters: string        // Business impact explanation
-  recommendation: string      // Specific, actionable fix
-  affectedUrls?: string[]     // URLs where the issue was found (optional)
+  id: string                       // Unique identifier e.g. 'local-no-phone-homepage'
+  category: FindingCategory        // 'technical' | 'localSeo' | 'conversion' | 'content' | 'trust'
+  severity: Severity               // 'high' | 'medium' | 'low'
+  title: string                    // Short, scannable title
+  summary: string                  // One-sentence description of the issue
+  whyItMatters: string             // Business impact explanation
+  recommendation: string           // Specific, actionable fix
+  affectedUrls?: string[]          // URLs where the issue was found (optional)
+  // Impact signals — set by impactAnalyzer after all findings are assembled
+  impactLevel?: ImpactLevel        // CRITICAL | HIGH | MEDIUM | LOW
+  impactReason?: string            // Why this issue hurts the business
+  estimatedBusinessEffect?: string // Concrete revenue/lead consequence
 }
 ```
 
@@ -179,21 +185,77 @@ interface LighthouseMetrics {
 
 ```typescript
 interface AuditResult {
-  id: string                    // e.g. 'example.com_1710000000000'
-  request: AuditRequest         // The original scan request
-  scannedAt: string             // ISO 8601 timestamp
-  domain: string                // Hostname e.g. 'example.com'
+  id: string                        // e.g. 'example.com_1710000000000'
+  request: AuditRequest             // The original scan request
+  scannedAt: string                 // ISO 8601 timestamp
+  domain: string                    // Hostname e.g. 'example.com'
   detectedBusinessType: BusinessType  // Always resolved (never 'auto')
-  pages: CrawledPage[]          // All crawled pages (html/textContent stripped in JSON report)
-  findings: Finding[]           // All findings, sorted by impact (prioritizeFindings)
-  scores: AuditScores           // Category and overall scores
-  quickWins: string[]           // Top 5 recommendation strings (high/medium findings)
-  moneyLeaks: string[]          // Top 5 summary strings (high findings only)
-  lighthouse?: LighthouseMetrics[]  // Present only if Lighthouse ran successfully (array of 1)
+  pages: CrawledPage[]              // All crawled pages (html/textContent stripped in JSON report)
+  findings: Finding[]               // All findings, enriched with impact, sorted by impact
+  scores: AuditScores               // Category and overall scores (overall adjusted by impact penalty)
+  quickWins: string[]               // Top 5 recommendation strings (high/medium findings)
+  moneyLeaks: string[]              // Top 5 summary strings (high findings only)
+  lighthouse?: LighthouseMetrics[]  // Present only if Lighthouse ran (array of 1)
+  visual?: VisualAnalysisResult     // Present only if visual analysis ran (Phase 9)
+  competitor?: CompetitorAnalysisResult  // Present only if competitor URLs were provided (Phase 10)
   artifacts: {
-    jsonPath?: string            // Absolute path to report.json
-    htmlPath?: string            // Absolute path to report.html
+    jsonPath?: string               // Absolute path to report.json
+    htmlPath?: string               // Absolute path to report.html
+    screenshotPaths?: Record<string, string>  // pageType → absolute screenshot path
   }
+}
+```
+
+### VisualAnalysisResult
+
+```typescript
+interface VisualCheckResult {
+  passed: boolean    // Whether the check found the expected signal
+  detail?: string    // Human-readable explanation of what was found or missing
+}
+
+interface VisualPageChecks {
+  hasAboveFoldCta:        VisualCheckResult
+  hasPhoneVisible:        VisualCheckResult
+  hasTrustSignalsVisible: VisualCheckResult
+  hasHeroClarity:         VisualCheckResult
+}
+
+interface VisualPageAnalysis {
+  url: string
+  pageType: string
+  screenshotPath?: string   // Absolute disk path of screenshot
+  screenshotFile?: string   // Filename only (for relative HTML report references)
+  checks: VisualPageChecks
+}
+
+interface VisualAnalysisResult {
+  pagesAnalyzed: VisualPageAnalysis[]
+}
+```
+
+### CompetitorAnalysisResult
+
+```typescript
+interface CompetitorSite {
+  url: string; domain: string; crawlError?: string; pageCount: number
+  hasLocalBusinessSchema: boolean; schemaTypes: string[]
+  servicePageCount: number; locationPageCount: number
+  hasGalleryPage: boolean; hasAboutPage: boolean; hasContactPage: boolean
+  hasPhone: boolean; hasAddress: boolean; hasMap: boolean; hasHours: boolean
+  hasTrustSignals: boolean; avgWordCount: number; ctaCoverage: number; hasForm: boolean
+}
+
+interface CompetitorGap {
+  id: string; title: string; description: string
+  competitorDomains: string[]   // Domains that have this advantage
+  recommendation: string
+}
+
+interface CompetitorAnalysisResult {
+  analyzedAt: string
+  competitors: CompetitorSite[]
+  gaps: CompetitorGap[]
 }
 ```
 

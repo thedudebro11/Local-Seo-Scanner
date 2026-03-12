@@ -52,17 +52,22 @@ Local SEO Scanner is a three-process Electron application. The renderer (React U
 │    7. classifyPage               (crawl/classifyPage)               │
 │    8. detectBusinessType         (analyzers/businessTypeDetector)   │
 │    9. analyze* x5                (analyzers/*)                      │
+│   9.5 runVisualAnalysis          (visual/visualAnalyzer)            │
 │   10. runLighthouse              (lighthouse/runLighthouse)         │
 │   11. score* x5 + weighted       (scoring/*)                       │
-│   12. prioritizeFindings          (scoring/prioritizeFindings)      │
-│   13. buildJsonReport            (reports/buildJsonReport)          │
-│   14. buildHtmlReport            (reports/buildHtmlReport)          │
-│   15. saveScan                   (storage/scanRepository)           │
+│   11.5 enrichFindingsWithImpact  (impactAnalyzer)                   │
+│   11.6 computeImpactPenalty      (impactAnalyzer)                   │
+│   12. prioritizeFindings         (scoring/prioritizeFindings)       │
+│   13. runCompetitorAnalysis      (competitor/index)                 │
+│   14. buildJsonReport            (reports/buildJsonReport)          │
+│   15. buildHtmlReport            (reports/buildHtmlReport)          │
+│   16. saveScan                   (storage/scanRepository)           │
 │                                                                     │
 │  STORAGE  (~/.../userData/reports/)                                 │
-│    index.json          ─ SavedScanMeta[]                            │
-│    <scanId>/report.json ─ AuditResult (html stripped)               │
-│    <scanId>/report.html ─ Self-contained HTML report                │
+│    index.json                    ─ SavedScanMeta[]                  │
+│    <scanId>/report.json          ─ AuditResult (html stripped)      │
+│    <scanId>/report.html          ─ Self-contained HTML report       │
+│    <scanId>/screenshots/*.png    ─ Visual UX screenshots            │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 

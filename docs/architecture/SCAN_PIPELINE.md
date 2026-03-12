@@ -174,6 +174,33 @@ All findings are merged into `allFindings`.
 
 ---
 
+## Step 8.5 — Visual UX Analysis (89%) — best-effort
+
+`emitProgress('Capturing visual screenshots…', 89)`
+
+`runVisualAnalysis(browser, crawledPages, screenshotDir)` in `src/engine/visual/visualAnalyzer.ts`.
+
+Runs after analyzers while the Playwright browser is still open. Identifies the homepage and up to one contact/service page from `crawledPages`. For each target:
+1. Opens a fresh page at 1280×800px
+2. Takes a full-page screenshot saved to `<scanId>/screenshots/<label>.png`
+3. On the homepage only, runs four DOM checks via `page.evaluate()` (each self-contained, no Node.js closures):
+   - `checkAboveFoldCta` — looks for CTA button/link text above the fold
+   - `checkPhoneVisible` — looks for `tel:` link or phone number text above the fold
+   - `checkTrustSignals` — looks for trust keywords near the top
+   - `checkHeroClarity` — looks for a non-empty H1 above the fold
+
+Visual findings generated (all `severity: 'medium'`):
+- `visual-no-hero-clarity` (category: `conversion`)
+- `visual-no-above-fold-cta` (category: `conversion`)
+- `visual-no-phone-above-fold` (category: `conversion`)
+- `visual-no-trust-signals-visible` (category: `trust`)
+
+**This step is best-effort**: wrapped in try/catch. Any failure is logged and the scan continues without visual data.
+
+**Returns**: `{ result: VisualAnalysisResult, findings: Finding[] }`
+
+---
+
 ## Step 9 — Lighthouse Performance Audit (90%)
 
 `emitProgress('Running performance audit…', 90)`
@@ -218,11 +245,34 @@ Each scorer uses `makeScore(findings, positives)` from `scoreHelpers.ts`:
 
 `computeWeightedScore(categoryScores)` combines the five scores with weights: Technical 25%, Local SEO 30%, Conversion 25%, Content 10%, Trust 10%.
 
-`prioritizeFindings(allFindings)` sorts the combined finding list by `categoryWeight × severityWeight` (highest first). Returns a new array.
+`enrichFindingsWithImpact(allFindings, detectedBusinessType)` in `src/engine/impactAnalyzer.ts` adds three fields to every finding: `impactLevel` (CRITICAL / HIGH / MEDIUM / LOW), `impactReason`, and `estimatedBusinessEffect`. Rules are keyed on 38 specific finding IDs with a category × severity fallback. This step runs before prioritization.
+
+`prioritizeFindings(allFindings)` sorts the enriched finding list by `categoryWeight × severityWeight` (highest first). Returns a new array.
+
+`computeImpactPenalty(allFindings)` sums impact-level deductions (CRITICAL −12, HIGH −8, MEDIUM −4, LOW −1), capped at −30 total, and subtracts the result from `scores.overall.value` only. Category scores are not affected.
 
 ---
 
-## Step 11 — Build and Save Reports (97%)
+---
+
+## Step 12 — Competitor Gap Analysis (94%) — optional, best-effort
+
+`emitProgress('Analyzing competitors…', 94)`
+
+Runs only if `request.competitorUrls` is non-empty. `runCompetitorAnalysis(browser, normalizedUrl, crawledPages, competitorUrls.slice(0,3))` in `src/engine/competitor/index.ts`.
+
+- Each competitor is crawled with `discoverUrls` (maxPages=5) — same BFS, different start URL
+- `analyzeCompetitor(url, pages)` converts each crawl into a `CompetitorSite` signal object
+- `analyzeGaps(clientUrl, clientPages, competitors)` identifies gaps where ≥ 60% of successful crawls have an advantage
+- `Promise.allSettled` isolates per-competitor failures
+
+Result stored in `competitorResult: CompetitorAnalysisResult | undefined`.
+
+**This step is best-effort**: wrapped in try/catch.
+
+---
+
+## Step 13 — Build and Save Reports (97%)
 
 `emitProgress('Building reports…', 97)`
 
@@ -238,7 +288,7 @@ Paths are determined by `pathResolver.ts`:
 
 ---
 
-## Step 12 — Complete (100%)
+## Step 14 — Complete (100%)
 
 `emitProgress('Complete.', 100)`
 
@@ -260,5 +310,7 @@ The IPC invoke resolves in `scanHandlers.ts`, which resolves the `ipcRenderer.in
 | Signal extraction | Returns empty signals if HTML is empty |
 | Analyzers | Synchronous — TypeScript errors would surface at build time |
 | Lighthouse | Caught, logged as warning, skipped — scan continues |
+| Visual analysis | Caught, logged as warning, skipped — scan continues without visual data |
+| Competitor analysis | Caught, logged as warning, skipped — scan continues without competitor data |
 | Report writing | Throws — would propagate but browser is already closed |
 | Scan index write | Throws — would propagate |

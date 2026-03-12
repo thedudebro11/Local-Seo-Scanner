@@ -1,65 +1,146 @@
 # Competitor Gap Analysis
 
-## Status: NOT IMPLEMENTED
+## Status: IMPLEMENTED (Phase 10)
 
-Competitor gap analysis is **not implemented** in this codebase. No feature, module, function, or data structure exists for comparing the audited site against competitor sites.
-
-This document describes what IS implemented (which is sometimes mistakenly described as competitor analysis), where competitor analysis would go if added, and what the existing `buildClientSummary` function actually does.
+Competitor gap analysis is fully implemented. Users provide up to three competitor URLs when submitting a scan. The engine crawls each competitor site, extracts comparable signals, and identifies gaps where the audited site falls behind the majority of competitors.
 
 ---
 
-## What IS Implemented: Owner-Focused Audit
+## How It Works
 
-The engine audits a single target URL and generates findings about that site alone. It does not fetch, crawl, or compare any other website.
+If `AuditRequest.competitorUrls` contains at least one URL, the engine runs the competitor step after the main site scoring step (at ~94% progress). Each competitor is crawled using the same Playwright BFS crawler, limited to 5 pages each. Crawls run in parallel via `Promise.allSettled` so one failed crawl never aborts the others.
 
-The output is an owner-focused report that answers:
-- What is wrong with this site?
-- Which issues are hurting Google visibility?
-- Which issues are hurting lead capture?
-- What should the owner fix first?
+---
 
-This is a self-contained audit, not a competitive analysis.
+## Module: src/engine/competitor/
+
+I implemented competitor analysis as a self-contained module:
+
+| File | Purpose |
+|---|---|
+| `index.ts` | Orchestrator — `runCompetitorAnalysis(browser, clientUrl, clientPages, competitorUrls)` |
+| `competitorCrawler.ts` | Reuses `discoverUrls` (maxPages=5) + `extractAllSignals` + `classifyPage` per competitor |
+| `competitorAnalyzer.ts` | Pure function — converts crawled pages into a `CompetitorSite` signal summary |
+| `gapAnalysis.ts` | Compares client signals vs competitors; returns `CompetitorGap[]` |
+| `competitorDiscovery.ts` | Pluggable stub for future auto-discovery (`noopDiscovery` returns `[]`) |
+| `competitorTypes.ts` | Re-exports `CompetitorSite`, `CompetitorGap`, `CompetitorAnalysisResult` from `audit.ts` |
+
+---
+
+## Orchestrator Entry Point
+
+```typescript
+export async function runCompetitorAnalysis(
+  browser: Browser,
+  clientUrl: string,
+  clientPages: CrawledPage[],
+  competitorUrls: string[],    // already sliced to max 3
+): Promise<CompetitorAnalysisResult>
+```
+
+Uses `Promise.allSettled` for parallel competitor crawls. Each crawl failure is isolated — the rest continue. `crawlCompetitor` never throws: it returns `{ pages: [], crawlError: string }` on any failure.
+
+---
+
+## Signals Extracted Per Competitor (CompetitorSite)
+
+```typescript
+interface CompetitorSite {
+  url: string
+  domain: string
+  crawlError?: string         // Set if crawl failed completely
+  pageCount: number
+  hasLocalBusinessSchema: boolean
+  schemaTypes: string[]
+  servicePageCount: number
+  locationPageCount: number
+  hasGalleryPage: boolean
+  hasAboutPage: boolean
+  hasContactPage: boolean
+  hasPhone: boolean
+  hasAddress: boolean
+  hasMap: boolean
+  hasHours: boolean
+  hasTrustSignals: boolean
+  avgWordCount: number
+  ctaCoverage: number         // Fraction of pages with CTA text (0–1)
+  hasForm: boolean
+}
+```
+
+---
+
+## Gap Analysis
+
+`analyzeGaps(clientUrl, clientPages, competitors)` runs 8 gap checks:
+
+| Gap ID | Fires when |
+|---|---|
+| `comp-no-service-pages` | Client has no service pages, majority of competitors do |
+| `comp-no-location-pages` | Client has no location pages, majority do |
+| `comp-no-local-schema` | Client has no LocalBusiness schema, majority do |
+| `comp-no-trust-signals` | Client has no trust signals, majority do |
+| `comp-no-map` | Client has no map, majority do |
+| `comp-no-hours` | Client has no hours, majority do |
+| `comp-no-contact-form` | Client has no form, majority do |
+| `comp-thin-content` | Client avg word count < 70% of average competitor word count |
+
+**Gap threshold**: A gap fires when ≥ 60% of successful competitor crawls have the advantage — i.e., `Math.ceil(successfulCount × 0.6)` competitors must have the signal.
+
+---
+
+## Wiring in runAudit.ts
+
+```typescript
+// ── 12. Competitor gap analysis (optional, best-effort) ───────────────
+emitProgress('Analyzing competitors…', 94)
+if (request.competitorUrls && request.competitorUrls.length > 0) {
+  try {
+    competitorResult = await runCompetitorAnalysis(
+      browser, normalizedUrl, crawledPages, request.competitorUrls.slice(0, 3),
+    )
+  } catch (cErr) {
+    log.warn(`Competitor analysis skipped: ${(cErr as Error).message}`)
+  }
+}
+```
+
+The entire step is wrapped in try/catch. If it fails, `competitorResult` remains `undefined` and the report omits the section.
+
+---
+
+## Frontend: ScanForm.tsx
+
+I added three optional competitor URL inputs to `ScanForm.tsx`. On submit:
+- Blank entries are filtered out
+- `https://` is automatically prepended if missing
+- `competitorUrls` is only included in the request if at least one entry is filled in
+
+---
+
+## Report Output
+
+If `AuditResult.competitor` is present, the HTML report includes a **🏆 Competitor Gap Analysis** section showing:
+1. A signal comparison table for each crawled competitor (schema, phone, map, hours, form, service pages, avg word count)
+2. A gaps list with descriptions and action recommendations, each noting which competitor domains have the advantage
+
+If no competitor URLs were provided (or all crawls failed), the section is omitted.
 
 ---
 
 ## What buildClientSummary Actually Does
 
-`src/engine/reports/buildClientSummary.ts` builds three sections for the HTML report:
+`src/engine/reports/buildClientSummary.ts` builds three sections based on the **audited site's own findings** only:
 
 ```typescript
 interface ClientSummary {
-  whatIsHurtingVisibility: string[]   // Issues from technical, local, content categories
+  whatIsHurtingVisibility: string[]   // Issues from technical, localSeo, content categories
   whatMayBeHurtingLeads: string[]     // Issues from conversion, trust categories
   fastestWins: string[]               // Top 5 quickWins recommendations
 }
 ```
 
-This function:
-1. Filters the audit's own findings by category and severity
-2. Formats them as plain-language statements: `"${f.title} — ${f.summary}"`
-3. Is used in the "What's Holding This Business Back" section of the HTML report
-
-There is no comparison to competitor data. The "visibility" and "leads" sections describe issues found on the audited site alone.
-
----
-
-## Where Competitor Analysis Would Go
-
-If competitor gap analysis were added in the future, the appropriate locations would be:
-
-1. **New orchestrator step** in `runAudit.ts` — after the main site is fully crawled and analyzed, accept competitor URLs from `AuditRequest`, crawl each competitor (same pipeline), and compare signal sets
-
-2. **New analyzer** — `src/engine/analyzers/competitorAnalyzer.ts` — takes the audited site's `CrawledPage[]` and each competitor's `CrawledPage[]`, returns findings for gaps (e.g., "Competitor A has LocalBusiness schema, you do not")
-
-3. **New AuditRequest field** — `competitorUrls?: string[]` in `src/engine/types/audit.ts`
-
-4. **New AuditResult field** — `competitorGaps?: CompetitorGap[]` or similar
-
-5. **UI additions** — New section in `ScanForm` to accept competitor URLs, new section in `ScanResultsPage` to display gap findings
-
-6. **Report section** — New section in `buildHtmlReport.ts` using a template from `reportTemplates.ts`
-
-None of these exist in the current codebase.
+This is distinct from competitor analysis. It summarises the site's own issues in plain language for the "What's Holding This Business Back" report section. No competitor data is involved.
 
 ---
 
@@ -67,7 +148,8 @@ None of these exist in the current codebase.
 
 | Claim | Truth |
 |---|---|
-| "The app does competitor analysis" | FALSE |
-| "buildClientSummary compares to competitors" | FALSE — it summarizes the site's own issues |
-| "The report shows gaps vs competitors" | FALSE — it shows gaps in the site's own implementation |
-| "Competitor analysis is possible in the future" | TRUE — the architecture supports it with the additions listed above |
+| "The app does competitor analysis" | TRUE — Phase 10, when competitor URLs are provided |
+| "buildClientSummary compares to competitors" | FALSE — it summarises the site's own issues only |
+| "Competitor crawl can fail silently" | TRUE — `Promise.allSettled` + try/catch; scan always completes |
+| "SERP scraping is involved" | FALSE — only manually-provided URLs are crawled |
+| "Auto-discovery of competitors works" | FALSE — `noopDiscovery` always returns `[]`; pluggable for future |

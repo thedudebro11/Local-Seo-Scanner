@@ -14,7 +14,7 @@ The target user is a local SEO agency or consultant auditing client sites. Repor
 
 ## Current State
 
-All 8 implementation phases are complete. The app builds, runs, and produces real audit results. Known issues exist (see below). The codebase is clean TypeScript with no `any` types in critical paths.
+All phases are complete — the original 8 plus Phase 9 (Visual UX Analysis), Phase 9+ (Impact Engine), and Phase 10 (Competitor Gap Analysis). The app builds, runs, and produces real audit results. The codebase is clean TypeScript with no `any` types in critical paths.
 
 ---
 
@@ -26,67 +26,49 @@ Three-process Electron app. Renderer (React + Zustand) talks to the main process
 
 ## What's Done
 
-Everything in the plan. Full pipeline:
+Full pipeline:
 - Playwright BFS crawler with robots.txt + sitemap discovery
+- www vs non-www mismatch fixed (`stripWww` in `isSameDomain`)
 - 9 extractors (meta, headings, schema, contact, local signals, CTAs, trust, images, text stats)
-- 5 analyzers producing ~40 finding types
+- 5 analyzers producing ~40 finding types across `technical`, `localSeo`, `conversion`, `content`, `trust`
 - 5 category scorers + weighted overall score
+- **Phase 9**: Visual UX analysis — Playwright screenshots + 4 above-the-fold DOM checks (`src/engine/visual/`)
+- **Phase 9+**: Impact Engine — 38-rule impact estimation layer, revenue impact HTML section, impact-weighted score penalty (`src/engine/impactAnalyzer.ts`)
 - Lighthouse integration (performance, SEO, accessibility, 9 finding types)
-- JSON + HTML report generation (self-contained, print-friendly)
+- **Phase 10**: Competitor gap analysis — crawl up to 3 URLs, 8 gap checks, HTML report section (`src/engine/competitor/`)
+- JSON + HTML report generation (self-contained, print-friendly, 11 sections)
 - Scan repository (index.json, load/save/delete)
 - React UI with all pages: dashboard, new scan, results, saved scans, settings
+- ScanForm has 3 optional competitor URL inputs
 
 ---
 
 ## Known Issues to Fix
-
-### Critical: www vs non-www Crawl Bug
-
-The most impactful bug. Sites that redirect `example.com` → `www.example.com` will only crawl the homepage because `isSameDomain` does strict hostname equality.
-
-**Location**: `src/engine/utils/domain.ts` → `isSameDomain` function
-**Fix**: Strip `www.` from both hostnames before comparing, or treat `example.com` and `www.example.com` as the same domain.
-
-```typescript
-// Current (buggy)
-export function isSameDomain(a: string, b: string): boolean {
-  return getDomain(a) === getDomain(b)
-}
-
-// Fix approach
-function canonicalHost(url: string): string {
-  const h = getDomain(url)
-  return h.startsWith('www.') ? h.slice(4) : h
-}
-export function isSameDomain(a: string, b: string): boolean {
-  return canonicalHost(a) === canonicalHost(b)
-}
-```
 
 ### Enhancement: Seed Sitemap URLs into Crawler
 
 `fetchSitemap` returns `sitemapResult.urls` but `discoverUrls` ignores these. Deep pages linked only from the sitemap (not from other pages) are never crawled.
 
 **Location**: `src/engine/orchestrator/runAudit.ts` around line 107
-**Fix**: Pass `sitemapResult.urls` as initial queue hints to `discoverUrls`, or add them as the initial queue after the start URL.
+**Fix**: Pass `sitemapResult.urls` as initial queue hints to `discoverUrls`.
 
 ### Enhancement: Load Old Scans from Disk in UI
 
 `ScanResultsPage` shows an empty state if the result ID in the URL doesn't match `latestResult.id` in the Zustand store. The IPC channel `file:load-scan` exists and works, but the page doesn't auto-call it.
 
 **Location**: `src/features/scans/ScanResultsPage.tsx`
-**Fix**: Add a `useEffect` that calls `window.api.loadScan(params.id)` when `latestResult === null` or `latestResult.id !== params.id`, and sets it in state.
+**Fix**: Add a `useEffect` that calls `window.api.loadScan(params.id)` when `latestResult === null` or `latestResult.id !== params.id`.
 
 ---
 
 ## Architecture Rules (Must Follow)
 
-1. No Electron/React imports in `src/engine/` (except `pathResolver.ts`)
+1. No Electron/React imports in `src/engine/` — `pathResolver.ts` no longer imports Electron; it uses `initReportsDir(userDataPath)` called from `electron/main.ts`
 2. Use `cheerio/slim` not `cheerio` (undici/Node.js 18 conflict)
 3. `playwright`, `lighthouse`, `chrome-launcher` → dynamic `import()` only (ESM-only packages)
 4. `URL` is a global — don't import it
 5. Renderer uses only `import type` from engine files
-6. `FindingCategory` uses `'local'`; `AuditScores` key is `'localSeo'` — both correct, don't "fix" one without the other
+6. `FindingCategory` uses `'localSeo'` throughout — findings, scores, and prioritization all use the same key
 7. HTML reports must be self-contained (no external assets)
 8. All artifact paths go through `pathResolver.ts`
 
@@ -137,7 +119,7 @@ export function isSameDomain(a: string, b: string): boolean {
 
 5. **"The renderer can't see my new engine function"** — Engine functions must be called from the main process via IPC handlers, never imported directly in renderer code.
 
-6. **"TypeScript errors about 'local' vs 'localSeo'"** — The `FindingCategory` type includes `'local'` (for findings) but `AuditScores` has a `localSeo` key (for scores). When writing analyzers, use `category: 'local'`. When accessing scores, use `scores.localSeo`. Both are correct.
+6. **"TypeScript errors about FindingCategory"** — `FindingCategory` is `'technical' | 'localSeo' | 'conversion' | 'content' | 'trust'`. Use `category: 'localSeo'` in analyzers. The old `'local'` value was cleaned up.
 
 7. **"The HTML report shows escaped HTML"** — Make sure any new template helper uses `escHtml()` from `reportTemplates.ts` on all user-sourced strings. Forgetting this will show `&amp;` instead of `&` or worse, XSS in the report.
 

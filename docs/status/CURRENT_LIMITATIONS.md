@@ -2,17 +2,11 @@
 
 ## Crawler Limitations
 
-### www vs non-www Domain Mismatch (Critical)
+### www vs non-www Domain Mismatch — FIXED
 
-**The issue**: The same-domain check uses exact hostname equality (`getDomain(a) === getDomain(b)`). If the start URL is `https://example.com/` but all internal links point to `https://www.example.com/page`, those links will be filtered out as "different domain". The result: only the homepage is crawled, even if `maxPages` is set to 20.
+I added `stripWww(hostname)` to `src/engine/utils/domain.ts` and updated `isSameDomain()` to strip the `www.` prefix from both hostnames before comparing. Sites that redirect `example.com` → `www.example.com` now crawl correctly — all internal links are recognized as same-domain.
 
-**How to reproduce**: Sites that redirect bare domain to www — user enters `example.com`, normalizer makes it `https://example.com/`, page redirects to `www.example.com`, but all links on that page use `https://www.example.com/` as base. `isSameDomain('https://www.example.com/about', 'https://example.com')` returns `false`.
-
-**Impact**: Affects a large proportion of real websites. A single-page scan means findings will reflect only homepage signals and will miss service pages, contact pages, location pages, and most other content.
-
-**Workaround**: User should enter the `www.` version of the URL if the site uses it.
-
-**Fix approach**: Normalize both bare domain and www to the same canonical hostname before comparison, or strip `www.` prefix from both sides in `isSameDomain`.
+The old workaround of entering the `www.` URL manually is no longer necessary.
 
 ### JavaScript-Rendered Content Requires Load Time
 

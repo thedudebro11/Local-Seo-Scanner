@@ -57,8 +57,11 @@ Overall score block
 Category score cards
 What's Holding This Business Back   ← insert before or after here
 Revenue-Impacting Issues
-Quick Wins
-Page Speed & Core Web Vitals
+🚨 Revenue Impact Summary
+✅ Quick Wins
+⚡ Page Speed & Core Web Vitals
+🖥️ Visual UX Analysis
+🏆 Competitor Gap Analysis
 All Issues Found                    ← or here
 Score Breakdown Detail
 Footer

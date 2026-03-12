@@ -7,18 +7,21 @@
 1. Crawls the target website using Playwright
 2. Extracts SEO and conversion signals from each page's HTML using cheerio
 3. Runs the extracted data through five category analyzers to generate findings
-4. Runs a Lighthouse performance audit
-5. Scores each category using a deduction-based model
-6. Prioritizes findings by business impact
-7. Writes JSON and HTML reports to disk
-8. Returns a complete `AuditResult`
+4. Captures screenshots and runs above-the-fold DOM checks via Playwright (visual analysis)
+5. Runs a Lighthouse performance audit
+6. Scores each category using a deduction-based model
+7. Enriches each finding with business impact estimation (impactLevel, impactReason, estimatedBusinessEffect)
+8. Applies an impact-weighted penalty to the overall score
+9. Optionally crawls up to 3 competitor sites and identifies gaps
+10. Writes JSON and HTML reports to disk
+11. Returns a complete `AuditResult`
 
 ## What the Engine Does NOT Do
 
-- It does not import or use any Electron API (except `pathResolver.ts` which uses `app.getPath`)
+- It does not import or use any Electron API (`pathResolver.ts` is initialized via `initReportsDir(userDataPath)` called from `electron/main.ts` — no direct Electron import in the engine)
 - It does not import React
 - It does not interact with the UI or IPC directly
-- It does not compare the site against competitors (see [COMPETITOR_GAP_ANALYSIS.md](COMPETITOR_GAP_ANALYSIS.md))
+- It does not auto-discover competitor URLs (manual entry only; `noopDiscovery` stub always returns `[]`)
 - It does not check Google Search Console, Google My Business, or any third-party data sources
 - It does not use a headless API — it crawls the live public website
 
@@ -74,6 +77,10 @@ content   = analyzeContent(analyzerInput)
 trust     = analyzeTrust(analyzerInput)
 allFindings = [...technical.findings, ...localSeo.findings, ...]
 
+// 8.5. Visual UX analysis (best-effort)
+{ result: visualResult, findings: vFindings } = await runVisualAnalysis(browser, crawledPages, screenshotDir)
+allFindings = [...allFindings, ...vFindings]
+
 // 9. Lighthouse (best-effort)
 lhMetric = await runLighthouse(normalizedUrl, chromiumPath)
 if (lhMetric) allFindings.push(...analyzeLighthouse(lhMetric))
@@ -85,14 +92,25 @@ convScore    = scoreConversion(...)
 contentScore = scoreContent(...)
 trustScore   = scoreTrust(...)
 scores.overall = computeWeightedScore({ technical, localSeo, conversion, content, trust })
-allFindings    = prioritizeFindings(allFindings)
 
-// 11. Reports
+// 10.5. Impact enrichment + score adjustment
+allFindings = enrichFindingsWithImpact(allFindings, detectedBusinessType)
+scores.overall.value -= computeImpactPenalty(allFindings)  // capped at -30
+
+// 11. Prioritize
+allFindings = prioritizeFindings(allFindings)
+
+// 12. Competitor analysis (optional, best-effort)
+if (request.competitorUrls?.length) {
+  competitorResult = await runCompetitorAnalysis(browser, normalizedUrl, crawledPages, competitorUrls)
+}
+
+// 13. Reports
 await buildJsonReport(result, jsonPath)
 await buildHtmlReport(result, htmlPath)
 await saveScan(result)
 
-// 12. Return
+// 14. Return
 return AuditResult
 ```
 

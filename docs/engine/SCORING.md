@@ -158,7 +158,7 @@ impactScore = CATEGORY_WEIGHT[finding.category] * SEVERITY_WEIGHT[finding.severi
 Category weights in prioritization:
 ```typescript
 const CATEGORY_WEIGHT = {
-  local:      0.30,
+  localSeo:   0.30,
   technical:  0.25,
   conversion: 0.25,
   content:    0.10,
@@ -199,3 +199,41 @@ These are the fastest, highest-impact actions the owner can take.
 - Returns each finding's `summary` string (the short business-impact statement)
 
 These are the issues most directly costing the business revenue.
+
+## Impact Engine
+
+`src/engine/impactAnalyzer.ts` — a separate layer applied after all findings are collected and scored.
+
+### analyzeIssueImpact
+
+```typescript
+export function analyzeIssueImpact(issue: Finding, businessType: BusinessType): ImpactAssessment
+```
+
+Returns `{ impactLevel, impactReason, estimatedBusinessEffect }`. Rules are keyed on 38 specific finding IDs. If the ID has no specific rule, a fallback rule based on `category × severity` is used.
+
+### Impact Levels
+
+| Level | Color | Meaning |
+|---|---|---|
+| CRITICAL | Purple `#7c3aed` | Direct lead loss or invisible to Google |
+| HIGH | Red `#dc2626` | Significant ranking or conversion damage |
+| MEDIUM | Amber `#d97706` | Noticeable impact on rankings or UX |
+| LOW | Gray `#6b7280` | Minor improvement opportunity |
+
+### enrichFindingsWithImpact
+
+Spreads impact fields onto every Finding (non-destructive — returns new array). Called in `runAudit.ts` after all analyzers and Lighthouse have run but before `prioritizeFindings`.
+
+### computeImpactPenalty
+
+```typescript
+const IMPACT_PENALTY: Record<ImpactLevel, number> = {
+  CRITICAL: 12,
+  HIGH:      8,
+  MEDIUM:    4,
+  LOW:       1,
+}
+```
+
+Sums penalties across all enriched findings. Capped at −30 to prevent extreme score collapse. Applied only to `scores.overall.value` — category scores are not affected. This ensures the overall score reflects real business damage and not just issue count.

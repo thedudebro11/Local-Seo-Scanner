@@ -1,6 +1,6 @@
 # Implementation Status
 
-All 8 phases from the original implementation plan are complete.
+All phases are complete, including three additional phases added after the original plan.
 
 ## Phase Summary
 
@@ -14,6 +14,46 @@ All 8 phases from the original implementation plan are complete.
 | Phase 6 | Scoring + prioritizeFindings → quickWins + moneyLeaks | Done |
 | Phase 7 | JSON + HTML report generation + scanRepository + openReport | Done |
 | Phase 8 | Lighthouse integration + full UI polish | Done |
+| Phase 9 | Visual UX Analysis — Playwright screenshots + above-the-fold DOM checks | Done |
+| Phase 9+ | Impact Engine — business impact estimation layer for all findings | Done |
+| Phase 10 | Competitor Gap Analysis — crawl up to 3 competitors, identify gaps | Done |
+
+### Phase 9 — Visual UX Analysis
+
+I implemented deterministic above-the-fold analysis using Playwright `page.evaluate()` — no ML or OCR. The engine captures screenshots of the homepage, contact page, and service page, then runs four heuristic checks on the homepage:
+
+- `hasAboveFoldCta` — strong CTA button/link visible in the first viewport
+- `hasPhoneVisible` — phone number or `tel:` link visible above the fold
+- `hasTrustSignalsVisible` — trust keywords visible near the top
+- `hasHeroClarity` — H1/hero headline present and descriptive
+
+Visual findings (category `conversion` or `trust`, severity `medium`) are appended to `allFindings`. Screenshots are saved as `<scanId>/screenshots/*.png`. The HTML report gains a **🖥️ Visual UX Analysis** section with a screenshot row and check results table.
+
+Module location: `src/engine/visual/` — `viewportChecks.ts`, `captureScreenshots.ts`, `visualAnalyzer.ts`
+
+### Phase 9+ — Impact Engine
+
+I added a business impact estimation layer on top of the existing finding system without changing any existing scoring logic.
+
+`src/engine/impactAnalyzer.ts` exports:
+- `analyzeIssueImpact(finding, businessType)` — returns `{ impactLevel, impactReason, estimatedBusinessEffect }` using 38 specific finding-ID rules with category × severity fallback
+- `enrichFindingsWithImpact(findings, businessType)` — adds impact fields to every finding (non-destructive spread)
+- `computeImpactPenalty(findings)` — sums per-level deductions (CRITICAL −12, HIGH −8, MEDIUM −4, LOW −1), capped at −30, applied to `scores.overall` only
+
+Each `Finding` now carries optional fields: `impactLevel`, `impactReason`, `estimatedBusinessEffect`.
+
+The HTML report gains a **🚨 Revenue Impact Summary** section (above Quick Wins) grouping findings by impact level with counts and business-effect descriptions. Individual finding cards also show an impact badge.
+
+### Phase 10 — Competitor Gap Analysis
+
+I implemented a full competitor crawl and gap analysis system in `src/engine/competitor/`.
+
+- `ScanForm.tsx` now includes three optional competitor URL inputs; blank entries are filtered and `https://` is prepended automatically
+- The engine crawls each competitor (up to 3 URLs, max 5 pages each) using the existing Playwright BFS crawler
+- `competitorAnalyzer.ts` extracts a `CompetitorSite` signal summary from each crawl
+- `gapAnalysis.ts` runs 8 gap checks; a gap fires when ≥ 60% of successful competitor crawls have an advantage the client lacks
+- Results appear in `AuditResult.competitor` and in the **🏆 Competitor Gap Analysis** HTML report section
+- If no URLs are provided the step is skipped entirely
 
 ## Feature-Level Status
 
@@ -77,6 +117,13 @@ All 8 phases from the original implementation plan are complete.
 | Client summary builder | Done | `src/engine/reports/buildClientSummary.ts` | |
 | Lighthouse runner | Done | `src/engine/lighthouse/runLighthouse.ts` | Best-effort, skips if no Chrome |
 | Lighthouse analyzer | Done | `src/engine/lighthouse/lighthouseAnalyzer.ts` | 9 finding types |
+| Visual analyzer | Done | `src/engine/visual/` | viewportChecks, captureScreenshots, visualAnalyzer |
+| Impact analyzer | Done | `src/engine/impactAnalyzer.ts` | 38 ID rules + category×severity fallback |
+| Competitor crawler | Done | `src/engine/competitor/competitorCrawler.ts` | max 5 pages per competitor |
+| Competitor analyzer | Done | `src/engine/competitor/competitorAnalyzer.ts` | CompetitorSite signal extraction |
+| Gap analysis | Done | `src/engine/competitor/gapAnalysis.ts` | 8 gap checks, 60% threshold |
+| Competitor orchestrator | Done | `src/engine/competitor/index.ts` | Promise.allSettled parallel crawls |
+| ScanForm competitor inputs | Done | `src/components/scan/ScanForm.tsx` | 3 optional URL fields |
 | Path resolver | Done | `src/engine/storage/pathResolver.ts` | Uses Electron userData |
 | Scan repository | Done | `src/engine/storage/scanRepository.ts` | list, load, save, delete |
 | Audit orchestrator | Done | `src/engine/orchestrator/runAudit.ts` | Full 15-step pipeline |
@@ -85,7 +132,7 @@ All 8 phases from the original implementation plan are complete.
 
 | Feature | Notes |
 |---|---|
-| Competitor gap analysis | Not planned in any phase; see COMPETITOR_GAP_ANALYSIS.md |
+| Competitor auto-discovery | `noopDiscovery` stub always returns `[]`; pluggable for future |
 | Google Search Console integration | Out of scope |
 | Google My Business integration | Out of scope |
 | Sitemap URL injection into crawler | Sitemap is found but not used to seed the BFS queue |

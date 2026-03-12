@@ -28,7 +28,7 @@ Local Seo Engine/
 │   │   │   ├── Sidebar.tsx            Navigation sidebar
 │   │   │   └── Topbar.tsx            Top bar with page title
 │   │   ├── scan/
-│   │   │   ├── ScanForm.tsx           URL input, business type, scan mode, submit button
+│   │   │   ├── ScanForm.tsx           URL input, business type, scan mode, 3 optional competitor URL inputs, submit button
 │   │   │   ├── BusinessTypeSelect.tsx Dropdown for business type selection
 │   │   │   ├── ScanProgress.tsx      Progress bar and step label during scanning
 │   │   │   ├── ScoreOverview.tsx     Category score cards (5 categories + overall)
@@ -95,6 +95,8 @@ Local Seo Engine/
 │       │   ├── contentAnalyzer.ts    Thin pages, service pages, location pages, content gaps
 │       │   └── trustAnalyzer.ts      HTTPS, testimonials, about page, gallery, trust language
 │       │
+│       ├── impactAnalyzer.ts     Business impact estimation — 38-rule engine, enrichFindingsWithImpact, computeImpactPenalty
+│       │
 │       ├── scoring/
 │       │   ├── scoreHelpers.ts       PENALTY constants, computeScore, scoreBand, makeScore
 │       │   ├── scoreTechnical.ts     Technical scorer with positive signals
@@ -107,16 +109,29 @@ Local Seo Engine/
 │       │
 │       ├── reports/
 │       │   ├── buildJsonReport.ts    Writes AuditResult JSON (strips html/textContent)
-│       │   ├── buildHtmlReport.ts    Generates self-contained HTML report
-│       │   ├── reportTemplates.ts    HTML helper functions (scoreColor, renderFinding, escHtml, etc.)
-│       │   └── buildClientSummary.ts Translates findings into plain-language summary sections
+│       │   ├── buildHtmlReport.ts    Generates self-contained HTML report (13 sections)
+│       │   ├── reportTemplates.ts    HTML helpers: scoreColor, renderFinding, renderImpactSummarySection, renderCompetitorSection, renderVisualSection, escHtml
+│       │   └── buildClientSummary.ts Translates findings into plain-language summary sections (owner-focused, not competitor analysis)
+│       │
+│       ├── visual/
+│       │   ├── viewportChecks.ts     4 self-contained page.evaluate() DOM checks
+│       │   ├── captureScreenshots.ts takeScreenshot() — saves PNG to screenshotDir
+│       │   └── visualAnalyzer.ts     Orchestrator — opens pages, runs checks, returns VisualAnalysisResult + findings
+│       │
+│       ├── competitor/
+│       │   ├── index.ts              runCompetitorAnalysis() — Promise.allSettled parallel crawls
+│       │   ├── competitorCrawler.ts  crawlCompetitor() — BFS max 5 pages, never throws
+│       │   ├── competitorAnalyzer.ts analyzeCompetitor() — pure fn, CrawledPage[] → CompetitorSite
+│       │   ├── gapAnalysis.ts        analyzeGaps() — 8 checks, 60% threshold
+│       │   ├── competitorDiscovery.ts noopDiscovery stub — pluggable for future auto-discovery
+│       │   └── competitorTypes.ts    Re-exports CompetitorSite, CompetitorGap, CompetitorAnalysisResult
 │       │
 │       ├── lighthouse/
 │       │   ├── runLighthouse.ts      Launches Chrome, runs Lighthouse, returns LighthouseMetrics
 │       │   └── lighthouseAnalyzer.ts Converts LighthouseMetrics into Finding objects
 │       │
 │       ├── storage/
-│       │   ├── pathResolver.ts       getReportsDir, buildJsonPath, buildHtmlPath, generateScanId (imports Electron app)
+│       │   ├── pathResolver.ts       initReportsDir, getReportsDir, getScreenshotsDir, buildJsonPath, buildHtmlPath, generateScanId (no Electron import — uses initReportsDir setter)
 │       │   └── scanRepository.ts     listSavedScans, loadScanById, saveScan, deleteScan
 │       │
 │       └── orchestrator/

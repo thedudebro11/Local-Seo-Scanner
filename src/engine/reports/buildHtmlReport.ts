@@ -11,6 +11,7 @@ import { createLogger } from '../utils/logger'
 import {
   scoreColor, renderScoreCard, renderFinding, renderBulletList,
   categoryLabel, escHtml, formatDate, renderVisualSection, renderCompetitorSection,
+  renderImpactSummarySection,
 } from './reportTemplates'
 import { buildClientSummary } from './buildClientSummary'
 
@@ -95,6 +96,12 @@ function generateHtml(r: AuditResult): string {
     /* Money leaks */
     .money-leaks { border-color: #fecaca; }
     .money-leaks h2 { color: #dc2626; }
+
+    /* Impact summary */
+    .impact-summary { border-color: #ede9fe; }
+    .impact-summary h2 { color: #7c3aed; }
+    .impact-badge { font-size: 9px; font-weight: 800; color: #fff; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px; margin-right: 6px; vertical-align: middle; }
+    .finding-impact { font-size: 12px; }
 
     /* Quick wins */
     .quick-wins { border-color: #bbf7d0; }
@@ -194,6 +201,9 @@ function generateHtml(r: AuditResult): string {
     <h2>🚨 Revenue-Impacting Issues</h2>
     ${renderBulletList(r.moneyLeaks)}
   </div>` : ''}
+
+  <!-- Revenue Impact Summary -->
+  ${renderImpactSummarySection(r.findings)}
 
   <!-- Quick wins -->
   ${r.quickWins.length > 0 ? `

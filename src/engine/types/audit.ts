@@ -32,6 +32,8 @@ export type FindingCategory = 'technical' | 'localSeo' | 'conversion' | 'content
 
 export type Severity = 'high' | 'medium' | 'low'
 
+export type ImpactLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+
 // ─── Request ──────────────────────────────────────────────────────────────────
 
 export interface AuditRequest {
@@ -93,6 +95,10 @@ export interface Finding {
   whyItMatters: string
   recommendation: string
   affectedUrls?: string[]
+  // Impact signals — populated by impactAnalyzer after all findings are assembled
+  impactLevel?: ImpactLevel
+  impactReason?: string
+  estimatedBusinessEffect?: string
 }
 
 // ─── Scoring ─────────────────────────────────────────────────────────────────
