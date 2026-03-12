@@ -34,7 +34,7 @@ import { scoreContent } from '../scoring/scoreContent'
 import { scoreTrust } from '../scoring/scoreTrust'
 import { computeWeightedScore } from '../scoring/weightedFinalScore'
 import { prioritizeFindings, buildQuickWins, buildMoneyLeaks } from '../scoring/prioritizeFindings'
-import { enrichFindingsWithImpact, computeImpactPenalty } from '../impactAnalyzer'
+import { enrichFindingsWithImpact } from '../impactAnalyzer'
 import { buildJsonReport } from '../reports/buildJsonReport'
 import { buildHtmlReport } from '../reports/buildHtmlReport'
 import { saveScan } from '../storage/scanRepository'
@@ -261,13 +261,6 @@ export async function runAudit(
 
     scores = { ...categoryScores, overall: computeWeightedScore(categoryScores) }
     allFindings = prioritizeFindings(enrichFindingsWithImpact(allFindings, detectedBusinessType))
-
-    // Apply impact-weighted penalty to overall score (capped at -30)
-    const impactPenalty = computeImpactPenalty(allFindings)
-    if (impactPenalty > 0) {
-      const adjusted = Math.max(0, scores.overall.value - impactPenalty)
-      scores = { ...scores, overall: { ...scores.overall, value: adjusted } }
-    }
 
     log.info(
       `Scoring complete: tech=${techScore.value} local=${localScore.value} conv=${convScore.value} content=${contentScore.value} trust=${trustScore.value} overall=${scores.overall.value}`,

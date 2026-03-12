@@ -2256,16 +2256,6 @@ function analyzeIssueImpact(issue, _businessType) {
 function enrichFindingsWithImpact(findings, businessType) {
   return findings.map((f) => ({ ...f, ...analyzeIssueImpact(f) }));
 }
-const IMPACT_PENALTY = {
-  CRITICAL: 12,
-  HIGH: 8,
-  MEDIUM: 4,
-  LOW: 1
-};
-function computeImpactPenalty(findings) {
-  const raw = findings.reduce((sum, f) => sum + (f.impactLevel ? IMPACT_PENALTY[f.impactLevel] ?? 0 : 0), 0);
-  return Math.min(raw, 30);
-}
 const log$5 = scanRepository.createLogger("buildJsonReport");
 async function buildJsonReport(result, jsonPath) {
   await fs.ensureDir(path.dirname(jsonPath));
@@ -3440,11 +3430,6 @@ async function runAudit(request, emitProgress) {
     };
     scores = { ...categoryScores, overall: computeWeightedScore(categoryScores) };
     allFindings = prioritizeFindings(enrichFindingsWithImpact(allFindings, detectedBusinessType));
-    const impactPenalty = computeImpactPenalty(allFindings);
-    if (impactPenalty > 0) {
-      const adjusted = Math.max(0, scores.overall.value - impactPenalty);
-      scores = { ...scores, overall: { ...scores.overall, value: adjusted } };
-    }
     log.info(
       `Scoring complete: tech=${techScore.value} local=${localScore.value} conv=${convScore.value} content=${contentScore.value} trust=${trustScore.value} overall=${scores.overall.value}`
     );
