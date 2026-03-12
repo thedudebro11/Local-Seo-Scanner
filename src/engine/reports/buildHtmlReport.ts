@@ -6,7 +6,7 @@
 
 import fs from 'fs-extra'
 import path from 'path'
-import type { AuditResult } from '../types/audit'
+import type { AuditResult, FixRoadmapItem, RevenueImpactEstimate } from '../types/audit'
 import { createLogger } from '../utils/logger'
 import {
   scoreColor, renderScoreCard, renderFinding, renderBulletList,
@@ -23,6 +23,83 @@ export async function buildHtmlReport(result: AuditResult, htmlPath: string): Pr
   await fs.writeFile(htmlPath, html, 'utf8')
   log.info(`HTML report written: ${htmlPath}`)
   return htmlPath
+}
+
+// ─── Revenue impact renderer ──────────────────────────────────────────────────
+
+function renderRevenueImpact(ri: RevenueImpactEstimate): string {
+  const fmt = (n: number) => `$${n.toLocaleString()}`
+  const confKey = ri.confidence.toLowerCase() as 'low' | 'medium' | 'high'
+
+  const revenueCard = ri.estimatedRevenueLossRange ? `
+    <div class="rev-range-card">
+      <div class="rev-range-label">Est. Revenue Loss / Month</div>
+      <div class="rev-range-value">${fmt(ri.estimatedRevenueLossRange.low)}–${fmt(ri.estimatedRevenueLossRange.high)}</div>
+      <div class="rev-range-sub">estimated range</div>
+    </div>` : ''
+
+  const driversHtml = ri.impactDrivers.map(
+    (d) => `<div class="rev-driver"><span class="rev-driver-dot">▸</span><span>${escHtml(d)}</span></div>`,
+  ).join('')
+
+  const assumptionsHtml = ri.assumptions
+    .map((a) => `<div>• ${escHtml(a)}</div>`)
+    .join('')
+
+  return `
+  <div class="section rev-impact">
+    <h2>Estimated Business Impact</h2>
+    <div class="rev-ranges">
+      <div class="rev-range-card">
+        <div class="rev-range-label">Est. Lead Loss / Month</div>
+        <div class="rev-range-value">${ri.estimatedLeadLossRange.low}–${ri.estimatedLeadLossRange.high} leads</div>
+        <div class="rev-range-sub">estimated range</div>
+      </div>
+      ${revenueCard}
+    </div>
+    <p class="rev-explanation">${escHtml(ri.explanation)}</p>
+    <div class="rev-drivers">
+      <h3>Main contributing issues</h3>
+      ${driversHtml}
+    </div>
+    <details class="rev-assumptions">
+      <summary>Assumptions &amp; methodology</summary>
+      <div style="margin-top:8px">${assumptionsHtml}</div>
+    </details>
+    <div class="rev-confidence">
+      Estimate confidence:
+      <span class="rev-confidence-pill rev-conf-${confKey}">${escHtml(ri.confidence)}</span>
+    </div>
+  </div>`
+}
+
+// ─── Roadmap renderer ─────────────────────────────────────────────────────────
+
+function renderRoadmapItem(item: FixRoadmapItem): string {
+  const impactKey = item.impact.toLowerCase() as 'critical' | 'high' | 'medium' | 'low'
+  const effortKey = item.effort.toLowerCase() as 'low' | 'medium' | 'high'
+  const urlsHtml = item.affectedUrls && item.affectedUrls.length > 0
+    ? `<div class="roadmap-urls">Affects: ${item.affectedUrls.map(escHtml).join(' · ')}</div>`
+    : ''
+  return `
+  <div class="roadmap-item">
+    <div class="roadmap-item-header">
+      <div class="roadmap-priority">${item.priority}</div>
+      <div>
+        <div class="roadmap-title">${escHtml(item.title)}</div>
+        <div class="roadmap-badges">
+          <span class="roadmap-badge roadmap-impact-${impactKey}">Impact: ${escHtml(item.impact)}</span>
+          <span class="roadmap-badge roadmap-effort-${effortKey}">Effort: ${escHtml(item.effort)}</span>
+        </div>
+      </div>
+    </div>
+    <div class="roadmap-why">${escHtml(item.whyItMatters)}</div>
+    <div class="roadmap-fix">
+      <div class="roadmap-fix-label">How to fix it</div>
+      ${escHtml(item.plainEnglishFix)}
+    </div>
+    ${urlsHtml}
+  </div>`
 }
 
 // ─── Generator ────────────────────────────────────────────────────────────────
@@ -131,6 +208,49 @@ function generateHtml(r: AuditResult): string {
     .rationale-list li { font-size: 13px; padding: 4px 0; color: #374151; }
     .rationale-list li:before { content: "• "; color: #9ca3af; }
 
+    /* Revenue impact estimate */
+    .rev-impact { border-color: #fde68a; }
+    .rev-impact h2 { color: #92400e; }
+    .rev-ranges { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+    .rev-range-card { flex: 1; min-width: 160px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 14px 18px; }
+    .rev-range-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #92400e; margin-bottom: 4px; }
+    .rev-range-value { font-size: 22px; font-weight: 800; color: #78350f; line-height: 1.2; }
+    .rev-range-sub { font-size: 11px; color: #a16207; margin-top: 2px; }
+    .rev-explanation { font-size: 14px; color: #374151; margin-bottom: 14px; line-height: 1.6; }
+    .rev-drivers { margin-bottom: 14px; }
+    .rev-drivers h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; margin-bottom: 8px; }
+    .rev-driver { font-size: 13px; color: #374151; padding: 5px 0; border-bottom: 1px solid #f9fafb; display: flex; gap: 8px; align-items: flex-start; }
+    .rev-driver:last-child { border-bottom: none; }
+    .rev-driver-dot { color: #d97706; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+    .rev-assumptions { font-size: 12px; color: #9ca3af; line-height: 1.6; }
+    .rev-assumptions summary { cursor: pointer; color: #6b7280; font-weight: 600; margin-bottom: 4px; }
+    .rev-confidence { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280; margin-top: 10px; }
+    .rev-confidence-pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+    .rev-conf-low    { background: #fee2e2; color: #b91c1c; }
+    .rev-conf-medium { background: #fef9c3; color: #a16207; }
+    .rev-conf-high   { background: #dcfce7; color: #15803d; }
+
+    /* Fix Roadmap */
+    .roadmap { border-color: #dbeafe; }
+    .roadmap h2 { color: #1d4ed8; }
+    .roadmap-item { border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; background: #fff; }
+    .roadmap-item-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 10px; }
+    .roadmap-priority { font-size: 13px; font-weight: 800; color: #fff; background: #1d4ed8; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .roadmap-title { font-size: 15px; font-weight: 700; color: #111827; line-height: 1.3; }
+    .roadmap-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+    .roadmap-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.4px; }
+    .roadmap-impact-critical { background: #ede9fe; color: #6d28d9; }
+    .roadmap-impact-high     { background: #fee2e2; color: #b91c1c; }
+    .roadmap-impact-medium   { background: #fef9c3; color: #92400e; }
+    .roadmap-impact-low      { background: #f3f4f6; color: #374151; }
+    .roadmap-effort-low    { background: #dcfce7; color: #15803d; }
+    .roadmap-effort-medium { background: #fef3c7; color: #92400e; }
+    .roadmap-effort-high   { background: #fee2e2; color: #b91c1c; }
+    .roadmap-why { font-size: 13px; color: #374151; margin-bottom: 8px; line-height: 1.55; }
+    .roadmap-fix { font-size: 13px; color: #1f2937; background: #f0fdf4; border-left: 3px solid #22c55e; padding: 10px 14px; border-radius: 4px; line-height: 1.55; }
+    .roadmap-fix-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #16a34a; margin-bottom: 4px; }
+    .roadmap-urls { font-size: 11px; color: #9ca3af; margin-top: 8px; }
+
     /* Score confidence */
     .confidence-block { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
     .confidence-pill { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
@@ -217,6 +337,17 @@ function generateHtml(r: AuditResult): string {
 
   <!-- Revenue Impact Summary -->
   ${renderImpactSummarySection(r.findings)}
+
+  <!-- Estimated Business Impact -->
+  ${r.revenueImpact ? renderRevenueImpact(r.revenueImpact) : ''}
+
+  <!-- Priority Fix Roadmap -->
+  ${r.roadmap && r.roadmap.length > 0 ? `
+  <div class="section roadmap">
+    <h2>Priority Fix Roadmap</h2>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:20px">A step-by-step action plan ordered by business impact. Start at the top.</p>
+    ${r.roadmap.map(renderRoadmapItem).join('')}
+  </div>` : ''}
 
   <!-- Quick wins -->
   ${r.quickWins.length > 0 ? `

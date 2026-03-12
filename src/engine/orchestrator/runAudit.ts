@@ -34,6 +34,8 @@ import { scoreContent } from '../scoring/scoreContent'
 import { scoreTrust } from '../scoring/scoreTrust'
 import { computeWeightedScore } from '../scoring/weightedFinalScore'
 import { computeScoreConfidence } from '../scoring/scoreConfidence'
+import { buildFixRoadmap } from '../roadmap/buildFixRoadmap'
+import { estimateRevenueImpact } from '../revenue/estimateRevenueImpact'
 import { prioritizeFindings, buildQuickWins, buildMoneyLeaks } from '../scoring/prioritizeFindings'
 import { enrichFindingsWithImpact } from '../impactAnalyzer'
 import { buildJsonReport } from '../reports/buildJsonReport'
@@ -312,6 +314,12 @@ export async function runAudit(
       visual: visualResult,
       competitor: competitorResult,
       scoreConfidence,
+      revenueImpact: estimateRevenueImpact({
+        findings: allFindings,
+        detectedBusinessType,
+        scoreConfidence,
+      }),
+      roadmap: buildFixRoadmap({ findings: allFindings, moneyLeaks: buildMoneyLeaks(allFindings) }),
       artifacts: { jsonPath, htmlPath, screenshotPaths: reportArtifacts.screenshotPaths },
     }
 

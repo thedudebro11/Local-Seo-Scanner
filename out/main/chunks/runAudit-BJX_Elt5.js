@@ -2010,8 +2010,8 @@ function buildReason(level, positives, negatives) {
   if (positives.length === 0 && negatives.length === 0) {
     return "Scan data was limited.";
   }
-  const posPart = joinList(positives);
-  const negPart = joinList(negatives);
+  const posPart = joinList$1(positives);
+  const negPart = joinList$1(negatives);
   if (level === "High") {
     return cap(posPart) + ".";
   }
@@ -2026,7 +2026,7 @@ function buildReason(level, positives, negatives) {
   }
   return negPart ? `${cap(negPart)}.` : `Scan coverage was very limited.`;
 }
-function joinList(items) {
+function joinList$1(items) {
   if (items.length === 0) return "";
   if (items.length === 1) return items[0];
   if (items.length === 2) return `${items[0]} and ${items[1]}`;
@@ -2034,6 +2034,445 @@ function joinList(items) {
 }
 function cap(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+const CLUSTERS = [
+  // ── Crawlability / Indexing ────────────────────────────────────────────────
+  {
+    clusterKey: "crawlability",
+    ids: ["technical-noindex-money-pages", "technical-broken-pages"],
+    title: "Fix pages that are hidden from or blocked by Google",
+    whyItMatters: "Some of your important pages are either broken or telling Google to ignore them. That means potential customers searching for your services may never find those pages, and any money spent on SEO for those pages is wasted.",
+    plainEnglishFix: 'Restore any broken pages (or redirect them to working ones). Remove the "do not index" setting from service, contact, and location pages so they can appear in Google search results.',
+    effort: "Medium",
+    category: "technical"
+  },
+  // ── Page speed ────────────────────────────────────────────────────────────
+  {
+    clusterKey: "page-speed",
+    ids: [
+      "lh-performance-poor",
+      "lh-performance-needs-work",
+      "lh-lcp-slow",
+      "lh-lcp-needs-work",
+      "lh-tbt-high",
+      "lh-tbt-medium",
+      "lh-cls-high",
+      "lh-cls-medium"
+    ],
+    title: "Speed up your website so visitors don't leave before it loads",
+    whyItMatters: "A slow website frustrates visitors and hurts your Google ranking. Most people will leave a page if it takes more than 3 seconds to load, meaning you are losing leads before they even see your services.",
+    plainEnglishFix: "Work with your web developer or hosting provider to compress images, reduce unnecessary scripts, and enable caching. If you use WordPress or a similar platform, a performance plugin can often fix this quickly.",
+    effort: "High",
+    category: "technical"
+  },
+  // ── Phone / contact visibility ─────────────────────────────────────────────
+  {
+    clusterKey: "phone-visibility",
+    ids: [
+      "local-no-phone-homepage",
+      "local-no-phone-contact",
+      "conversion-no-phone-homepage",
+      "visual-no-phone-above-fold"
+    ],
+    title: "Make your phone number visible and easy to tap on every key page",
+    whyItMatters: "People searching for local businesses often want to call immediately. If your phone number is missing or hard to find, those visitors will call a competitor instead. This is one of the most direct causes of lost leads.",
+    plainEnglishFix: "Add your phone number in large, clickable text at the top of your homepage, contact page, and every service page. On mobile, it should be a tap-to-call link so visitors can reach you instantly.",
+    effort: "Low",
+    category: "conversion"
+  },
+  // ── CTA coverage ──────────────────────────────────────────────────────────
+  {
+    clusterKey: "cta-coverage",
+    ids: [
+      "conversion-no-cta-homepage",
+      "conversion-low-cta-coverage",
+      "conversion-no-booking-cta",
+      "visual-no-above-fold-cta"
+    ],
+    title: 'Add clear "contact us" or "get a quote" buttons to your key pages',
+    whyItMatters: "Visitors who are ready to hire someone need a clear next step. Without a prominent button or link telling them what to do, many will leave without contacting you — even if they liked what they saw.",
+    plainEnglishFix: 'Add a visible button (such as "Call Now", "Get a Free Quote", or "Book an Appointment") near the top of your homepage and on every service page. The button should be a strong color that stands out from the rest of the page.',
+    effort: "Medium",
+    category: "conversion"
+  },
+  // ── Contact form ───────────────────────────────────────────────────────────
+  {
+    clusterKey: "contact-form",
+    ids: ["conversion-no-form", "conversion-no-form-contact-page"],
+    title: "Add a contact form so people can reach you any time of day",
+    whyItMatters: "Not everyone wants to call — many visitors prefer to send a message, especially outside business hours. Without a contact form you are missing enquiries from people who would have hired you.",
+    plainEnglishFix: "Add a simple contact form to your contact page and ideally your homepage too. Ask only for the essentials: name, phone or email, and a brief message. Make sure form submissions arrive in an inbox you check regularly.",
+    effort: "Medium",
+    category: "conversion"
+  },
+  // ── LocalBusiness schema ───────────────────────────────────────────────────
+  {
+    clusterKey: "local-schema",
+    ids: ["local-no-localbusiness-schema"],
+    title: "Tell Google exactly what kind of business you are and where you operate",
+    whyItMatters: "Google uses structured data to display your business name, address, phone number, and hours directly in search results. Without it, you are less likely to appear in local map results and Google may mis-categorize your business.",
+    plainEnglishFix: 'Add "LocalBusiness" structured data to your homepage. This is a small piece of code (or a plugin setting in WordPress) that gives Google your business name, type, address, phone, and opening hours in a format it can reliably read.',
+    effort: "Medium",
+    category: "localSeo"
+  },
+  // ── Local signals: map, hours, address ────────────────────────────────────
+  {
+    clusterKey: "local-signals",
+    ids: ["local-no-map", "local-no-hours", "local-no-address-homepage", "local-no-location-pages"],
+    title: "Add your address, hours, and a map to make your location easy to find",
+    whyItMatters: "Local customers need to know where you are, when you are open, and how to get there. If this information is missing or buried, visitors will go to a competitor whose website answers these questions immediately.",
+    plainEnglishFix: "Add your full address and business hours to your homepage and contact page. Embed a Google Map so visitors can get directions with one click. If you serve multiple areas, create a dedicated page for each location.",
+    effort: "Low",
+    category: "localSeo"
+  },
+  // ── Meta content ──────────────────────────────────────────────────────────
+  {
+    clusterKey: "meta-content",
+    ids: [
+      "technical-missing-title",
+      "technical-short-title",
+      "technical-long-title",
+      "technical-missing-meta-desc",
+      "technical-missing-h1",
+      "technical-multiple-h1",
+      "technical-missing-canonical"
+    ],
+    title: "Fix missing or poorly written page titles and descriptions",
+    whyItMatters: "Page titles and descriptions are what Google shows in search results. If they are missing, duplicated, or too short, your pages look generic and get passed over for competitors who have written compelling, keyword-rich summaries.",
+    plainEnglishFix: "Give every page a unique title (50–60 characters) that describes exactly what the page is about, including your service and city. Write a short description (150–160 characters) for each page that encourages someone to click. Make sure every page has exactly one clear main heading.",
+    effort: "Low",
+    category: "technical"
+  },
+  // ── Content depth ─────────────────────────────────────────────────────────
+  {
+    clusterKey: "content-depth",
+    ids: [
+      "content-thin-homepage",
+      "content-no-service-pages",
+      "content-too-few-service-pages",
+      "content-thin-service-pages",
+      "content-no-location-pages",
+      "content-widespread-thin-pages"
+    ],
+    title: "Write more detailed pages that explain your services and service area",
+    whyItMatters: "Thin pages with little content rarely rank well because Google struggles to understand what you offer and for whom. Competitors with detailed service pages consistently outrank sites with sparse content.",
+    plainEnglishFix: "Create or expand your service pages to clearly describe each service, who it is for, and why customers should choose you. Add a dedicated page for each major service and each city or town you serve. Aim for at least 300–500 words per page.",
+    effort: "High",
+    category: "content"
+  },
+  // ── Trust & credibility ────────────────────────────────────────────────────
+  {
+    clusterKey: "trust-credibility",
+    ids: [
+      "trust-no-https",
+      "trust-no-testimonials",
+      "trust-weak-trust-signals",
+      "trust-homepage-no-trust-content",
+      "trust-no-about-page",
+      "trust-no-gallery"
+    ],
+    title: "Build visible credibility so visitors trust you before they call",
+    whyItMatters: "Visitors decide within seconds whether a business looks trustworthy. Without reviews, credentials, photos, or an About page, many people will leave rather than risk contacting an unknown company.",
+    plainEnglishFix: "Add real customer reviews or testimonials to your homepage. Create an About page that introduces your team and story. Add photos of your work, vehicle, or premises. If your site is not yet on HTTPS (the padlock), ask your hosting provider to enable SSL — it is usually free.",
+    effort: "Medium",
+    category: "trust"
+  },
+  // ── Visual / above-fold presence ──────────────────────────────────────────
+  {
+    clusterKey: "above-fold",
+    ids: ["visual-no-hero-clarity", "visual-no-trust-signals-visible"],
+    title: "Make it immediately clear who you are and why visitors should stay",
+    whyItMatters: "The first thing a visitor sees on your homepage determines whether they stay or leave. If there is no clear headline, photo, or trust signal above the fold (before scrolling), many visitors will bounce without ever learning about your services.",
+    plainEnglishFix: "Update your homepage hero section to include: a clear headline stating what you do and where, a short sub-heading with your key selling point, a visible phone number or CTA button, and a recognizable photo (your team, your work, or your location).",
+    effort: "Medium",
+    category: "conversion"
+  },
+  // ── Robots / Sitemap ──────────────────────────────────────────────────────
+  {
+    clusterKey: "crawl-config",
+    ids: ["technical-no-robots", "technical-no-sitemap"],
+    title: "Set up the basic files Google needs to crawl your site properly",
+    whyItMatters: "A robots.txt file and a sitemap tell Google which pages exist and how to crawl your site. Without them, Google may miss pages entirely or crawl your site less often.",
+    plainEnglishFix: "Ask your developer or use your CMS's SEO plugin (e.g., Yoast) to generate a sitemap.xml and a robots.txt file, then submit the sitemap to Google Search Console.",
+    effort: "Low",
+    category: "technical"
+  },
+  // ── Image accessibility ───────────────────────────────────────────────────
+  {
+    clusterKey: "image-alt",
+    ids: ["technical-poor-image-alt"],
+    title: "Add descriptions to your images so Google and screen readers can understand them",
+    whyItMatters: "Images without alt text are invisible to Google — and to visitors using screen readers. Properly described images add keyword relevance and improve accessibility.",
+    plainEnglishFix: 'For each image on your site, add a short description (alt text) explaining what the image shows. For example: "Roofing crew replacing shingles on a home in Dallas." Your CMS likely has an alt text field when you upload or edit images.',
+    effort: "Low",
+    category: "technical"
+  },
+  // ── Lighthouse SEO score ──────────────────────────────────────────────────
+  {
+    clusterKey: "lh-seo",
+    ids: ["lh-seo-low"],
+    title: "Fix the technical SEO issues flagged by Google's own audit tool",
+    whyItMatters: "Google's Lighthouse tool scored your SEO below the recommended threshold, meaning there are measurable technical issues that directly reduce your search visibility.",
+    plainEnglishFix: "Run Google Search Console on your site and review the Core Web Vitals and Coverage reports. Address each flagged issue — these are items Google itself is telling you to fix.",
+    effort: "Medium",
+    category: "technical"
+  }
+];
+const ID_TO_CLUSTER = /* @__PURE__ */ new Map();
+for (const cluster of CLUSTERS) {
+  for (const id of cluster.ids) {
+    ID_TO_CLUSTER.set(id, cluster.clusterKey);
+  }
+}
+const IMPACT_SCORE = {
+  CRITICAL: 40,
+  HIGH: 20,
+  MEDIUM: 10,
+  LOW: 3
+};
+const SEVERITY_SCORE = {
+  high: 8,
+  medium: 4,
+  low: 1
+};
+function findingScore(f, moneyLeakIds) {
+  let score = 0;
+  score += IMPACT_SCORE[f.impactLevel ?? ""] ?? 0;
+  score += SEVERITY_SCORE[f.severity] ?? 0;
+  if (moneyLeakIds.has(f.id)) score += 15;
+  score += Math.min((f.affectedUrls?.length ?? 0) * 2, 10);
+  return score;
+}
+function toRoadmapImpact(f) {
+  switch (f.impactLevel) {
+    case "CRITICAL":
+      return "Critical";
+    case "HIGH":
+      return "High";
+    case "MEDIUM":
+      return "Medium";
+    default:
+      return f.severity === "high" ? "High" : f.severity === "medium" ? "Medium" : "Low";
+  }
+}
+const IMPACT_RANK = {
+  Critical: 4,
+  High: 3,
+  Medium: 2,
+  Low: 1
+};
+function highestImpact(impacts) {
+  return impacts.reduce(
+    (best, cur) => IMPACT_RANK[cur] > IMPACT_RANK[best] ? cur : best,
+    "Low"
+  );
+}
+function effortForUngrouped(f) {
+  if (f.category === "technical" && (f.id.startsWith("lh-") || f.id.includes("speed"))) return "High";
+  if ((f.affectedUrls?.length ?? 0) > 5) return "High";
+  if (f.severity === "low") return "Low";
+  return "Medium";
+}
+function buildFixRoadmap(result) {
+  const { findings, moneyLeaks } = result;
+  const moneyLeakIds = new Set(
+    findings.filter((f) => moneyLeaks.some((ml) => ml.toLowerCase().includes(f.title.toLowerCase().slice(0, 20)))).map((f) => f.id)
+  );
+  const scored = findings.map((f) => ({
+    finding: f,
+    score: findingScore(f, moneyLeakIds),
+    clusterKey: ID_TO_CLUSTER.get(f.id) ?? null
+  }));
+  const clusterBuckets = /* @__PURE__ */ new Map();
+  const ungrouped = [];
+  for (const sf of scored) {
+    if (sf.clusterKey) {
+      if (!clusterBuckets.has(sf.clusterKey)) clusterBuckets.set(sf.clusterKey, []);
+      clusterBuckets.get(sf.clusterKey).push(sf);
+    } else {
+      ungrouped.push(sf);
+    }
+  }
+  const items = [];
+  for (const cluster of CLUSTERS) {
+    const bucket = clusterBuckets.get(cluster.clusterKey);
+    if (!bucket || bucket.length === 0) continue;
+    const totalScore = bucket.reduce((s, sf) => s + sf.score, 0);
+    const allUrls = Array.from(new Set(bucket.flatMap((sf) => sf.finding.affectedUrls ?? [])));
+    const impact = highestImpact(bucket.map((sf) => toRoadmapImpact(sf.finding)));
+    items.push({
+      totalScore,
+      item: {
+        title: cluster.title,
+        whyItMatters: cluster.whyItMatters,
+        plainEnglishFix: cluster.plainEnglishFix,
+        impact,
+        effort: cluster.effort,
+        category: cluster.category,
+        affectedUrls: allUrls.length > 0 ? allUrls.slice(0, 5) : void 0,
+        sourceFindingIds: bucket.map((sf) => sf.finding.id)
+      }
+    });
+  }
+  const UNGROUPED_THRESHOLD = 10;
+  for (const sf of ungrouped) {
+    if (sf.score < UNGROUPED_THRESHOLD) continue;
+    const f = sf.finding;
+    items.push({
+      totalScore: sf.score,
+      item: {
+        title: f.title,
+        whyItMatters: f.whyItMatters,
+        plainEnglishFix: f.recommendation,
+        impact: toRoadmapImpact(f),
+        effort: effortForUngrouped(f),
+        category: f.category,
+        affectedUrls: f.affectedUrls?.slice(0, 5),
+        sourceFindingIds: [f.id]
+      }
+    });
+  }
+  items.sort((a, b) => b.totalScore - a.totalScore);
+  const top10 = items.slice(0, 10);
+  return top10.map((entry, idx) => ({ priority: idx + 1, ...entry.item }));
+}
+const LEAD_VALUE = {
+  roofer: { low: 800, high: 3e3, label: "roofing" },
+  contractor: { low: 600, high: 2500, label: "contracting / home services" },
+  auto_shop: { low: 150, high: 600, label: "auto repair" },
+  auto: { low: 300, high: 1e3, label: "automotive" },
+  dentist: { low: 400, high: 1800, label: "dental / healthcare" },
+  salon: { low: 40, high: 200, label: "salon / spa" },
+  restaurant: { low: 20, high: 100, label: "restaurant / food service" },
+  other: { low: 150, high: 600, label: "local business" }
+};
+const IMPACT_WEIGHT = {
+  CRITICAL: 8,
+  HIGH: 4,
+  MEDIUM: 1.5,
+  LOW: 0.3
+};
+function issueScoreToLeadRange(score) {
+  if (score < 5) return { low: 1, high: 4 };
+  if (score < 15) return { low: 3, high: 10 };
+  if (score < 30) return { low: 8, high: 20 };
+  if (score < 55) return { low: 15, high: 35 };
+  return { low: 25, high: 60 };
+}
+function estimateRevenueImpact(input) {
+  const { findings, detectedBusinessType, scoreConfidence } = input;
+  const leadValueConfig = LEAD_VALUE[detectedBusinessType] ?? LEAD_VALUE.other;
+  const issueScore = findings.reduce((sum, f) => {
+    const w = IMPACT_WEIGHT[f.impactLevel ?? ""] ?? 0;
+    return sum + w;
+  }, 0);
+  const leadLoss = issueScoreToLeadRange(issueScore);
+  const CONVERSION_LOW = 0.2;
+  const CONVERSION_HIGH = 0.4;
+  const revLow = Math.round(leadLoss.low * CONVERSION_LOW * leadValueConfig.low / 100) * 100;
+  const revHigh = Math.round(leadLoss.high * CONVERSION_HIGH * leadValueConfig.high / 100) * 100;
+  const estimatedRevenueLossRange = revLow > 0 ? { low: revLow, high: revHigh } : void 0;
+  const impactDrivers = buildDriverList(findings);
+  const explanation = buildExplanation(findings, leadLoss);
+  const confidence = deriveConfidence(findings, scoreConfidence);
+  const assumptions = buildAssumptions(detectedBusinessType, leadValueConfig, confidence);
+  return {
+    estimatedLeadLossRange: leadLoss,
+    estimatedRevenueLossRange,
+    impactDrivers,
+    explanation,
+    assumptions,
+    confidence
+  };
+}
+const DRIVER_LABELS = {
+  "local-no-phone-homepage": "Phone number missing from the homepage — visitors cannot call without searching for it",
+  "local-no-phone-contact": "Phone number absent from the contact page — the most conversion-critical page on the site",
+  "conversion-no-phone-homepage": "No clickable phone link on the homepage — mobile visitors cannot tap to call",
+  "visual-no-phone-above-fold": "Phone number not visible before scrolling — most visitors never scroll far enough to find it",
+  "conversion-no-cta-homepage": "No clear call-to-action button on the homepage — visitors have no obvious next step",
+  "visual-no-above-fold-cta": 'No "contact" or "get a quote" button visible on first load — visitors leave without acting',
+  "conversion-low-cta-coverage": "Contact options are missing on many pages — visitors who browse rarely find a way to reach you",
+  "conversion-no-booking-cta": "No booking or appointment link — customers must find another way to schedule",
+  "conversion-no-form": "No contact form anywhere on the site — enquiries outside business hours are lost",
+  "conversion-no-form-contact-page": "No form on the contact page — the expected action on that page is unavailable",
+  "technical-noindex-money-pages": "Key service or contact pages blocked from Google — they cannot appear in search results",
+  "technical-broken-pages": "Broken pages on the site — visitors and Google hit dead ends",
+  "lh-performance-poor": "Very slow page loading speed — most visitors leave before the page finishes loading",
+  "lh-performance-needs-work": "Below-average page speed — slow enough to increase visitor drop-off rate",
+  "lh-lcp-slow": "Largest element takes too long to appear — visitors experience a blank or partial page",
+  "lh-tbt-high": "Page interactivity is heavily delayed — buttons and links feel unresponsive",
+  "trust-no-testimonials": "No customer reviews or testimonials — visitors cannot gauge whether to trust the business",
+  "trust-weak-trust-signals": "Weak credibility signals on the homepage — first-time visitors may lack confidence to contact",
+  "trust-homepage-no-trust-content": "Nothing on the homepage establishes trust — the site looks generic",
+  "local-no-localbusiness-schema": "No structured business data for Google — harder to appear in local map results",
+  "local-no-address-homepage": "Business address not on the homepage — local customers cannot verify the location quickly",
+  "local-no-map": "No embedded map — visitors must leave the site to find directions",
+  "content-thin-homepage": "Homepage has very little content — gives Google and visitors minimal information about the business",
+  "content-no-service-pages": "No dedicated service pages — each service cannot rank independently in search",
+  "content-thin-service-pages": "Service pages have too little content — unlikely to rank for relevant search terms"
+};
+function buildDriverList(findings) {
+  const sorted = [...findings].sort((a, b) => {
+    const wa = IMPACT_WEIGHT[a.impactLevel ?? ""] ?? 0;
+    const wb = IMPACT_WEIGHT[b.impactLevel ?? ""] ?? 0;
+    return wb - wa;
+  });
+  return sorted.slice(0, 5).map((f) => DRIVER_LABELS[f.id] ?? f.title);
+}
+function buildExplanation(findings, leadLoss, businessType) {
+  const criticalCount = findings.filter((f) => f.impactLevel === "CRITICAL").length;
+  const highCount = findings.filter((f) => f.impactLevel === "HIGH").length;
+  const hasConversionIssues = findings.some(
+    (f) => f.category === "conversion" && (f.impactLevel === "CRITICAL" || f.impactLevel === "HIGH")
+  );
+  const hasSpeedIssues = findings.some(
+    (f) => f.id.startsWith("lh-performance") || f.id === "lh-lcp-slow" || f.id === "lh-tbt-high"
+  );
+  const hasVisibilityIssues = findings.some(
+    (f) => f.id === "technical-noindex-money-pages" || f.id === "technical-broken-pages"
+  );
+  const hasLocalIssues = findings.some(
+    (f) => f.category === "localSeo" && (f.impactLevel === "CRITICAL" || f.impactLevel === "HIGH")
+  );
+  const hasTrustIssues = findings.some(
+    (f) => f.category === "trust" && (f.impactLevel === "CRITICAL" || f.impactLevel === "HIGH")
+  );
+  const causes = [];
+  if (hasConversionIssues) causes.push("missing contact options and call-to-action buttons");
+  if (hasSpeedIssues) causes.push("slow page loading speed");
+  if (hasVisibilityIssues) causes.push("pages that are hidden from or broken for Google");
+  if (hasLocalIssues) causes.push("weak local search signals");
+  if (hasTrustIssues) causes.push("lack of visible credibility signals");
+  const causeText = causes.length > 0 ? joinList(causes) : "a combination of technical, conversion, and local SEO issues";
+  const severityNote = criticalCount + highCount >= 3 ? "Several high-priority issues were detected. " : criticalCount > 0 ? "At least one critical issue was detected. " : "";
+  return `${severityNote}Based on the issues found, this website may be losing an estimated ${leadLoss.low}–${leadLoss.high} potential leads per month due to ${causeText}. This is a directional estimate only — actual results depend on traffic volume, market, and competition.`;
+}
+function deriveConfidence(findings, scoreConfidence) {
+  const criticalOrHigh = findings.filter(
+    (f) => f.impactLevel === "CRITICAL" || f.impactLevel === "HIGH"
+  ).length;
+  if (scoreConfidence?.level === "High" && criticalOrHigh >= 2) return "Medium";
+  if (scoreConfidence?.level === "Low") return "Low";
+  if (criticalOrHigh === 0) return "Low";
+  if (criticalOrHigh >= 3) return "Medium";
+  return "Low";
+}
+function buildAssumptions(businessType, leadValueConfig, confidence) {
+  return [
+    `Business type: ${leadValueConfig.label}`,
+    `Estimated lead value assumed at $${leadValueConfig.low.toLocaleString()}–$${leadValueConfig.high.toLocaleString()} per converted customer (conservative range)`,
+    "Lead-to-customer conversion rate assumed at 20–40% of enquiries",
+    "Lead loss estimates are based on detected website issues only — actual traffic and market conditions are not known",
+    "Revenue estimates assume current organic and direct traffic levels; paid traffic is not considered",
+    confidence === "Low" ? "Confidence is low — fewer pages were crawled or fewer high-impact issues were identified, making the estimate less certain" : "Estimate is directional; consult an SEO professional for a detailed revenue projection",
+    "All figures are estimates and should not be treated as guaranteed outcomes"
+  ];
+}
+function joinList(items) {
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
 }
 const CATEGORY_WEIGHT = {
   localSeo: 0.3,
@@ -2607,6 +3046,69 @@ async function buildHtmlReport(result, htmlPath) {
   log$4.info(`HTML report written: ${htmlPath}`);
   return htmlPath;
 }
+function renderRevenueImpact(ri) {
+  const fmt = (n) => `$${n.toLocaleString()}`;
+  const confKey = ri.confidence.toLowerCase();
+  const revenueCard = ri.estimatedRevenueLossRange ? `
+    <div class="rev-range-card">
+      <div class="rev-range-label">Est. Revenue Loss / Month</div>
+      <div class="rev-range-value">${fmt(ri.estimatedRevenueLossRange.low)}–${fmt(ri.estimatedRevenueLossRange.high)}</div>
+      <div class="rev-range-sub">estimated range</div>
+    </div>` : "";
+  const driversHtml = ri.impactDrivers.map(
+    (d) => `<div class="rev-driver"><span class="rev-driver-dot">▸</span><span>${escHtml(d)}</span></div>`
+  ).join("");
+  const assumptionsHtml = ri.assumptions.map((a) => `<div>• ${escHtml(a)}</div>`).join("");
+  return `
+  <div class="section rev-impact">
+    <h2>Estimated Business Impact</h2>
+    <div class="rev-ranges">
+      <div class="rev-range-card">
+        <div class="rev-range-label">Est. Lead Loss / Month</div>
+        <div class="rev-range-value">${ri.estimatedLeadLossRange.low}–${ri.estimatedLeadLossRange.high} leads</div>
+        <div class="rev-range-sub">estimated range</div>
+      </div>
+      ${revenueCard}
+    </div>
+    <p class="rev-explanation">${escHtml(ri.explanation)}</p>
+    <div class="rev-drivers">
+      <h3>Main contributing issues</h3>
+      ${driversHtml}
+    </div>
+    <details class="rev-assumptions">
+      <summary>Assumptions &amp; methodology</summary>
+      <div style="margin-top:8px">${assumptionsHtml}</div>
+    </details>
+    <div class="rev-confidence">
+      Estimate confidence:
+      <span class="rev-confidence-pill rev-conf-${confKey}">${escHtml(ri.confidence)}</span>
+    </div>
+  </div>`;
+}
+function renderRoadmapItem(item) {
+  const impactKey = item.impact.toLowerCase();
+  const effortKey = item.effort.toLowerCase();
+  const urlsHtml = item.affectedUrls && item.affectedUrls.length > 0 ? `<div class="roadmap-urls">Affects: ${item.affectedUrls.map(escHtml).join(" · ")}</div>` : "";
+  return `
+  <div class="roadmap-item">
+    <div class="roadmap-item-header">
+      <div class="roadmap-priority">${item.priority}</div>
+      <div>
+        <div class="roadmap-title">${escHtml(item.title)}</div>
+        <div class="roadmap-badges">
+          <span class="roadmap-badge roadmap-impact-${impactKey}">Impact: ${escHtml(item.impact)}</span>
+          <span class="roadmap-badge roadmap-effort-${effortKey}">Effort: ${escHtml(item.effort)}</span>
+        </div>
+      </div>
+    </div>
+    <div class="roadmap-why">${escHtml(item.whyItMatters)}</div>
+    <div class="roadmap-fix">
+      <div class="roadmap-fix-label">How to fix it</div>
+      ${escHtml(item.plainEnglishFix)}
+    </div>
+    ${urlsHtml}
+  </div>`;
+}
 function generateHtml(r) {
   const overall = r.scores.overall;
   const overallColor = scoreColor(overall.value);
@@ -2706,6 +3208,49 @@ function generateHtml(r) {
     .rationale-list li { font-size: 13px; padding: 4px 0; color: #374151; }
     .rationale-list li:before { content: "• "; color: #9ca3af; }
 
+    /* Revenue impact estimate */
+    .rev-impact { border-color: #fde68a; }
+    .rev-impact h2 { color: #92400e; }
+    .rev-ranges { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+    .rev-range-card { flex: 1; min-width: 160px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 14px 18px; }
+    .rev-range-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #92400e; margin-bottom: 4px; }
+    .rev-range-value { font-size: 22px; font-weight: 800; color: #78350f; line-height: 1.2; }
+    .rev-range-sub { font-size: 11px; color: #a16207; margin-top: 2px; }
+    .rev-explanation { font-size: 14px; color: #374151; margin-bottom: 14px; line-height: 1.6; }
+    .rev-drivers { margin-bottom: 14px; }
+    .rev-drivers h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; margin-bottom: 8px; }
+    .rev-driver { font-size: 13px; color: #374151; padding: 5px 0; border-bottom: 1px solid #f9fafb; display: flex; gap: 8px; align-items: flex-start; }
+    .rev-driver:last-child { border-bottom: none; }
+    .rev-driver-dot { color: #d97706; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+    .rev-assumptions { font-size: 12px; color: #9ca3af; line-height: 1.6; }
+    .rev-assumptions summary { cursor: pointer; color: #6b7280; font-weight: 600; margin-bottom: 4px; }
+    .rev-confidence { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280; margin-top: 10px; }
+    .rev-confidence-pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+    .rev-conf-low    { background: #fee2e2; color: #b91c1c; }
+    .rev-conf-medium { background: #fef9c3; color: #a16207; }
+    .rev-conf-high   { background: #dcfce7; color: #15803d; }
+
+    /* Fix Roadmap */
+    .roadmap { border-color: #dbeafe; }
+    .roadmap h2 { color: #1d4ed8; }
+    .roadmap-item { border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; background: #fff; }
+    .roadmap-item-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 10px; }
+    .roadmap-priority { font-size: 13px; font-weight: 800; color: #fff; background: #1d4ed8; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .roadmap-title { font-size: 15px; font-weight: 700; color: #111827; line-height: 1.3; }
+    .roadmap-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+    .roadmap-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.4px; }
+    .roadmap-impact-critical { background: #ede9fe; color: #6d28d9; }
+    .roadmap-impact-high     { background: #fee2e2; color: #b91c1c; }
+    .roadmap-impact-medium   { background: #fef9c3; color: #92400e; }
+    .roadmap-impact-low      { background: #f3f4f6; color: #374151; }
+    .roadmap-effort-low    { background: #dcfce7; color: #15803d; }
+    .roadmap-effort-medium { background: #fef3c7; color: #92400e; }
+    .roadmap-effort-high   { background: #fee2e2; color: #b91c1c; }
+    .roadmap-why { font-size: 13px; color: #374151; margin-bottom: 8px; line-height: 1.55; }
+    .roadmap-fix { font-size: 13px; color: #1f2937; background: #f0fdf4; border-left: 3px solid #22c55e; padding: 10px 14px; border-radius: 4px; line-height: 1.55; }
+    .roadmap-fix-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #16a34a; margin-bottom: 4px; }
+    .roadmap-urls { font-size: 11px; color: #9ca3af; margin-top: 8px; }
+
     /* Score confidence */
     .confidence-block { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
     .confidence-pill { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
@@ -2792,6 +3337,17 @@ function generateHtml(r) {
 
   <!-- Revenue Impact Summary -->
   ${renderImpactSummarySection(r.findings)}
+
+  <!-- Estimated Business Impact -->
+  ${r.revenueImpact ? renderRevenueImpact(r.revenueImpact) : ""}
+
+  <!-- Priority Fix Roadmap -->
+  ${r.roadmap && r.roadmap.length > 0 ? `
+  <div class="section roadmap">
+    <h2>Priority Fix Roadmap</h2>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:20px">A step-by-step action plan ordered by business impact. Start at the top.</p>
+    ${r.roadmap.map(renderRoadmapItem).join("")}
+  </div>` : ""}
 
   <!-- Quick wins -->
   ${r.quickWins.length > 0 ? `
@@ -3580,6 +4136,12 @@ async function runAudit(request, emitProgress) {
       visual: visualResult,
       competitor: competitorResult,
       scoreConfidence,
+      revenueImpact: estimateRevenueImpact({
+        findings: allFindings,
+        detectedBusinessType,
+        scoreConfidence
+      }),
+      roadmap: buildFixRoadmap({ findings: allFindings, moneyLeaks: buildMoneyLeaks(allFindings) }),
       artifacts: { jsonPath, htmlPath, screenshotPaths: reportArtifacts.screenshotPaths }
     };
     await Promise.all([

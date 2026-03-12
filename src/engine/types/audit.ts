@@ -101,6 +101,39 @@ export interface Finding {
   estimatedBusinessEffect?: string
 }
 
+// ─── Revenue Impact Estimate ──────────────────────────────────────────────────
+
+export interface RevenueImpactEstimate {
+  /** Estimated number of leads the site may be losing per month. */
+  estimatedLeadLossRange: { low: number; high: number }
+  /** Estimated monthly revenue loss range (USD). Optional — omitted when confidence is too low. */
+  estimatedRevenueLossRange?: { low: number; high: number }
+  /** Plain-English drivers behind the estimate (top 5 findings). */
+  impactDrivers: string[]
+  /** Single-paragraph explanation for a non-technical reader. */
+  explanation: string
+  /** Assumptions used to produce the estimate — always included for transparency. */
+  assumptions: string[]
+  /** How reliable this estimate is, given the scan completeness. */
+  confidence: 'Low' | 'Medium' | 'High'
+}
+
+// ─── Fix Roadmap ──────────────────────────────────────────────────────────────
+
+export interface FixRoadmapItem {
+  /** 1-based display order — 1 is the most urgent action. */
+  priority: number
+  title: string
+  whyItMatters: string
+  plainEnglishFix: string
+  impact: 'Critical' | 'High' | 'Medium' | 'Low'
+  effort: 'Low' | 'Medium' | 'High'
+  category: FindingCategory
+  affectedUrls?: string[]
+  /** IDs of the findings that contributed to this roadmap item. */
+  sourceFindingIds?: string[]
+}
+
 // ─── Score Confidence ─────────────────────────────────────────────────────────
 
 export interface ScoreConfidence {
@@ -158,6 +191,8 @@ export interface AuditResult {
   visual?: VisualAnalysisResult
   competitor?: CompetitorAnalysisResult
   scoreConfidence?: ScoreConfidence
+  revenueImpact?: RevenueImpactEstimate
+  roadmap?: FixRoadmapItem[]
   artifacts: {
     jsonPath?: string
     htmlPath?: string
