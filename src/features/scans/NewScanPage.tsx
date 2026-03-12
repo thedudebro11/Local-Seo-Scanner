@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ScanForm } from '../../components/scan/ScanForm'
 import { ScanProgress } from '../../components/scan/ScanProgress'
@@ -13,9 +13,14 @@ export default function NewScanPage(): JSX.Element {
 
   const latestResult = useScanStore((s) => s.latestResult)
 
-  // Navigate to results once the scan completes
+  // Capture the result ID that existed when this page was opened.
+  // We only auto-navigate when a *new* scan finishes — not when we arrived
+  // here with a stale result already in the store (e.g. clicking "New Scan"
+  // from the results page).
+  const mountedResultId = useRef(latestResult?.id ?? null)
+
   useEffect(() => {
-    if (latestResult && !isScanning) {
+    if (latestResult && !isScanning && latestResult.id !== mountedResultId.current) {
       navigate(`/scan/results/${latestResult.id}`)
     }
   }, [latestResult, isScanning, navigate])
