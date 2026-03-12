@@ -131,6 +131,14 @@ function generateHtml(r: AuditResult): string {
     .rationale-list li { font-size: 13px; padding: 4px 0; color: #374151; }
     .rationale-list li:before { content: "• "; color: #9ca3af; }
 
+    /* Score confidence */
+    .confidence-block { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
+    .confidence-pill { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+    .confidence-high  { background: #dcfce7; color: #15803d; }
+    .confidence-medium { background: #fef9c3; color: #a16207; }
+    .confidence-low   { background: #fee2e2; color: #b91c1c; }
+    .confidence-reason { font-size: 13px; color: #6b7280; }
+
     /* Footer */
     .footer { text-align: center; font-size: 12px; color: #9ca3af; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
 
@@ -167,10 +175,15 @@ function generateHtml(r: AuditResult): string {
   <!-- Overall score -->
   <div class="overall-block">
     <div class="overall-number" style="color:${overallColor}">${overall.value}</div>
-    <div>
+    <div style="flex:1">
       <div class="overall-label" style="color:${overallColor}">${escHtml(overall.label)}</div>
       <div class="overall-sub">Overall Local SEO Score (out of 100)</div>
       <div class="overall-sub">${r.findings.length} issue${r.findings.length !== 1 ? 's' : ''} found — ${r.findings.filter(f => f.severity === 'high').length} high priority</div>
+      ${r.scoreConfidence ? `
+      <div class="confidence-block">
+        <span class="confidence-pill confidence-${r.scoreConfidence.level.toLowerCase()}">Confidence: ${escHtml(r.scoreConfidence.level)}</span>
+        <span class="confidence-reason">${escHtml(r.scoreConfidence.reason)}</span>
+      </div>` : ''}
     </div>
   </div>
 

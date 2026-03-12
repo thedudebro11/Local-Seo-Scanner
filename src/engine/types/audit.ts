@@ -101,6 +101,15 @@ export interface Finding {
   estimatedBusinessEffect?: string
 }
 
+// ─── Score Confidence ─────────────────────────────────────────────────────────
+
+export interface ScoreConfidence {
+  /** How trustworthy / complete this scan result is — not an SEO quality rating. */
+  level: 'High' | 'Medium' | 'Low'
+  /** Short human-readable explanation of what drove the confidence level. */
+  reason: string
+}
+
 // ─── Scoring ─────────────────────────────────────────────────────────────────
 
 export interface CategoryScore {
@@ -148,6 +157,7 @@ export interface AuditResult {
   lighthouse?: LighthouseMetrics[]
   visual?: VisualAnalysisResult
   competitor?: CompetitorAnalysisResult
+  scoreConfidence?: ScoreConfidence
   artifacts: {
     jsonPath?: string
     htmlPath?: string

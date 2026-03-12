@@ -33,6 +33,7 @@ import { scoreConversion } from '../scoring/scoreConversion'
 import { scoreContent } from '../scoring/scoreContent'
 import { scoreTrust } from '../scoring/scoreTrust'
 import { computeWeightedScore } from '../scoring/weightedFinalScore'
+import { computeScoreConfidence } from '../scoring/scoreConfidence'
 import { prioritizeFindings, buildQuickWins, buildMoneyLeaks } from '../scoring/prioritizeFindings'
 import { enrichFindingsWithImpact } from '../impactAnalyzer'
 import { buildJsonReport } from '../reports/buildJsonReport'
@@ -288,6 +289,13 @@ export async function runAudit(
     const jsonPath = buildJsonPath(scanId)
     const htmlPath = buildHtmlPath(scanId)
 
+    const scoreConfidence = computeScoreConfidence({
+      pages: crawledPages,
+      lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : undefined,
+      visual: visualResult,
+      competitor: competitorResult,
+    })
+
     // Build a partial result with real scores so the report writers have complete data
     const partialResult: AuditResult = {
       id: scanId,
@@ -303,6 +311,7 @@ export async function runAudit(
       lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : undefined,
       visual: visualResult,
       competitor: competitorResult,
+      scoreConfidence,
       artifacts: { jsonPath, htmlPath, screenshotPaths: reportArtifacts.screenshotPaths },
     }
 

@@ -1939,6 +1939,102 @@ function computeWeightedScore(scores) {
   ];
   return { value, label: scoreBand(value), rationale };
 }
+function computeScoreConfidence(input) {
+  const { pages, lighthouse, visual, competitor } = input;
+  let score = 0;
+  const positives = [];
+  const negatives = [];
+  const pageCount = pages.length;
+  if (pageCount >= 8) {
+    score += 2;
+    positives.push(`${pageCount} pages crawled`);
+  } else if (pageCount >= 4) {
+    score += 1;
+    positives.push(`${pageCount} pages crawled`);
+  } else {
+    negatives.push(`only ${pageCount} page${pageCount !== 1 ? "s" : ""} crawled`);
+  }
+  const homepageFound = pages.some((p) => p.pageType === "home");
+  if (homepageFound) {
+    score += 1;
+    positives.push("homepage found");
+  } else {
+    negatives.push("homepage not detected");
+  }
+  const importantTypes = ["contact", "service", "location", "about"];
+  const foundTypes = importantTypes.filter((t) => pages.some((p) => p.pageType === t));
+  if (foundTypes.length >= 2) {
+    score += 2;
+    positives.push(`key pages found (${foundTypes.join(", ")})`);
+  } else if (foundTypes.length === 1) {
+    score += 1;
+    positives.push(`${foundTypes[0]} page found`);
+    const missingType = importantTypes.find((t) => !foundTypes.includes(t)) ?? "supporting page";
+    negatives.push(`no ${missingType} page detected`);
+  } else {
+    negatives.push("no contact, service, or location pages detected");
+  }
+  const lighthouseDone = (lighthouse ?? []).length > 0;
+  if (lighthouseDone) {
+    score += 1;
+    positives.push("Lighthouse completed");
+  } else {
+    negatives.push("Lighthouse data missing");
+  }
+  const errorPageCount = pages.filter((p) => p.statusCode >= 400).length;
+  if (errorPageCount === 0) {
+    score += 1;
+  } else if (errorPageCount / Math.max(pageCount, 1) > 0.3) {
+    negatives.push(`${errorPageCount} pages returned errors`);
+  }
+  if (visual && visual.pagesAnalyzed.length > 0) {
+    score += 1;
+    positives.push("visual analysis completed");
+  }
+  if (competitor && competitor.competitors.length > 0) {
+    score += 1;
+    positives.push("competitor analysis completed");
+  }
+  let level;
+  if (score >= 6) {
+    level = "High";
+  } else if (score >= 3) {
+    level = "Medium";
+  } else {
+    level = "Low";
+  }
+  const reason = buildReason(level, positives, negatives);
+  return { level, reason };
+}
+function buildReason(level, positives, negatives) {
+  if (positives.length === 0 && negatives.length === 0) {
+    return "Scan data was limited.";
+  }
+  const posPart = joinList(positives);
+  const negPart = joinList(negatives);
+  if (level === "High") {
+    return cap(posPart) + ".";
+  }
+  if (level === "Medium") {
+    if (posPart && negPart) {
+      return `${cap(posPart)}, but ${negPart}.`;
+    }
+    return posPart ? `${cap(posPart)}.` : `${cap(negPart)}.`;
+  }
+  if (negPart && posPart) {
+    return `${cap(negPart)}; ${posPart}.`;
+  }
+  return negPart ? `${cap(negPart)}.` : `Scan coverage was very limited.`;
+}
+function joinList(items) {
+  if (items.length === 0) return "";
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+function cap(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 const CATEGORY_WEIGHT = {
   localSeo: 0.3,
   technical: 0.25,
@@ -2610,6 +2706,14 @@ function generateHtml(r) {
     .rationale-list li { font-size: 13px; padding: 4px 0; color: #374151; }
     .rationale-list li:before { content: "• "; color: #9ca3af; }
 
+    /* Score confidence */
+    .confidence-block { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
+    .confidence-pill { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+    .confidence-high  { background: #dcfce7; color: #15803d; }
+    .confidence-medium { background: #fef9c3; color: #a16207; }
+    .confidence-low   { background: #fee2e2; color: #b91c1c; }
+    .confidence-reason { font-size: 13px; color: #6b7280; }
+
     /* Footer */
     .footer { text-align: center; font-size: 12px; color: #9ca3af; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
 
@@ -2646,10 +2750,15 @@ function generateHtml(r) {
   <!-- Overall score -->
   <div class="overall-block">
     <div class="overall-number" style="color:${overallColor}">${overall.value}</div>
-    <div>
+    <div style="flex:1">
       <div class="overall-label" style="color:${overallColor}">${escHtml(overall.label)}</div>
       <div class="overall-sub">Overall Local SEO Score (out of 100)</div>
       <div class="overall-sub">${r.findings.length} issue${r.findings.length !== 1 ? "s" : ""} found — ${r.findings.filter((f) => f.severity === "high").length} high priority</div>
+      ${r.scoreConfidence ? `
+      <div class="confidence-block">
+        <span class="confidence-pill confidence-${r.scoreConfidence.level.toLowerCase()}">Confidence: ${escHtml(r.scoreConfidence.level)}</span>
+        <span class="confidence-reason">${escHtml(r.scoreConfidence.reason)}</span>
+      </div>` : ""}
     </div>
   </div>
 
@@ -3450,6 +3559,12 @@ async function runAudit(request, emitProgress) {
     emitProgress("Building reports…", 97);
     const jsonPath = index.buildJsonPath(scanId);
     const htmlPath = index.buildHtmlPath(scanId);
+    const scoreConfidence = computeScoreConfidence({
+      pages: crawledPages,
+      lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : void 0,
+      visual: visualResult,
+      competitor: competitorResult
+    });
     const partialResult = {
       id: scanId,
       request,
@@ -3464,6 +3579,7 @@ async function runAudit(request, emitProgress) {
       lighthouse: lighthouseMetrics.length > 0 ? lighthouseMetrics : void 0,
       visual: visualResult,
       competitor: competitorResult,
+      scoreConfidence,
       artifacts: { jsonPath, htmlPath, screenshotPaths: reportArtifacts.screenshotPaths }
     };
     await Promise.all([
