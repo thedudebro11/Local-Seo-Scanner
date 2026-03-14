@@ -6,7 +6,7 @@
 
 import fs from 'fs-extra'
 import path from 'path'
-import type { AuditResult, FixRoadmapItem, RevenueImpactEstimate } from '../types/audit'
+import type { AuditResult, FixRoadmapItem, OpportunityItem, RevenueImpactEstimate } from '../types/audit'
 import { createLogger } from '../utils/logger'
 import {
   scoreColor, renderScoreCard, renderFinding, renderBulletList,
@@ -99,6 +99,30 @@ function renderRoadmapItem(item: FixRoadmapItem): string {
       ${escHtml(item.plainEnglishFix)}
     </div>
     ${urlsHtml}
+  </div>`
+}
+
+// ─── Opportunity renderer ─────────────────────────────────────────────────────
+
+function renderOpportunityItem(item: OpportunityItem): string {
+  const levelKey = item.opportunityLevel.toLowerCase() as 'high' | 'medium' | 'low'
+  const fmt = (n: number) => `$${n.toLocaleString()}`
+  const competitorHtml = item.competitorCoverage && item.competitorCoverage.length > 0
+    ? `<div class="opp-competitors">Competitors doing this: ${item.competitorCoverage.map(escHtml).join(', ')}</div>`
+    : ''
+  return `
+  <div class="opp-item">
+    <div class="opp-item-header">
+      <span class="opp-level-badge opp-level-${levelKey}">${escHtml(item.opportunityLevel)}</span>
+      <span class="opp-title">${escHtml(item.title)}</span>
+    </div>
+    <div class="opp-description">${escHtml(item.description)}</div>
+    <div class="opp-reason">${escHtml(item.reason)}</div>
+    <div class="opp-footer">
+      <span class="opp-slug">Suggested page: <code>/${escHtml(item.suggestedPageSlug)}</code></span>
+      <span class="opp-value">Est. value: ${fmt(item.estimatedMonthlyValueRange.low)}–${fmt(item.estimatedMonthlyValueRange.high)}/mo</span>
+    </div>
+    ${competitorHtml}
   </div>`
 }
 
@@ -259,6 +283,23 @@ function generateHtml(r: AuditResult): string {
     .confidence-low   { background: #fee2e2; color: #b91c1c; }
     .confidence-reason { font-size: 13px; color: #6b7280; }
 
+    /* SEO Opportunities */
+    .opportunities { border-color: #a7f3d0; }
+    .opportunities h2 { color: #065f46; }
+    .opp-item { border: 1px solid #d1fae5; border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; background: #f0fdf4; }
+    .opp-item-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .opp-level-badge { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 20px; flex-shrink: 0; }
+    .opp-level-high   { background: #fee2e2; color: #b91c1c; }
+    .opp-level-medium { background: #fef9c3; color: #92400e; }
+    .opp-level-low    { background: #f3f4f6; color: #374151; }
+    .opp-title { font-size: 15px; font-weight: 700; color: #065f46; }
+    .opp-description { font-size: 13px; color: #374151; margin-bottom: 6px; line-height: 1.55; }
+    .opp-reason { font-size: 12px; color: #6b7280; margin-bottom: 10px; line-height: 1.5; font-style: italic; }
+    .opp-footer { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; font-size: 12px; }
+    .opp-slug { color: #374151; }
+    .opp-value { font-weight: 700; color: #065f46; }
+    .opp-competitors { font-size: 11px; color: #6b7280; margin-top: 6px; }
+
     /* Footer */
     .footer { text-align: center; font-size: 12px; color: #9ca3af; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
 
@@ -397,6 +438,14 @@ function generateHtml(r: AuditResult): string {
 
   <!-- Competitor Gap Analysis -->
   ${r.competitor && r.competitor.competitors.length > 0 ? renderCompetitorSection(r.competitor) : ''}
+
+  <!-- SEO Growth Opportunities -->
+  ${r.seoOpportunities && r.seoOpportunities.length > 0 ? `
+  <div class="section opportunities">
+    <h2>🚀 SEO Growth Opportunities</h2>
+    <p style="font-size:13px;color:#374151;margin-bottom:20px">High-value pages and content this site is missing. Each opportunity can unlock new rankings and leads.</p>
+    ${r.seoOpportunities.map(renderOpportunityItem).join('')}
+  </div>` : ''}
 
   <!-- All findings -->
   <div class="section">

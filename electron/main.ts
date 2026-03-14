@@ -1,9 +1,13 @@
 import { app, BrowserWindow, shell, ipcMain } from 'electron'
 import { join } from 'path'
 import { registerScanHandlers } from './ipc/scanHandlers'
+import { registerBulkScanHandlers } from './ipc/bulkScanHandlers'
+import { registerDiscoveryHandlers } from './ipc/discoveryHandlers'
+import { registerMarketHandlers } from './ipc/marketHandlers'
 import { registerFileHandlers } from './ipc/fileHandlers'
 import { registerAppHandlers } from './ipc/appHandlers'
 import { initReportsDir } from '../src/engine/storage/pathResolver'
+import { initMonitoringDir } from '../src/engine/monitoring/monitoringPaths'
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -48,13 +52,17 @@ function createWindow(): BrowserWindow {
 }
 
 app.whenReady().then(() => {
-  // Initialize engine storage path before any IPC handler can trigger a scan
+  // Initialize engine storage paths before any IPC handler can trigger a scan
   initReportsDir(app.getPath('userData'))
+  initMonitoringDir(app.getPath('userData'))
 
   mainWindow = createWindow()
 
   // Register all IPC handlers
   registerScanHandlers(mainWindow)
+  registerBulkScanHandlers(mainWindow)
+  registerDiscoveryHandlers()
+  registerMarketHandlers()
   registerFileHandlers()
   registerAppHandlers()
 
@@ -63,6 +71,7 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) {
       mainWindow = createWindow()
       registerScanHandlers(mainWindow)
+      registerBulkScanHandlers(mainWindow)
     }
   })
 })

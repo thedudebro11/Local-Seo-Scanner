@@ -159,3 +159,18 @@ This is distinct from competitor analysis. It summarises the site's own issues i
 | "Competitor crawl can fail silently" | TRUE — `Promise.allSettled` + try/catch; scan always completes |
 | "SERP scraping is involved" | FALSE — only manually-provided URLs are crawled |
 | "Auto-discovery of competitors works" | FALSE — `noopDiscovery` always returns `[]`; pluggable for future |
+
+---
+
+## Distinction from Market Discovery (Phase 14)
+
+Competitor gap analysis and market discovery are entirely separate systems:
+
+| | Competitor Gap Analysis (Phase 10) | Market Discovery (Phase 14) |
+|---|---|---|
+| **Purpose** | Compare one site against manually-provided competitor URLs | Find local business prospects in a market |
+| **Input** | Up to 3 competitor URLs entered by user in ScanForm | A search query (e.g. "plumber Denver") |
+| **How it finds sites** | User-provided URLs only | DuckDuckGo Lite scraping |
+| **Output** | `CompetitorAnalysisResult` — gap findings attached to scan | `MarketDiscoveryResult` — list of candidate domains |
+| **When it runs** | Inside the single-site scan pipeline (Stage 8) | As a standalone `discovery:run` IPC call |
+| **Feeds into** | HTML report section: 🏆 Competitor Gap Analysis | Bulk scan → Market Intelligence Dashboard |

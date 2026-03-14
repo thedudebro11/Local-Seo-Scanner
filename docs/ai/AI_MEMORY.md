@@ -4,11 +4,18 @@ Compact reference for AI assistants. Read this first when picking up any task in
 
 ## System Overview
 
-Desktop app: Electron 28 + React 18 + Vite 5 + TypeScript 5. Audits local business websites for SEO and conversion issues. Entry: user submits URL → `runAudit` (thin wrapper) → `runScanJob` pipeline (12 named stages) → crawl → extract → analyze → visual checks → Lighthouse → score → competitor (optional) → confidence → roadmap → revenue → reports saved → results shown in UI.
+Desktop app: Electron 28 + React 18 + Vite 5 + TypeScript 5. **Market-level SEO analysis platform** for local businesses.
+
+Three operating modes:
+- **Single scan**: URL → `runAudit` → 12-stage pipeline → per-site score + report
+- **Bulk scan**: Multiple domains → `runBulkScan` (sequential `runAudit` calls) → `BulkScanResult`
+- **Market intelligence**: Discovery (DDG Lite) → candidate selection → bulk scan → `buildMarketDashboard` → outreach targets ranked by `computeOutreachScore()`
+
+All data stored locally. No API keys. No cloud.
 
 ## Architecture Invariants (never violate these)
 
-1. `src/engine/` has NO Electron/React imports — `pathResolver.ts` uses `initReportsDir(userDataPath)` called once from `electron/main.ts`; no direct Electron import in the engine
+1. `src/engine/` has NO Electron/React imports — `pathResolver.ts` uses `initReportsDir(userDataPath)` and `monitoringPaths.ts` uses `initMonitoringDir(userDataPath)`, both called once from `electron/main.ts`
 2. Engine uses `cheerio/slim`, never `cheerio` — undici conflict with Node.js 18 fetch
 3. `playwright`, `lighthouse`, `chrome-launcher` must be loaded with `await import()` — ESM-only
 4. `URL` is a global — never `import { URL } from 'url'`
@@ -51,7 +58,7 @@ Stage 12: reportStage         buildJsonReport + buildHtmlReport + saveScan    �
 | `src/engine/pipeline/runScanJob.ts` | Pipeline orchestrator — 12 stages, browser lifecycle |
 | `src/engine/pipeline/types.ts` | ScanJobContext, createScanJobContext() |
 | `src/engine/types/audit.ts` | All core interfaces (incl. ScoreConfidence, FixRoadmapItem, RevenueImpactEstimate) |
-| `src/engine/types/ipc.ts` | IPC channels + ElectronAPI |
+| `src/engine/types/ipc.ts` | IPC channels + ElectronAPI (includes bulk/discovery/market channels) |
 | `src/engine/extractors/index.ts` | cheerio loaded once, all extractors run |
 | `src/engine/scoring/scoreHelpers.ts` | PENALTY constants, computeScore, scoreBand |
 | `src/engine/scoring/weightedFinalScore.ts` | Weights: tech 25%, local 30%, conv 25%, content 10%, trust 10% |
@@ -59,9 +66,18 @@ Stage 12: reportStage         buildJsonReport + buildHtmlReport + saveScan    �
 | `src/engine/scoring/scoreConfidence.ts` | Scan completeness confidence (High/Medium/Low) |
 | `src/engine/roadmap/buildFixRoadmap.ts` | Priority fix roadmap builder |
 | `src/engine/revenue/estimateRevenueImpact.ts` | Heuristic revenue loss estimator |
-| `src/engine/storage/pathResolver.ts` | ONLY engine file importing Electron |
-| `src/features/scans/state/useScanStore.ts` | Zustand store — scan lifecycle |
+| `src/engine/storage/pathResolver.ts` | Path helpers for all report artifacts (no Electron import) |
+| `src/engine/monitoring/monitoringPaths.ts` | Path helpers for monitoring storage |
+| `src/engine/bulk/runBulkScan.ts` | Sequential multi-domain scan orchestrator |
+| `src/engine/discovery/marketDiscovery.ts` | DuckDuckGo Lite scraper + save |
+| `src/engine/market/buildMarketDashboard.ts` | Enrich + rank bulk results → MarketDashboard |
+| `src/engine/market/marketOpportunity.ts` | computeOutreachScore() — 0–11pt heuristic |
+| `src/features/scans/state/useScanStore.ts` | Zustand store — single scan lifecycle |
+| `src/features/bulk/useBulkScanStore.ts` | Zustand store — bulk scan lifecycle |
 | `electron/ipc/scanHandlers.ts` | scan:start handler, emitProgress → webContents.send |
+| `electron/ipc/bulkScanHandlers.ts` | bulk:start handler |
+| `electron/ipc/discoveryHandlers.ts` | discovery:run handler |
+| `electron/ipc/marketHandlers.ts` | market:build + monitoring:add-site handlers |
 
 ## Scoring Model
 
@@ -108,8 +124,14 @@ Stage 12: reportStage         buildJsonReport + buildHtmlReport + saveScan    �
 
 7. **Lighthouse is best-effort**: Wrapped in try/catch. Any failure → scan continues without Lighthouse data. The `lighthouse` field in AuditResult will be undefined.
 
-8. **pathResolver.ts no longer imports Electron**: Uses `initReportsDir(userDataPath)` setter pattern. `electron/main.ts` calls it once on app ready. Fully testable outside Electron.
+8. **pathResolver.ts and monitoringPaths.ts do not import Electron**: Both use setter patterns (`initReportsDir`, `initMonitoringDir`) called once from `electron/main.ts`. Fully testable outside Electron.
+
+9. **Market dashboard does NOT re-scan**: `buildMarketDashboard()` only reads existing `BulkScanResult` and optionally loads already-saved `report.json` files. Never calls `runAudit()`.
+
+10. **Monitoring writes in reportStage are fire-and-forget**: Wrapped in try/catch. A failure to write monitoring data never propagates to the caller or fails the scan. Check logs for `[reportStage] monitoring write failed`.
+
+11. **Crawler domain guard (Phase 14)**: `discoverUrls.ts` checks `isSameDomain(result.finalUrl, targetDomain)` after each page fetch. Off-domain redirects are silently dropped. This is critical for bulk scans initiated from market discovery.
 
 ## Implementation Status
 
-All phases complete including Phase 9 (visual analysis), Phase 9+ (impact engine), Phase 10 (competitor analysis), Score Confidence, Priority Fix Roadmap, Revenue Impact Estimator, and Pipeline/Job Architecture Refactor. Not implemented: Google APIs, international phone formats, sitemap seeding into BFS, auto-loading old scan results from disk in UI, competitor auto-discovery (stub only).
+All phases complete: Phases 1–10, Phase 9+ (impact engine), Phase 11 (monitoring), Phase 13 (bulk scan), Phase 14 (market discovery), Phase 15 (market intelligence). Not implemented: Google APIs, international phone formats, sitemap seeding into BFS, auto-loading old scan results from disk in UI, competitor auto-discovery (stub only), periodic monitoring automation (data model ready; UI for scheduling not built).

@@ -6,21 +6,27 @@ This document provides the full context needed for an AI agent (or developer) to
 
 ## What This App Is
 
-A cross-platform desktop application (Electron) that audits local business websites. The user enters a URL, selects their business type, and the app crawls the site, analyzes it across 5 categories (Technical SEO, Local SEO, Conversion, Content, Trust), generates a score, and produces a prioritized report of issues with fix recommendations.
+A cross-platform desktop application (Electron) that has evolved into a **market-level SEO analysis platform**. It can operate at three scales:
 
-The target user is a local SEO agency or consultant auditing client sites. Reports are saved locally and can be opened as self-contained HTML files.
+1. **Single site**: User enters one URL → 12-stage analysis pipeline → per-site HTML + JSON report with score, findings, roadmap, revenue estimate
+2. **Bulk scan**: User enters multiple domains → sequential scans → comparison table with score ranking and revenue leak
+3. **Market intelligence**: Discover businesses via DuckDuckGo Lite → candidate selection → bulk scan → market dashboard with outreach target scoring
+
+The target user is a local SEO agency or consultant who audits both individual clients and entire local markets to find high-value prospects. All data is stored locally — no cloud service, no API keys required.
+
+Lead identification emerges from market intelligence: sites scoring below 70 with high-priority issues and revenue leak above $1k/mo are ranked as the best outreach targets.
 
 ---
 
 ## Current State
 
-All phases are complete — the original 8 plus Phase 9 (Visual UX Analysis), Phase 9+ (Impact Engine), and Phase 10 (Competitor Gap Analysis). The app builds, runs, and produces real audit results. The codebase is clean TypeScript with no `any` types in critical paths.
+All phases are complete — original Phases 1–10, plus Phase 9+ (Impact Engine), plus Phase 11 (Monitoring), Phase 13 (Bulk Scan), Phase 14 (Market Discovery), and Phase 15 (Market Intelligence Dashboard). The app builds, runs, and produces real audit results at both the individual site and market levels. The codebase is clean TypeScript with no `any` types in critical paths.
 
 ---
 
 ## Architecture in One Paragraph
 
-Three-process Electron app. Renderer (React + Zustand) talks to the main process via a contextBridge preload. All audit logic runs in `src/engine/` which is a self-contained Node.js library — no Electron/React imports except `pathResolver.ts`. Engine is dynamically imported by IPC handlers so it never enters the renderer bundle. Crawler uses Playwright BFS. Extractors use cheerio/slim. Lighthouse runs best-effort after the crawl. The audit pipeline is 12 named stages in `src/engine/pipeline/`; `runAudit.ts` is a thin wrapper. Reports are written to `userData/reports/`. Scan index is in `userData/reports/index.json`.
+Three-process Electron app. Renderer (React + Zustand) talks to the main process via a contextBridge preload. All audit logic runs in `src/engine/` which is a self-contained Node.js library — no Electron/React imports except `pathResolver.ts`. Engine is dynamically imported by IPC handlers so it never enters the renderer bundle. Crawler uses Playwright BFS with a domain guard preventing off-domain redirects. Extractors use cheerio/slim. Lighthouse runs best-effort after the crawl. The single-site audit pipeline is 12 named stages in `src/engine/pipeline/`; `runAudit.ts` is a thin wrapper. Higher-order systems (bulk scan, market discovery, market intelligence) call `runAudit()` in loops or process its output — they do not modify the pipeline. Reports are written to `userData/reports/`. Monitoring data is in `userData/monitoring/`.
 
 ---
 
@@ -44,6 +50,10 @@ Full pipeline:
 - Scan repository (index.json, load/save/delete)
 - React UI with all pages: dashboard, new scan, results, saved scans, settings
 - ScanForm has 3 optional competitor URL inputs
+- **Phase 11**: Multi-site monitoring — `src/engine/monitoring/`; `AuditRequest.siteId` hook in `reportStage`; `monitoring:add-site` IPC
+- **Phase 13**: Bulk scan engine — `src/engine/bulk/`; `bulk:start` IPC; `useBulkScanStore`; `BulkScanPage`
+- **Phase 14**: Market discovery — `src/engine/discovery/`; DuckDuckGo Lite scraper; directory blocklist; domain guard in crawler; `MarketDiscoveryPage`
+- **Phase 15**: Market intelligence — `src/engine/market/`; `market:build` IPC; outreach scoring; `MarketDashboardPage`
 
 ---
 
@@ -67,14 +77,16 @@ Full pipeline:
 
 ## Architecture Rules (Must Follow)
 
-1. No Electron/React imports in `src/engine/` — `pathResolver.ts` no longer imports Electron; it uses `initReportsDir(userDataPath)` called from `electron/main.ts`
+1. No Electron/React imports in `src/engine/` — `pathResolver.ts` uses `initReportsDir(userDataPath)`; `monitoringPaths.ts` uses `initMonitoringDir(userDataPath)` — both called from `electron/main.ts`
 2. Use `cheerio/slim` not `cheerio` (undici/Node.js 18 conflict)
 3. `playwright`, `lighthouse`, `chrome-launcher` → dynamic `import()` only (ESM-only packages)
 4. `URL` is a global — don't import it
 5. Renderer uses only `import type` from engine files
 6. `FindingCategory` uses `'localSeo'` throughout — findings, scores, and prioritization all use the same key
 7. HTML reports must be self-contained (no external assets)
-8. All artifact paths go through `pathResolver.ts`
+8. All artifact paths go through `pathResolver.ts` or `monitoringPaths.ts`
+9. Bulk scan, discovery, and market systems call `runAudit()` — they must never modify pipeline stages
+10. Monitoring writes must always be wrapped in try/catch — they must never abort a scan
 
 ---
 
@@ -158,13 +170,18 @@ console.log(JSON.stringify(result.scores, null, 2))
 
 ```
 electron/           ← Electron-specific shell code
-src/app/            ← React router and entry
+  ipc/              ← scan, bulkScan, discovery, market, file, app handlers
+src/app/            ← React router and entry (9 routes)
 src/components/     ← React UI components
-src/features/       ← React pages and Zustand store
+src/features/       ← React pages and Zustand stores
+  scans/            ← Single scan pages + useScanStore
+  bulk/             ← BulkScanPage + useBulkScanStore
+  discovery/        ← MarketDiscoveryPage
+  market/           ← MarketDashboardPage
 src/engine/         ← Pure Node.js audit engine
   types/            ← Shared TS interfaces (no runtime code)
   utils/            ← domain.ts, logger.ts
-  crawl/            ← Playwright crawler
+  crawl/            ← Playwright crawler (+ domain guard)
   extractors/       ← cheerio/slim extractors
   analyzers/        ← Finding generators
   scoring/          ← Score calculators + scoreConfidence.ts
@@ -174,7 +191,11 @@ src/engine/         ← Pure Node.js audit engine
   lighthouse/       ← Performance auditor
   visual/           ← Screenshot + above-the-fold checks
   competitor/       ← Competitor crawl + gap analysis
-  storage/          ← File I/O
+  monitoring/       ← Multi-site tracking + scan history (Phase 11)
+  bulk/             ← Sequential multi-domain scan engine (Phase 13)
+  discovery/        ← DuckDuckGo Lite scraper + candidate filter (Phase 14)
+  market/           ← Market intelligence dashboard builder (Phase 15)
+  storage/          ← File I/O (pathResolver + scanRepository)
   pipeline/         ← runScanJob.ts orchestrator + 12 stage modules
   orchestrator/     ← runAudit.ts (thin wrapper around runScanJob)
 docs/               ← All documentation

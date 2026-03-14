@@ -43,6 +43,12 @@ export interface AuditRequest {
   maxPages: number
   /** Up to 3 competitor URLs for gap analysis. Optional — main scan runs without them. */
   competitorUrls?: string[]
+  /**
+   * If set, the completed scan is recorded to the monitoring history for this site.
+   * Obtain a siteId by calling siteManager.addTrackedSite() before starting the scan.
+   * Omitting this field leaves scan behavior completely unchanged.
+   */
+  siteId?: string
 }
 
 // ─── Crawl ────────────────────────────────────────────────────────────────────
@@ -134,6 +140,20 @@ export interface FixRoadmapItem {
   sourceFindingIds?: string[]
 }
 
+// ─── SEO Opportunity ──────────────────────────────────────────────────────────
+
+export interface OpportunityItem {
+  title: string
+  description: string
+  /** Suggested URL slug for a new page, e.g. 'roof-repair' */
+  suggestedPageSlug: string
+  opportunityLevel: 'High' | 'Medium' | 'Low'
+  reason: string
+  /** Domains of competitors that already have this covered */
+  competitorCoverage?: string[]
+  estimatedMonthlyValueRange: { low: number; high: number }
+}
+
 // ─── Score Confidence ─────────────────────────────────────────────────────────
 
 export interface ScoreConfidence {
@@ -193,6 +213,7 @@ export interface AuditResult {
   scoreConfidence?: ScoreConfidence
   revenueImpact?: RevenueImpactEstimate
   roadmap?: FixRoadmapItem[]
+  seoOpportunities?: OpportunityItem[]
   artifacts: {
     jsonPath?: string
     htmlPath?: string

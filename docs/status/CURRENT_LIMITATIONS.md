@@ -105,3 +105,67 @@ The crawler does not add delays between page requests. On small sites this is fi
 ### Memory Usage on Large Sites
 
 With `maxPages` set high (50+), the crawler loads full HTML for each page into memory in `fetchedPages`. For very large pages, this may cause significant memory consumption during the extraction phase.
+
+---
+
+## Bulk Scan Limitations (Phase 13)
+
+### Sequential Execution — No Parallelism
+
+`runBulkScan` processes domains one at a time. A batch of 20 sites runs 20 full Playwright crawls in sequence. Each scan takes 30–120 seconds, so large batches can take many minutes. There is no concurrent crawling across domains.
+
+### Memory Accumulates Across Domains
+
+Each `runAudit()` call creates its own Playwright browser instance (launched and closed per domain). However, all `BulkScanItemResult` objects are held in memory until the batch completes and the result is saved. For large batches, this is a non-trivial memory footprint.
+
+### No Partial Save on Failure
+
+If the process is killed mid-batch, the in-progress `BulkScanResult` is lost. Only successfully completed batches are saved to `reports/bulk/<batchId>.json`.
+
+---
+
+## Market Discovery Limitations (Phase 14)
+
+### DuckDuckGo Lite Rate Limiting
+
+`marketDiscovery.ts` scrapes DuckDuckGo Lite (HTML, no API key). DuckDuckGo may throttle or block repeated requests from the same IP. If discovery returns fewer results than expected, the scraper was likely rate-limited. There is no retry logic or delay backoff.
+
+### Result Count Is Unpredictable
+
+DDG Lite returns a variable number of organic results per query. Typical results: 5–15 domains per search. The discovery result depends entirely on what DDG returns at the time the query runs.
+
+### Directory Blocklist Is Static
+
+The 50+ domain blocklist (Yelp, Angi, HomeAdvisor, etc.) is hardcoded. New aggregator sites not in the list will pass through and appear as discovery candidates. The blocklist is in `marketDiscovery.ts`.
+
+### No Deduplication Across Multiple Runs
+
+Running discovery twice for the same query/market creates two separate `MarketDiscoveryResult` files. The UI does not merge or deduplicate results across runs.
+
+---
+
+## Market Intelligence Dashboard Limitations (Phase 15)
+
+### Does Not Re-Scan
+
+`buildMarketDashboard()` reads from an existing `BulkScanResult`. If the bulk scan results are stale (days/weeks old), the dashboard reflects stale data. There is no "refresh" flow that re-scans already-discovered domains.
+
+### Outreach Score Is Heuristic Only
+
+`computeOutreachScore()` produces a 0–11pt score based on thresholds (score <70, revenue loss >$1k, etc.). It is not trained on actual conversion data. High outreach score does not guarantee a domain is actually a good prospect.
+
+### No Email / Contact Discovery
+
+The dashboard identifies outreach targets by domain and SEO score but does not attempt to find contact emails, phone numbers, or business names for the identified targets beyond what was extracted during the scan.
+
+---
+
+## Monitoring Limitations (Phase 11)
+
+### No Automated Scheduling
+
+The monitoring data model is complete (`TrackedSite`, `SiteScanSummary`, `sites.json`). However, there is no scheduler — periodic re-scans must be triggered manually. The UI for scheduling monitoring runs is not built.
+
+### Monitoring History Only Grows
+
+`saveScanSummary()` appends a new entry per scan with no pruning. For a site monitored daily, the history directory will accumulate one JSON file per scan indefinitely.

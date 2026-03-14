@@ -49,25 +49,25 @@ All helpers must:
 
 Open `src/engine/reports/buildHtmlReport.ts` and find the `generateHtml` function.
 
-Sections are concatenated in the main template literal. Find the appropriate insertion point:
+Sections are concatenated in the main template literal. Find the appropriate insertion point (current 16-section order):
 
 ```
-Header
-Overall score block
-Score Confidence block
-Category score cards
-What's Holding This Business Back   ← insert before or after here
-Revenue-Impacting Issues
-🚨 Revenue Impact Summary
-✅ Quick Wins
-⚡ Page Speed & Core Web Vitals
-🖥️ Visual UX Analysis
-🏆 Competitor Gap Analysis
-💰 Revenue Impact Estimator
-🗺️ Priority Fix Roadmap
-All Issues Found                    ← or here
-Score Breakdown Detail
-Footer
+ 1. Header
+ 2. Overall score block
+ 3. Score Confidence block
+ 4. Category score cards
+ 5. What's Holding This Business Back   ← insert before or after here
+ 6. Revenue-Impacting Issues
+ 7. 🚨 Revenue Impact Summary
+ 8. ✅ Quick Wins
+ 9. ⚡ Page Speed & Core Web Vitals
+10. 🖥️ Visual UX Analysis
+11. 🏆 Competitor Gap Analysis
+12. 💰 Revenue Impact Estimator
+13. 🗺️ Priority Fix Roadmap
+14. All Issues Found                    ← or here
+15. Score Breakdown Detail
+16. Footer
 ```
 
 Add your section as a conditional block (use an IIFE or ternary if the logic is complex):

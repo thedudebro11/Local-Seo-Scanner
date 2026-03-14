@@ -7,14 +7,25 @@ All scan artifacts are stored under Electron's `userData` directory:
 ```
 <userData>/
   reports/
-    index.json                       ← SavedScanMeta[] — all scans list
+    index.json                           ← SavedScanMeta[] — all scans list
     <scanId>/
-      report.json                    ← Full AuditResult (html/textContent stripped)
-      report.html                    ← Self-contained HTML report
+      report.json                        ← Full AuditResult (html/textContent stripped)
+      report.html                        ← Self-contained HTML report
       screenshots/
-        homepage.png                 ← Full-page screenshot (if visual analysis ran)
-        contact.png                  ← Contact page screenshot (if found)
-        service.png                  ← Service page screenshot (if found)
+        homepage.png                     ← Full-page screenshot (if visual analysis ran)
+        contact.png                      ← Contact page screenshot (if found)
+        service.png                      ← Service page screenshot (if found)
+    bulk/
+      <batchId>.json                     ← BulkScanResult (Phase 13)
+    discovery/
+      <discoveryId>.json                 ← MarketDiscoveryResult (Phase 14)
+    market-dashboards/
+      <dashboardId>.json                 ← MarketDashboard (Phase 15)
+  monitoring/
+    sites.json                           ← TrackedSite[] (Phase 11)
+    history/
+      <siteId>/
+        <scanId>.json                    ← SiteScanSummary per recorded scan
 ```
 
 Platform-specific `userData` paths:
@@ -36,8 +47,26 @@ Platform-specific `userData` paths:
 | `buildHtmlPath(scanId)` | `<userData>/reports/<scanId>/report.html` |
 | `getIndexPath()` | `<userData>/reports/index.json` |
 | `generateScanId(domain)` | `<safeDomain>_<timestamp>` e.g. `example.com_1710000000000` |
+| `getBulkScansDir()` | `<userData>/reports/bulk` |
+| `getBulkScanPath(batchId)` | `<userData>/reports/bulk/<batchId>.json` |
+| `getDiscoveryDir()` | `<userData>/reports/discovery` |
+| `getDiscoveryPath(discoveryId)` | `<userData>/reports/discovery/<discoveryId>.json` |
+| `getMarketDashboardsDir()` | `<userData>/reports/market-dashboards` |
+| `getMarketDashboardPath(dashboardId)` | `<userData>/reports/market-dashboards/<dashboardId>.json` |
 
 `generateScanId` sanitizes the domain (replaces non-alphanumeric characters with `_`, caps at 40 characters) and appends `Date.now()`.
+
+## monitoringPaths.ts (Phase 11)
+
+`src/engine/monitoring/monitoringPaths.ts` — follows the same pattern as `pathResolver.ts`: no Electron import. `electron/main.ts` calls `initMonitoringDir(app.getPath('userData'))` once on startup.
+
+| Function | Returns |
+|---|---|
+| `initMonitoringDir(userDataPath)` | Setter — call once from `electron/main.ts` |
+| `getMonitoringDir()` | `<userData>/monitoring` |
+| `getSitesPath()` | `<userData>/monitoring/sites.json` |
+| `getSiteHistoryDir(siteId)` | `<userData>/monitoring/history/<siteId>` |
+| `getScanSummaryPath(siteId, scanId)` | `<userData>/monitoring/history/<siteId>/<scanId>.json` |
 
 ## buildJsonReport
 
@@ -181,3 +210,34 @@ Entries are stored in insertion order (oldest first). `listSavedScans` reverses 
 3. IPC channel `file:open-report` is invoked in `fileHandlers.ts`
 4. `shell.openPath(reportPath)` opens the HTML file using the system default browser
 5. The HTML report is entirely self-contained — no server needed
+
+## Bulk Scan Persistence (Phase 13)
+
+`runBulkScan.ts` saves a `BulkScanResult` JSON after the batch completes:
+
+- File: `<userData>/reports/bulk/<batchId>.json`
+- Written by `saveBulkResult(result)` inside `runBulkScan.ts`
+- The result is also returned over IPC and held in `useBulkScanStore` in the renderer — the renderer uses the in-memory copy to build the Market Intelligence Dashboard
+
+## Market Discovery Persistence (Phase 14)
+
+`marketDiscovery.ts` saves a `MarketDiscoveryResult` JSON after discovery completes:
+
+- File: `<userData>/reports/discovery/<discoveryId>.json`
+- Includes the full `discovered[]` array (including filtered-out sites) and `validDomains[]` (scannable subset)
+
+## Market Intelligence Dashboard Persistence (Phase 15)
+
+`buildMarketDashboard.ts` saves a `MarketDashboard` JSON after building the dashboard:
+
+- File: `<userData>/reports/market-dashboards/<dashboardId>.json`
+- Written by `saveDashboard()` inside `buildMarketDashboard.ts`, wrapped in try/catch — a save failure is logged but does not prevent the dashboard from being returned to the renderer
+
+## Monitoring Persistence (Phase 11)
+
+Two separate files manage monitoring state:
+
+- `<userData>/monitoring/sites.json` — `TrackedSite[]` array, written atomically by `siteManager.ts`
+- `<userData>/monitoring/history/<siteId>/<scanId>.json` — one `SiteScanSummary` per recorded scan
+
+`addTrackedSite()` uses a read-then-write pattern with deduplication by domain. `saveScanSummary()` creates the history directory if needed (`fs.ensureDir`) then writes the summary JSON. Both operations are wrapped in try/catch in `reportStage.ts` so monitoring failures never affect scan results.

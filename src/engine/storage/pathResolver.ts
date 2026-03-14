@@ -74,3 +74,45 @@ export function generateScanId(domain: string): string {
   const ts = Date.now()
   return `${safeDomain}_${ts}`
 }
+
+/**
+ * Directory where bulk scan result files are stored.
+ */
+export function getBulkScansDir(): string {
+  return path.join(getReportsDir(), 'bulk')
+}
+
+/**
+ * Full path for a single bulk scan result file.
+ */
+export function getBulkScanPath(batchId: string): string {
+  return path.join(getBulkScansDir(), `${batchId}.json`)
+}
+
+/**
+ * Directory where market discovery result files are stored.
+ */
+export function getDiscoveryDir(): string {
+  return path.join(getReportsDir(), 'discovery')
+}
+
+/**
+ * Full path for a single market discovery result file.
+ */
+export function getDiscoveryPath(discoveryId: string): string {
+  return path.join(getDiscoveryDir(), `${discoveryId}.json`)
+}
+
+/**
+ * Directory where market intelligence dashboard files are stored.
+ */
+export function getMarketDashboardsDir(): string {
+  return path.join(getReportsDir(), 'market-dashboards')
+}
+
+/**
+ * Full path for a single market dashboard file.
+ */
+export function getMarketDashboardPath(dashboardId: string): string {
+  return path.join(getMarketDashboardsDir(), `${dashboardId}.json`)
+}

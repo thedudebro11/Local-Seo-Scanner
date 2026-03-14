@@ -22,10 +22,12 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const scanRepository = require("./scanRepository-CxNMbKnN.js");
+const logger = require("./logger-DOTeCaxX.js");
 const fs = require("fs-extra");
 const path = require("path");
+const scanRepository = require("./scanRepository-D1_fs6er.js");
 const index = require("../index.js");
+const siteManager = require("./siteManager-D5Sop0bC.js");
 const cheerio = require("cheerio/slim");
 require("electron");
 function _interopNamespaceDefault(e) {
@@ -85,7 +87,7 @@ function buildPlaceholderScores() {
     overall: make()
   };
 }
-const log$n = scanRepository.createLogger("buildJsonReport");
+const log$p = logger.createLogger("buildJsonReport");
 async function buildJsonReport(result, jsonPath) {
   await fs.ensureDir(path.dirname(jsonPath));
   const slim = {
@@ -93,7 +95,7 @@ async function buildJsonReport(result, jsonPath) {
     pages: result.pages.map(({ html: _html, textContent: _tc, ...rest }) => rest)
   };
   await fs.writeJson(jsonPath, slim, { spaces: 2 });
-  log$n.info(`JSON report written: ${jsonPath}`);
+  log$p.info(`JSON report written: ${jsonPath}`);
   return jsonPath;
 }
 function scoreColor(value) {
@@ -332,12 +334,12 @@ function buildClientSummary(result) {
   const fastestWins = result.quickWins.slice(0, 5);
   return { whatIsHurtingVisibility, whatMayBeHurtingLeads, fastestWins };
 }
-const log$m = scanRepository.createLogger("buildHtmlReport");
+const log$o = logger.createLogger("buildHtmlReport");
 async function buildHtmlReport(result, htmlPath) {
   await fs.ensureDir(path.dirname(htmlPath));
   const html = generateHtml(result);
   await fs.writeFile(htmlPath, html, "utf8");
-  log$m.info(`HTML report written: ${htmlPath}`);
+  log$o.info(`HTML report written: ${htmlPath}`);
   return htmlPath;
 }
 function renderRevenueImpact(ri) {
@@ -401,6 +403,25 @@ function renderRoadmapItem(item) {
       ${escHtml(item.plainEnglishFix)}
     </div>
     ${urlsHtml}
+  </div>`;
+}
+function renderOpportunityItem(item) {
+  const levelKey = item.opportunityLevel.toLowerCase();
+  const fmt = (n) => `$${n.toLocaleString()}`;
+  const competitorHtml = item.competitorCoverage && item.competitorCoverage.length > 0 ? `<div class="opp-competitors">Competitors doing this: ${item.competitorCoverage.map(escHtml).join(", ")}</div>` : "";
+  return `
+  <div class="opp-item">
+    <div class="opp-item-header">
+      <span class="opp-level-badge opp-level-${levelKey}">${escHtml(item.opportunityLevel)}</span>
+      <span class="opp-title">${escHtml(item.title)}</span>
+    </div>
+    <div class="opp-description">${escHtml(item.description)}</div>
+    <div class="opp-reason">${escHtml(item.reason)}</div>
+    <div class="opp-footer">
+      <span class="opp-slug">Suggested page: <code>/${escHtml(item.suggestedPageSlug)}</code></span>
+      <span class="opp-value">Est. value: ${fmt(item.estimatedMonthlyValueRange.low)}–${fmt(item.estimatedMonthlyValueRange.high)}/mo</span>
+    </div>
+    ${competitorHtml}
   </div>`;
 }
 function generateHtml(r) {
@@ -553,6 +574,23 @@ function generateHtml(r) {
     .confidence-low   { background: #fee2e2; color: #b91c1c; }
     .confidence-reason { font-size: 13px; color: #6b7280; }
 
+    /* SEO Opportunities */
+    .opportunities { border-color: #a7f3d0; }
+    .opportunities h2 { color: #065f46; }
+    .opp-item { border: 1px solid #d1fae5; border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; background: #f0fdf4; }
+    .opp-item-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .opp-level-badge { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 20px; flex-shrink: 0; }
+    .opp-level-high   { background: #fee2e2; color: #b91c1c; }
+    .opp-level-medium { background: #fef9c3; color: #92400e; }
+    .opp-level-low    { background: #f3f4f6; color: #374151; }
+    .opp-title { font-size: 15px; font-weight: 700; color: #065f46; }
+    .opp-description { font-size: 13px; color: #374151; margin-bottom: 6px; line-height: 1.55; }
+    .opp-reason { font-size: 12px; color: #6b7280; margin-bottom: 10px; line-height: 1.5; font-style: italic; }
+    .opp-footer { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; font-size: 12px; }
+    .opp-slug { color: #374151; }
+    .opp-value { font-weight: 700; color: #065f46; }
+    .opp-competitors { font-size: 11px; color: #6b7280; margin-top: 6px; }
+
     /* Footer */
     .footer { text-align: center; font-size: 12px; color: #9ca3af; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
 
@@ -691,6 +729,14 @@ function generateHtml(r) {
   <!-- Competitor Gap Analysis -->
   ${r.competitor && r.competitor.competitors.length > 0 ? renderCompetitorSection(r.competitor) : ""}
 
+  <!-- SEO Growth Opportunities -->
+  ${r.seoOpportunities && r.seoOpportunities.length > 0 ? `
+  <div class="section opportunities">
+    <h2>🚀 SEO Growth Opportunities</h2>
+    <p style="font-size:13px;color:#374151;margin-bottom:20px">High-value pages and content this site is missing. Each opportunity can unlock new rankings and leads.</p>
+    ${r.seoOpportunities.map(renderOpportunityItem).join("")}
+  </div>` : ""}
+
   <!-- All findings -->
   <div class="section">
     <h2>All Issues Found (${r.findings.length} total)</h2>
@@ -727,7 +773,38 @@ function generateHtml(r) {
 </body>
 </html>`;
 }
-const log$l = scanRepository.createLogger("reportStage");
+const log$n = logger.createLogger("scanHistory");
+async function saveScanSummary(siteId, result) {
+  const summary = buildSummary(siteId, result);
+  const summaryPath = index.getScanSummaryPath(siteId, result.id);
+  await fs.ensureDir(index.getSiteHistoryDir(siteId));
+  await fs.writeJson(summaryPath, summary, { spaces: 2 });
+  log$n.info(`saveScanSummary: ${siteId}/${result.id} (score=${summary.overallScore})`);
+}
+function buildSummary(siteId, r) {
+  const highPriorityCount = r.findings.filter(
+    (f) => f.severity === "high" || f.impactLevel === "CRITICAL" || f.impactLevel === "HIGH"
+  ).length;
+  const rev = r.revenueImpact;
+  const revenueImpactSummary = rev ? {
+    leadLossLow: rev.estimatedLeadLossRange.low,
+    leadLossHigh: rev.estimatedLeadLossRange.high,
+    revenueLossLow: rev.estimatedRevenueLossRange?.low,
+    revenueLossHigh: rev.estimatedRevenueLossRange?.high
+  } : void 0;
+  return {
+    siteId,
+    scanId: r.id,
+    timestamp: r.scannedAt,
+    overallScore: r.scores.overall.value,
+    scoreLabel: r.scores.overall.label,
+    confidenceLevel: r.scoreConfidence?.level,
+    issueCount: r.findings.length,
+    highPriorityIssueCount: highPriorityCount,
+    revenueImpactSummary
+  };
+}
+const log$m = logger.createLogger("reportStage");
 async function reportStage(ctx, emit) {
   emit("Building reports…", 97);
   const jsonPath = index.buildJsonPath(ctx.scanId);
@@ -743,7 +820,11 @@ async function reportStage(ctx, emit) {
     htmlPath,
     screenshotPaths: Object.keys(ctx.screenshotPaths).length > 0 ? ctx.screenshotPaths : void 0
   };
-  log$l.info(`Reports saved: ${jsonPath}`);
+  const siteId = ctx.request.siteId;
+  if (siteId) {
+    await saveMonitoringData(siteId, result);
+  }
+  log$m.info(`Reports saved: ${jsonPath}`);
 }
 function buildAuditResult(ctx, jsonPath, htmlPath) {
   return {
@@ -763,12 +844,21 @@ function buildAuditResult(ctx, jsonPath, htmlPath) {
     scoreConfidence: ctx.scoreConfidence,
     revenueImpact: ctx.revenueImpact,
     roadmap: ctx.roadmap,
+    seoOpportunities: ctx.seoOpportunities,
     artifacts: {
       jsonPath,
       htmlPath,
       screenshotPaths: Object.keys(ctx.screenshotPaths).length > 0 ? ctx.screenshotPaths : void 0
     }
   };
+}
+async function saveMonitoringData(siteId, result) {
+  try {
+    await saveScanSummary(siteId, result);
+    await siteManager.updateTrackedSiteLastScan(siteId, result.id);
+  } catch (err) {
+    log$m.warn(`Monitoring save failed for siteId=${siteId}: ${err.message}`);
+  }
 }
 function normalizeInputUrl(raw) {
   let url = raw.trim();
@@ -841,15 +931,15 @@ function stripTrackingParams(url) {
     return url;
   }
 }
-const log$k = scanRepository.createLogger("validateStage");
+const log$l = logger.createLogger("validateStage");
 async function validateStage(ctx, emit) {
   emit("Validating URL…", 2);
   ctx.normalizedUrl = normalizeInputUrl(ctx.request.url);
   ctx.domain = getDomain(ctx.normalizedUrl);
   ctx.scanId = index.generateScanId(ctx.domain);
-  log$k.info(`Normalized: ${ctx.normalizedUrl} | domain: ${ctx.domain} | id: ${ctx.scanId}`);
+  log$l.info(`Normalized: ${ctx.normalizedUrl} | domain: ${ctx.domain} | id: ${ctx.scanId}`);
 }
-const log$j = scanRepository.createLogger("robots");
+const log$k = logger.createLogger("robots");
 const FETCH_TIMEOUT_MS$1 = 1e4;
 async function fetchRobots(siteUrl) {
   let robotsUrl;
@@ -865,17 +955,17 @@ async function fetchRobots(siteUrl) {
       headers: { "User-Agent": "LocalSEOScanner/1.0" }
     });
     if (!response.ok) {
-      log$j.info(`robots.txt not found at ${robotsUrl} (${response.status})`);
+      log$k.info(`robots.txt not found at ${robotsUrl} (${response.status})`);
       return emptyResult();
     }
     const text = await response.text();
     const result = parseRobots(text);
-    log$j.info(
+    log$k.info(
       `robots.txt found: disallowed=${result.disallowedPaths.length}, sitemaps=${result.sitemapUrls.length}`
     );
     return result;
   } catch (err) {
-    log$j.warn(`Failed to fetch robots.txt: ${err.message}`);
+    log$k.warn(`Failed to fetch robots.txt: ${err.message}`);
     return emptyResult();
   }
 }
@@ -920,7 +1010,7 @@ function parseRobots(text) {
 function emptyResult() {
   return { found: false, disallowedPaths: [], sitemapUrls: [], allowsGooglebot: true };
 }
-const log$i = scanRepository.createLogger("sitemap");
+const log$j = logger.createLogger("sitemap");
 const FETCH_TIMEOUT_MS = 1e4;
 const CANDIDATE_PATHS = [
   "/sitemap.xml",
@@ -948,7 +1038,7 @@ async function fetchSitemap(siteUrl, robotsSitemapUrls = []) {
     } catch {
     }
   }
-  log$i.info("No sitemap found");
+  log$j.info("No sitemap found");
   return { found: false, urls: [] };
 }
 async function trySitemap(sitemapUrl) {
@@ -960,7 +1050,7 @@ async function trySitemap(sitemapUrl) {
   const text = await response.text();
   if (!text.trim().startsWith("<")) return { found: false, urls: [] };
   const urls = parseSitemapXml(text);
-  log$i.info(`Sitemap found at ${sitemapUrl}: ${urls.length} URLs`);
+  log$j.info(`Sitemap found at ${sitemapUrl}: ${urls.length} URLs`);
   return { found: true, urls, sitemapUrl };
 }
 function parseSitemapXml(xml) {
@@ -978,7 +1068,7 @@ function parseSitemapXml(xml) {
   }
   return [...new Set(urls)];
 }
-const log$h = scanRepository.createLogger("fetchHtml");
+const log$i = logger.createLogger("fetchHtml");
 const PAGE_TIMEOUT_MS = 3e4;
 async function fetchHtml(url, context) {
   const page = await context.newPage();
@@ -990,10 +1080,10 @@ async function fetchHtml(url, context) {
     const statusCode = response?.status() ?? 0;
     const finalUrl = page.url();
     const html = await page.content();
-    log$h.info(`Fetched ${url} → ${finalUrl} [${statusCode}]`);
+    log$i.info(`Fetched ${url} → ${finalUrl} [${statusCode}]`);
     return { requestedUrl: url, finalUrl, statusCode, html };
   } catch (err) {
-    log$h.warn(`Failed to fetch ${url}: ${err.message}`);
+    log$i.warn(`Failed to fetch ${url}: ${err.message}`);
     return { requestedUrl: url, finalUrl: url, statusCode: 0, html: "" };
   } finally {
     await page.close();
@@ -1034,7 +1124,7 @@ function shouldSkipUrl(url) {
   }
   return false;
 }
-const log$g = scanRepository.createLogger("discoverUrls");
+const log$h = logger.createLogger("discoverUrls");
 const CRAWLER_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 LocalSEOScanner/1.0";
 async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
   const context = await browser.newContext({
@@ -1047,7 +1137,7 @@ async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
   const queue = [startUrl];
   const fetchedPages = [];
   const internalLinkGraph = {};
-  log$g.info(`Starting BFS crawl from ${startUrl} (maxPages=${maxPages}, domain=${domain})`);
+  log$h.info(`Starting BFS crawl from ${startUrl} (maxPages=${maxPages}, domain=${domain})`);
   try {
     while (queue.length > 0 && fetchedPages.length < maxPages) {
       const url = queue.shift();
@@ -1055,11 +1145,15 @@ async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
       visited.add(url);
       const result = await fetchHtml(url, context);
       if (result.statusCode === 0 && result.html === "") {
-        log$g.warn(`Skipping failed fetch: ${url}`);
+        log$h.warn(`Skipping failed fetch: ${url}`);
         continue;
       }
       if (result.html.trim() && !result.html.trim().startsWith("<")) {
-        log$g.warn(`Skipping non-HTML response: ${url}`);
+        log$h.warn(`Skipping non-HTML response: ${url}`);
+        continue;
+      }
+      if (!isSameDomain(result.finalUrl, `https://${domain}`)) {
+        log$h.warn(`Domain guard: ${url} → ${result.finalUrl} (off-domain, skipping)`);
         continue;
       }
       fetchedPages.push(result);
@@ -1077,7 +1171,7 @@ async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
   } finally {
     await context.close();
   }
-  log$g.info(
+  log$h.info(
     `Crawl complete: ${fetchedPages.length} pages fetched, ${Object.keys(internalLinkGraph).length} nodes in link graph`
   );
   return { fetchedPages, internalLinkGraph };
@@ -1098,7 +1192,7 @@ function extractInternalLinks(html, baseUrl, domain) {
   });
   return links;
 }
-const log$f = scanRepository.createLogger("crawlStage");
+const log$g = logger.createLogger("crawlStage");
 async function crawlStage(ctx, emit) {
   emit("Launching browser…", 5);
   const { chromium } = await import("playwright");
@@ -1110,11 +1204,11 @@ async function crawlStage(ctx, emit) {
   emit("Loading robots.txt…", 8);
   const robotsResult = await fetchRobots(ctx.normalizedUrl);
   ctx.robotsFound = robotsResult.found;
-  log$f.info(`robots.txt: found=${ctx.robotsFound}, sitemaps=${robotsResult.sitemapUrls.length}`);
+  log$g.info(`robots.txt: found=${ctx.robotsFound}, sitemaps=${robotsResult.sitemapUrls.length}`);
   emit("Loading sitemap…", 12);
   const sitemapResult = await fetchSitemap(ctx.normalizedUrl, robotsResult.sitemapUrls);
   ctx.sitemapFound = sitemapResult.found;
-  log$f.info(`sitemap: found=${ctx.sitemapFound}, urls=${sitemapResult.urls.length}`);
+  log$g.info(`sitemap: found=${ctx.sitemapFound}, urls=${sitemapResult.urls.length}`);
   emit("Fetching homepage…", 16);
   const { fetchedPages } = await discoverUrls(
     ctx.normalizedUrl,
@@ -1128,7 +1222,7 @@ async function crawlStage(ctx, emit) {
     }
   );
   ctx.rawPages = fetchedPages;
-  log$f.info(`Crawl complete: ${fetchedPages.length} pages fetched`);
+  log$g.info(`Crawl complete: ${fetchedPages.length} pages fetched`);
 }
 function extractMeta($) {
   const title = $("title").first().text().trim();
@@ -1627,7 +1721,7 @@ function buildSignalCorpus(pages) {
   }
   return parts.join(" ");
 }
-const log$e = scanRepository.createLogger("extractStage");
+const log$f = logger.createLogger("extractStage");
 async function extractStage(ctx, emit) {
   emit("Extracting signals…", 66);
   ctx.pages = ctx.rawPages.map((raw) => {
@@ -1666,7 +1760,7 @@ async function extractStage(ctx, emit) {
     ctx.pages,
     ctx.request.businessType
   );
-  log$e.info(
+  log$f.info(
     `Extraction complete: ${ctx.pages.length} pages | business type: ${ctx.detectedBusinessType}`
   );
 }
@@ -2255,7 +2349,7 @@ function analyzeTrust(input) {
   );
   return { findings, notes };
 }
-const log$d = scanRepository.createLogger("analysisStage");
+const log$e = logger.createLogger("analysisStage");
 async function analysisStage(ctx, emit) {
   emit("Analyzing technical SEO…", 76);
   const input = {
@@ -2287,21 +2381,21 @@ async function analysisStage(ctx, emit) {
     ...content.findings,
     ...trust.findings
   ];
-  log$d.info(
+  log$e.info(
     `Analysis complete: ${ctx.allFindings.length} findings (tech=${technical.findings.length}, local=${localSeo.findings.length}, conv=${conversion.findings.length}, content=${content.findings.length}, trust=${trust.findings.length})`
   );
 }
-const log$c = scanRepository.createLogger("captureScreenshots");
+const log$d = logger.createLogger("captureScreenshots");
 async function takeScreenshot(page, screenshotDir, label) {
   try {
     await fs.ensureDir(screenshotDir);
     const filename = `${label}.png`;
     const filepath = path.join(screenshotDir, filename);
     await page.screenshot({ path: filepath, fullPage: false });
-    log$c.info(`Screenshot saved: ${filepath}`);
+    log$d.info(`Screenshot saved: ${filepath}`);
     return filepath;
   } catch (err) {
-    log$c.warn(`Screenshot failed (${label}): ${err.message}`);
+    log$d.warn(`Screenshot failed (${label}): ${err.message}`);
     return void 0;
   }
 }
@@ -2426,7 +2520,7 @@ async function checkHeroClarity(page) {
     return { passed: false, detail: "Check could not run" };
   }
 }
-const log$b = scanRepository.createLogger("visualAnalyzer");
+const log$c = logger.createLogger("visualAnalyzer");
 const NAVIGATE_TIMEOUT = 15e3;
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 LocalSEOScanner/1.0";
 async function runVisualAnalysis(browser, crawledPages, screenshotDir) {
@@ -2442,7 +2536,7 @@ async function runVisualAnalysis(browser, crawledPages, screenshotDir) {
   if (contactPage) targets.push({ crawledPage: contactPage, label: "contact", runChecks: false });
   if (servicePage) targets.push({ crawledPage: servicePage, label: "service", runChecks: false });
   if (targets.length === 0) {
-    log$b.warn("No pages available for visual analysis");
+    log$c.warn("No pages available for visual analysis");
     return { result: { pagesAnalyzed: [] }, findings: [] };
   }
   const context = await browser.newContext({
@@ -2474,7 +2568,7 @@ async function runVisualAnalysis(browser, crawledPages, screenshotDir) {
               hasTrustSignalsVisible: trust,
               hasHeroClarity: hero
             };
-            log$b.info(
+            log$c.info(
               `Visual checks [${label}]: cta=${cta.passed} phone=${phone.passed} trust=${trust.passed} hero=${hero.passed}`
             );
           } else {
@@ -2500,13 +2594,13 @@ async function runVisualAnalysis(browser, crawledPages, screenshotDir) {
           await page.close();
         }
       } catch (err) {
-        log$b.warn(`Visual analysis failed for ${label} (${url}): ${err.message}`);
+        log$c.warn(`Visual analysis failed for ${label} (${url}): ${err.message}`);
       }
     }
   } finally {
     await context.close();
   }
-  log$b.info(
+  log$c.info(
     `Visual analysis complete: ${pagesAnalyzed.length} page(s) analyzed, ${findings.length} finding(s)`
   );
   return { result: { pagesAnalyzed }, findings };
@@ -2564,10 +2658,10 @@ function buildFindings(analysis) {
   }
   return out;
 }
-const log$a = scanRepository.createLogger("visualStage");
+const log$b = logger.createLogger("visualStage");
 async function visualStage(ctx, emit) {
   if (!ctx.browser) {
-    log$a.warn("Visual stage skipped — no browser in context");
+    log$b.warn("Visual stage skipped — no browser in context");
     return;
   }
   emit("Capturing visual screenshots…", 89);
@@ -2584,11 +2678,11 @@ async function visualStage(ctx, emit) {
       ctx.screenshotPaths[p.pageType] = p.screenshotPath;
     }
   }
-  log$a.info(
+  log$b.info(
     `Visual analysis: ${vResult.pagesAnalyzed.length} page(s), ${vFindings.length} finding(s)`
   );
 }
-const log$9 = scanRepository.createLogger("lighthouse");
+const log$a = logger.createLogger("lighthouse");
 const CHROME_FLAGS = [
   "--headless=new",
   "--no-sandbox",
@@ -2604,10 +2698,10 @@ async function runLighthouse(url, fallbackChromiumPath) {
       chrome = await launch({ chromeFlags: CHROME_FLAGS, logLevel: "silent" });
     } catch {
       if (!fallbackChromiumPath) {
-        log$9.warn("System Chrome not found and no fallback path provided — skipping Lighthouse");
+        log$a.warn("System Chrome not found and no fallback path provided — skipping Lighthouse");
         return null;
       }
-      log$9.info(`System Chrome not found, using Playwright Chromium: ${fallbackChromiumPath}`);
+      log$a.info(`System Chrome not found, using Playwright Chromium: ${fallbackChromiumPath}`);
       chrome = await launch({
         chromePath: fallbackChromiumPath,
         chromeFlags: CHROME_FLAGS,
@@ -2615,7 +2709,7 @@ async function runLighthouse(url, fallbackChromiumPath) {
       });
     }
     if (!chrome) return null;
-    log$9.info(`Chrome launched on port ${chrome.port}, running Lighthouse on ${url}`);
+    log$a.info(`Chrome launched on port ${chrome.port}, running Lighthouse on ${url}`);
     const runnerResult = await lighthouse(url, {
       port: chrome.port,
       output: "json",
@@ -2631,7 +2725,7 @@ async function runLighthouse(url, fallbackChromiumPath) {
       }
     });
     if (!runnerResult?.lhr) {
-      log$9.warn("Lighthouse returned no result");
+      log$a.warn("Lighthouse returned no result");
       return null;
     }
     const { lhr } = runnerResult;
@@ -2651,12 +2745,12 @@ async function runLighthouse(url, fallbackChromiumPath) {
       cumulativeLayoutShift: lhr.audits?.["cumulative-layout-shift"]?.numericValue,
       speedIndex: audit("speed-index")
     };
-    log$9.info(
+    log$a.info(
       `Lighthouse complete: perf=${metrics.performanceScore} seo=${metrics.seoScore} a11y=${metrics.accessibilityScore}`
     );
     return metrics;
   } catch (err) {
-    log$9.warn(`Lighthouse run failed: ${err.message}`);
+    log$a.warn(`Lighthouse run failed: ${err.message}`);
     return null;
   } finally {
     if (chrome) {
@@ -3101,7 +3195,7 @@ function buildQuickWins(findings) {
 function buildMoneyLeaks(findings) {
   return prioritizeFindings(findings).filter((f) => f.severity === "high").slice(0, 5).map((f) => f.summary);
 }
-const log$8 = scanRepository.createLogger("impactStage");
+const log$9 = logger.createLogger("impactStage");
 async function impactStage(ctx, emit) {
   emit("Running performance audit…", 90);
   if (ctx.chromiumPath) {
@@ -3111,18 +3205,18 @@ async function impactStage(ctx, emit) {
         ctx.lighthouseMetrics = [lhMetric];
         const lhFindings = analyzeLighthouse(lhMetric);
         ctx.allFindings = [...ctx.allFindings, ...lhFindings];
-        log$8.info(
+        log$9.info(
           `Lighthouse: perf=${lhMetric.performanceScore} seo=${lhMetric.seoScore} findings=${lhFindings.length}`
         );
       }
     } catch (lhErr) {
-      log$8.warn(`Lighthouse skipped: ${lhErr.message}`);
+      log$9.warn(`Lighthouse skipped: ${lhErr.message}`);
     }
   }
   ctx.allFindings = prioritizeFindings(
     enrichFindingsWithImpact(ctx.allFindings, ctx.detectedBusinessType)
   );
-  log$8.info(`Impact enrichment complete: ${ctx.allFindings.length} findings`);
+  log$9.info(`Impact enrichment complete: ${ctx.allFindings.length} findings`);
 }
 const PENALTY = {
   high: 20,
@@ -3343,7 +3437,7 @@ function computeWeightedScore(scores) {
   ];
   return { value, label: scoreBand(value), rationale };
 }
-const log$7 = scanRepository.createLogger("scoreStage");
+const log$8 = logger.createLogger("scoreStage");
 async function scoreStage(ctx, emit) {
   emit("Scoring results…", 92);
   const techScore = scoreTechnical({
@@ -3379,11 +3473,11 @@ async function scoreStage(ctx, emit) {
   ctx.scores = { ...categoryScores, overall: computeWeightedScore(categoryScores) };
   ctx.quickWins = buildQuickWins(ctx.allFindings);
   ctx.moneyLeaks = buildMoneyLeaks(ctx.allFindings);
-  log$7.info(
+  log$8.info(
     `Scoring complete: tech=${techScore.value} local=${localScore.value} conv=${convScore.value} content=${contentScore.value} trust=${trustScore.value} overall=${ctx.scores.overall.value}`
   );
 }
-const log$6 = scanRepository.createLogger("competitorCrawler");
+const log$7 = logger.createLogger("competitorCrawler");
 const MAX_COMPETITOR_PAGES = 5;
 async function crawlCompetitor(url, browser) {
   let normalizedUrl;
@@ -3432,10 +3526,10 @@ async function crawlCompetitor(url, browser) {
         missingAltCount: signals.missingAltCount
       };
     });
-    log$6.info(`Competitor ${domain}: crawled ${pages.length} page(s)`);
+    log$7.info(`Competitor ${domain}: crawled ${pages.length} page(s)`);
     return { pages };
   } catch (err) {
-    log$6.warn(`Competitor crawl failed for ${domain}: ${err.message}`);
+    log$7.warn(`Competitor crawl failed for ${domain}: ${err.message}`);
     return { pages: [], crawlError: err.message };
   }
 }
@@ -3653,11 +3747,11 @@ function analyzeGaps(clientUrl, clientPages, competitors) {
   }
   return gaps;
 }
-const log$5 = scanRepository.createLogger("competitorAnalysis");
+const log$6 = logger.createLogger("competitorAnalysis");
 const MAX_COMPETITORS = 3;
 async function runCompetitorAnalysis(browser, clientUrl, clientPages, competitorUrls) {
   const urls = [...new Set(competitorUrls)].slice(0, MAX_COMPETITORS);
-  log$5.info(`Starting competitor analysis: ${urls.length} competitor(s)`);
+  log$6.info(`Starting competitor analysis: ${urls.length} competitor(s)`);
   const results = await Promise.allSettled(
     urls.map(async (url) => {
       const { pages, crawlError } = await crawlCompetitor(url, browser);
@@ -3672,11 +3766,11 @@ async function runCompetitorAnalysis(browser, clientUrl, clientPages, competitor
   const competitors = results.map((result, i) => {
     if (result.status === "fulfilled") return result.value;
     const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
-    log$5.warn(`Competitor ${urls[i]} failed: ${reason}`);
+    log$6.warn(`Competitor ${urls[i]} failed: ${reason}`);
     return analyzeCompetitor(urls[i], [], reason);
   });
   const gaps = analyzeGaps(clientUrl, clientPages, competitors);
-  log$5.info(
+  log$6.info(
     `Competitor analysis complete: ${competitors.length} site(s) analyzed, ${competitors.filter((c) => c.pageCount > 0).length} successful, ${gaps.length} gap(s) found`
   );
   return {
@@ -3685,14 +3779,14 @@ async function runCompetitorAnalysis(browser, clientUrl, clientPages, competitor
     gaps
   };
 }
-const log$4 = scanRepository.createLogger("competitorStage");
+const log$5 = logger.createLogger("competitorStage");
 async function competitorStage(ctx, emit) {
   if (!ctx.request.competitorUrls || ctx.request.competitorUrls.length === 0) {
-    log$4.info("Competitor stage skipped — no competitor URLs provided");
+    log$5.info("Competitor stage skipped — no competitor URLs provided");
     return;
   }
   if (!ctx.browser) {
-    log$4.warn("Competitor stage skipped — browser not available");
+    log$5.warn("Competitor stage skipped — browser not available");
     return;
   }
   emit("Analyzing competitors…", 94);
@@ -3702,7 +3796,7 @@ async function competitorStage(ctx, emit) {
     ctx.pages,
     ctx.request.competitorUrls.slice(0, 3)
   );
-  log$4.info(
+  log$5.info(
     `Competitor analysis: ${ctx.competitorResult.competitors.length} sites, ${ctx.competitorResult.gaps.length} gaps`
   );
 }
@@ -3802,7 +3896,7 @@ function joinList$1(items) {
 function cap(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
-const log$3 = scanRepository.createLogger("confidenceStage");
+const log$4 = logger.createLogger("confidenceStage");
 async function confidenceStage(ctx, emit) {
   emit("Computing score confidence…", 95);
   ctx.scoreConfidence = computeScoreConfidence({
@@ -3811,7 +3905,7 @@ async function confidenceStage(ctx, emit) {
     visual: ctx.visualResult,
     competitor: ctx.competitorResult
   });
-  log$3.info(`Score confidence: ${ctx.scoreConfidence.level} — ${ctx.scoreConfidence.reason}`);
+  log$4.info(`Score confidence: ${ctx.scoreConfidence.level} — ${ctx.scoreConfidence.reason}`);
 }
 const CLUSTERS = [
   // ── Crawlability / Indexing ────────────────────────────────────────────────
@@ -4114,14 +4208,14 @@ function buildFixRoadmap(result) {
   const top10 = items.slice(0, 10);
   return top10.map((entry, idx) => ({ priority: idx + 1, ...entry.item }));
 }
-const log$2 = scanRepository.createLogger("roadmapStage");
+const log$3 = logger.createLogger("roadmapStage");
 async function roadmapStage(ctx, emit) {
   emit("Building fix roadmap…", 96);
   ctx.roadmap = buildFixRoadmap({
     findings: ctx.allFindings,
     moneyLeaks: ctx.moneyLeaks
   });
-  log$2.info(`Roadmap built: ${ctx.roadmap.length} items`);
+  log$3.info(`Roadmap built: ${ctx.roadmap.length} items`);
 }
 const LEAD_VALUE = {
   roofer: { low: 800, high: 3e3, label: "roofing" },
@@ -4261,7 +4355,7 @@ function joinList(items) {
   if (items.length === 2) return `${items[0]} and ${items[1]}`;
   return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
 }
-const log$1 = scanRepository.createLogger("revenueStage");
+const log$2 = logger.createLogger("revenueStage");
 async function revenueStage(ctx, emit) {
   emit("Estimating revenue impact…", 96);
   ctx.revenueImpact = estimateRevenueImpact({
@@ -4269,9 +4363,166 @@ async function revenueStage(ctx, emit) {
     detectedBusinessType: ctx.detectedBusinessType,
     scoreConfidence: ctx.scoreConfidence
   });
-  log$1.info(`Revenue estimate: ${ctx.revenueImpact.confidence} confidence`);
+  log$2.info(`Revenue estimate: ${ctx.revenueImpact.confidence} confidence`);
 }
-const log = scanRepository.createLogger("runScanJob");
+const VALUE = {
+  High: { low: 2e3, high: 8e3 },
+  Medium: { low: 800, high: 3e3 },
+  Low: { low: 200, high: 1e3 }
+};
+const SERVICE_SLUGS = {
+  roofer: ["roof-repair", "roof-replacement", "roof-inspection", "gutter-installation", "emergency-roof-repair"],
+  contractor: ["kitchen-remodeling", "bathroom-remodeling", "basement-finishing", "deck-installation", "home-additions"],
+  dentist: ["teeth-whitening", "dental-implants", "orthodontics", "emergency-dental-care", "cosmetic-dentistry"],
+  salon: ["hair-coloring", "hair-extensions", "balayage-highlights", "keratin-treatment", "bridal-hair"],
+  auto_shop: ["oil-change-service", "brake-repair", "tire-rotation", "transmission-repair", "engine-diagnostics"],
+  restaurant: ["private-dining", "catering-services", "takeout-delivery", "meal-prep-delivery"]
+};
+const SERVICE_LABELS = {
+  roofer: ["Roof Repair", "Roof Replacement", "Roof Inspection", "Gutter Installation", "Emergency Roof Repair"],
+  contractor: ["Kitchen Remodeling", "Bathroom Remodeling", "Basement Finishing", "Deck Installation", "Home Additions"],
+  dentist: ["Teeth Whitening", "Dental Implants", "Orthodontics", "Emergency Dental Care", "Cosmetic Dentistry"],
+  salon: ["Hair Coloring", "Hair Extensions", "Balayage Highlights", "Keratin Treatment", "Bridal Hair"],
+  auto_shop: ["Oil Change Service", "Brake Repair", "Tire Rotation", "Transmission Repair", "Engine Diagnostics"],
+  restaurant: ["Private Dining", "Catering Services", "Takeout & Delivery", "Meal Prep Delivery"]
+};
+const GAP_LEVEL = {
+  "comp-no-service-pages": "High",
+  "comp-no-location-pages": "High",
+  "comp-no-local-schema": "Medium",
+  "comp-no-trust-signals": "Medium",
+  "comp-no-map": "Low",
+  "comp-no-hours": "Low",
+  "comp-no-contact-form": "Medium",
+  "comp-thin-content": "Medium"
+};
+function detectOpportunities(input) {
+  const { pages, categoryFindings, competitorResult, detectedBusinessType } = input;
+  const allFindings = [
+    ...categoryFindings.technical,
+    ...categoryFindings.localSeo,
+    ...categoryFindings.conversion,
+    ...categoryFindings.content,
+    ...categoryFindings.trust
+  ];
+  const findingIds = new Set(allFindings.map((f) => f.id));
+  const items = [];
+  const emittedTypes = /* @__PURE__ */ new Set();
+  const servicePages = pages.filter((p) => p.pageType === "service");
+  if (servicePages.length === 0 && !emittedTypes.has("service-pages")) {
+    const slugs = SERVICE_SLUGS[detectedBusinessType] ?? ["services-overview", "our-services"];
+    const labels = SERVICE_LABELS[detectedBusinessType] ?? ["Our Services"];
+    const compCoverage = competitorResult ? competitorResult.competitors.filter((c) => c.servicePageCount > 0 && !c.crawlError).map((c) => c.domain) : [];
+    items.push({
+      title: "Create Dedicated Service Pages",
+      description: `Your site has no dedicated service pages. Customers searching for specific services (like "${labels[0]}" or "${labels[1] ?? "specialized services"}") can't find them — and Google can't rank you for those terms.`,
+      suggestedPageSlug: slugs[0],
+      opportunityLevel: "High",
+      reason: `No service-specific pages were found. Dedicated service pages are the single highest-ROI content investment for local businesses — each page can rank for dozens of local keywords.`,
+      competitorCoverage: compCoverage.length > 0 ? compCoverage : void 0,
+      estimatedMonthlyValueRange: VALUE.High
+    });
+    emittedTypes.add("service-pages");
+    if (slugs.length > 1) {
+      slugs.slice(1, 3).forEach((slug, i) => {
+        items.push({
+          title: `Add "${labels[i + 1] ?? slug}" Service Page`,
+          description: `A dedicated page for ${labels[i + 1] ?? slug} allows you to target customers searching for that specific service in your area.`,
+          suggestedPageSlug: slug,
+          opportunityLevel: "Medium",
+          reason: `Service-specific pages consistently outperform generic service overviews for local search visibility.`,
+          competitorCoverage: compCoverage.length > 0 ? compCoverage : void 0,
+          estimatedMonthlyValueRange: VALUE.Medium
+        });
+      });
+    }
+  }
+  const hasGenericServicesOnly = servicePages.length === 1 && /^\/(services?|our-services?|what-we-do)\/?$/i.test(new URL(servicePages[0].url, "https://x").pathname);
+  if (hasGenericServicesOnly && !emittedTypes.has("service-pages")) {
+    const avgCompServicePages = competitorResult ? average(competitorResult.competitors.filter((c) => !c.crawlError).map((c) => c.servicePageCount)) : 0;
+    const slugs = SERVICE_SLUGS[detectedBusinessType] ?? ["specific-service"];
+    const labels = SERVICE_LABELS[detectedBusinessType] ?? ["Specific Service"];
+    const compCoverage = competitorResult ? competitorResult.competitors.filter((c) => c.servicePageCount >= 3 && !c.crawlError).map((c) => c.domain) : [];
+    if (avgCompServicePages >= 3 || findingIds.has("content-too-few-service-pages")) {
+      items.push({
+        title: "Split Generic Services Page into Individual Pages",
+        description: `You have one generic services page but competitors have ${Math.round(avgCompServicePages) || "multiple"} individual service pages. Each dedicated page can rank for its own set of local keywords.`,
+        suggestedPageSlug: slugs[0],
+        opportunityLevel: "High",
+        reason: `Google ranks specific pages higher for specific searches. A page titled "${labels[0]}" will rank for "${labels[0].toLowerCase()} near me" far better than a generic services page.`,
+        competitorCoverage: compCoverage.length > 0 ? compCoverage : void 0,
+        estimatedMonthlyValueRange: VALUE.High
+      });
+      emittedTypes.add("service-pages");
+    }
+  }
+  const locationPages = pages.filter((p) => p.pageType === "location");
+  const hasAddressSignal = pages.some((p) => p.hasAddress);
+  if (locationPages.length === 0 && hasAddressSignal && !emittedTypes.has("location-pages")) {
+    const compCoverage = competitorResult ? competitorResult.competitors.filter((c) => c.locationPageCount > 0 && !c.crawlError).map((c) => c.domain) : [];
+    const level = findingIds.has("content-no-location-pages") || findingIds.has("local-no-location-pages") ? "High" : "Medium";
+    items.push({
+      title: "Create City-Specific Service Pages",
+      description: `You have no location-specific pages. Creating pages like "[Service] in [City]" dramatically improves rankings for nearby searches and customers searching by area.`,
+      suggestedPageSlug: "service-area-cityname",
+      opportunityLevel: level,
+      reason: `"Near me" and city-specific searches make up a large portion of local service queries. Location pages let you target each area you serve directly.`,
+      competitorCoverage: compCoverage.length > 0 ? compCoverage : void 0,
+      estimatedMonthlyValueRange: VALUE[level]
+    });
+    emittedTypes.add("location-pages");
+  }
+  if (competitorResult && competitorResult.gaps.length > 0) {
+    for (const gap of competitorResult.gaps) {
+      const level = GAP_LEVEL[gap.id] ?? "Low";
+      if (gap.id === "comp-no-service-pages" && emittedTypes.has("service-pages")) continue;
+      if (gap.id === "comp-no-location-pages" && emittedTypes.has("location-pages")) continue;
+      const slug = gapSlug(gap.id);
+      items.push({
+        title: gap.title,
+        description: gap.description,
+        suggestedPageSlug: slug,
+        opportunityLevel: level,
+        reason: gap.recommendation,
+        competitorCoverage: gap.competitorDomains.length > 0 ? gap.competitorDomains : void 0,
+        estimatedMonthlyValueRange: VALUE[level]
+      });
+      if (gap.id === "comp-no-service-pages") emittedTypes.add("service-pages");
+      if (gap.id === "comp-no-location-pages") emittedTypes.add("location-pages");
+    }
+  }
+  const levelOrder = { High: 0, Medium: 1, Low: 2 };
+  return items.sort((a, b) => levelOrder[a.opportunityLevel] - levelOrder[b.opportunityLevel]);
+}
+function average(nums) {
+  if (nums.length === 0) return 0;
+  return nums.reduce((s, n) => s + n, 0) / nums.length;
+}
+function gapSlug(gapId) {
+  const map = {
+    "comp-no-service-pages": "our-services",
+    "comp-no-location-pages": "service-area-city",
+    "comp-no-local-schema": "about-local-business",
+    "comp-no-trust-signals": "reviews-testimonials",
+    "comp-no-map": "contact-directions",
+    "comp-no-hours": "business-hours",
+    "comp-no-contact-form": "contact-us",
+    "comp-thin-content": "detailed-service-page"
+  };
+  return map[gapId] ?? gapId.replace(/^comp-no-/, "");
+}
+const log$1 = logger.createLogger("opportunityStage");
+async function opportunityStage(ctx, emit) {
+  emit("Detecting SEO opportunities…", 97);
+  ctx.seoOpportunities = detectOpportunities({
+    pages: ctx.pages,
+    categoryFindings: ctx.categoryFindings,
+    competitorResult: ctx.competitorResult,
+    detectedBusinessType: ctx.detectedBusinessType
+  });
+  log$1.info(`SEO opportunities detected: ${ctx.seoOpportunities.length}`);
+}
+const log = logger.createLogger("runScanJob");
 async function runScanJob(request, emit) {
   log.info(`Scan job starting: ${request.url}`);
   const ctx = createScanJobContext(request);
@@ -4287,6 +4538,7 @@ async function runScanJob(request, emit) {
     await runOptional("confidence", ctx, emit, confidenceStage);
     await runOptional("roadmap", ctx, emit, roadmapStage);
     await runOptional("revenue", ctx, emit, revenueStage);
+    await runOptional("opportunity", ctx, emit, opportunityStage);
     await reportStage(ctx, emit);
   } finally {
     if (ctx.browser) {

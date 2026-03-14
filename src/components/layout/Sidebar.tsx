@@ -8,10 +8,13 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/',         label: 'Dashboard',    icon: '◈' },
-  { to: '/scan/new', label: 'New Scan',     icon: '⊕' },
-  { to: '/scans',    label: 'Saved Scans',  icon: '⊞' },
-  { to: '/settings', label: 'Settings',     icon: '⚙' },
+  { to: '/',                label: 'Dashboard',       icon: '◈' },
+  { to: '/scan/new',        label: 'New Scan',        icon: '⊕' },
+  { to: '/scan/bulk',       label: 'Bulk Scan',       icon: '⊟' },
+  { to: '/scan/discovery',  label: 'Market Discovery', icon: '⊛' },
+  { to: '/market',          label: 'Market Intel',    icon: '⊠' },
+  { to: '/scans',           label: 'Saved Scans',     icon: '⊞' },
+  { to: '/settings',        label: 'Settings',        icon: '⚙' },
 ]
 
 export default function Sidebar(): JSX.Element {

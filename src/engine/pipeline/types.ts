@@ -21,6 +21,7 @@ import type {
   Finding,
   FixRoadmapItem,
   LighthouseMetrics,
+  OpportunityItem,
   RevenueImpactEstimate,
   ScoreConfidence,
   VisualAnalysisResult,
@@ -41,6 +42,7 @@ export type ScanStageName =
   | 'confidence'
   | 'roadmap'
   | 'revenue'
+  | 'opportunity'
   | 'report'
   | 'complete'
 
@@ -113,6 +115,7 @@ export interface ScanJobContext {
   scoreConfidence?: ScoreConfidence
   roadmap?: FixRoadmapItem[]
   revenueImpact?: RevenueImpactEstimate
+  seoOpportunities?: OpportunityItem[]
 
   // ── report stage ──────────────────────────────────────────────────────────
   artifacts: AuditResult['artifacts']

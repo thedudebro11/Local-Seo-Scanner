@@ -72,10 +72,11 @@ Local SEO Scanner is a three-process Electron application. The renderer (React U
 The React UI runs inside a sandboxed Chromium renderer. It has no access to Node.js APIs, Electron APIs, or the file system. All communication with the outside world goes through `window.api`.
 
 Key pieces:
-- `src/app/routes.tsx` — Hash router with 5 routes under `AppShell`
+- `src/app/routes.tsx` — Hash router with 9 routes under `AppShell`
 - `src/features/` — Page-level feature components
 - `src/components/` — Reusable UI primitives and scan-specific widgets
-- `src/features/scans/state/useScanStore.ts` — Zustand store; owns scan lifecycle state
+- `src/features/scans/state/useScanStore.ts` — Zustand store; owns single-scan lifecycle state
+- `src/features/bulk/useBulkScanStore.ts` — Zustand store; owns bulk scan lifecycle state
 
 ### Preload Script
 
@@ -83,8 +84,11 @@ Key pieces:
 
 ### Main Process
 
-`electron/main.ts` creates the `BrowserWindow`, registers three groups of IPC handlers, and handles app lifecycle events (activate, window-all-closed). IPC handlers are in `electron/ipc/`:
+`electron/main.ts` creates the `BrowserWindow`, registers IPC handler groups, and handles app lifecycle events (activate, window-all-closed). IPC handlers are in `electron/ipc/`:
 - `scanHandlers.ts` — handles `scan:start`, dynamically imports `runAudit`
+- `bulkScanHandlers.ts` — handles `bulk:start`, calls `runBulkScan`
+- `discoveryHandlers.ts` — handles `discovery:run`, calls `runMarketDiscovery`
+- `marketHandlers.ts` — handles `market:build` and `monitoring:add-site`
 - `fileHandlers.ts` — handles `file:*` channels via `scanRepository` and `shell`
 - `appHandlers.ts` — handles `app:*` channels (version, platform, reports path)
 
@@ -95,6 +99,21 @@ Key pieces:
 ### Storage
 
 All artifacts are written to Electron's `userData` path (platform-specific, survives app updates). The `index.json` file tracks all scan metadata. Each scan gets its own subdirectory containing `report.json` (slim AuditResult) and `report.html` (self-contained HTML).
+
+Phases 11–15 added new storage sub-trees:
+
+```
+<userData>/
+  reports/
+    index.json                          ← SavedScanMeta[]
+    <scanId>/report.json + report.html + screenshots/
+    bulk/<batchId>.json                 ← BulkScanResult
+    discovery/<discoveryId>.json        ← MarketDiscoveryResult
+    market-dashboards/<dashboardId>.json ← MarketDashboard
+  monitoring/
+    sites.json                          ← TrackedSite[]
+    history/<siteId>/<scanId>.json      ← SiteScanSummary per monitored scan
+```
 
 ## Build Targets
 
@@ -107,6 +126,85 @@ electron-vite compiles three separate bundles:
 | renderer | `src/index.html` | `out/renderer/` | ESM browser bundle |
 
 Path aliases `@engine` → `src/engine` and `@` → `src` are available in all three targets. `@components` and `@features` are renderer-only aliases.
+
+## Full Platform Architecture Diagram
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  USER INPUT                                                  │
+│                                                              │
+│  Single URL      Multiple Domains     Industry + Location    │
+│  (NewScanPage)   (BulkScanPage)       (MarketDiscoveryPage)  │
+└──────────┬───────────────┬──────────────────┬───────────────┘
+           │               │                  │
+           ▼               ▼                  ▼
+┌──────────────────────────────────────────────────────────────┐
+│  DISCOVERY / DOMAIN PREPARATION                              │
+│                                                              │
+│  Manual URL entry     Textarea input      DuckDuckGo Lite    │
+│                       (one per line)      search → extract   │
+│                                           → filter dirs      │
+│                                           (marketDiscovery)  │
+└──────────┬───────────────┬──────────────────┘
+           │               └──────────────────┐
+           ▼                                  ▼
+┌──────────────────────────────────────────────────────────────┐
+│  BULK SCAN ENGINE  (runBulkScan.ts)                          │
+│                                                              │
+│  Sequential: for each domain → runAudit()                    │
+│  Failed domains recorded; batch never aborts                 │
+│  Progress via bulk:progress IPC channel                      │
+│  Result saved to reports/bulk/<batchId>.json                 │
+└──────────┬───────────────────────────────────────────────────┘
+           │  (also called directly for single scans)
+           ▼
+┌──────────────────────────────────────────────────────────────┐
+│  SCAN PIPELINE  (runScanJob.ts — 12 stages)                  │
+│                                                              │
+│  validate → crawl → extract → analyze → visual →            │
+│  impact → score → competitor → confidence →                  │
+│  roadmap → revenue → report                                  │
+│                                                              │
+│  Optional siteId on request → monitoring hook in reportStage │
+└──────────┬───────────────────────────────────────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────────────────────┐
+│  REPORT GENERATION                                           │
+│                                                              │
+│  JSON report   HTML report   index.json updated              │
+│  screenshots   AuditResult returned to caller                │
+└──────────┬───────────────────────────────────────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────────────────────┐
+│  MONITORING LAYER  (src/engine/monitoring/)                  │
+│                                                              │
+│  If request.siteId set:                                      │
+│    saveScanSummary() → monitoring/history/<siteId>/          │
+│    updateTrackedSiteLastScan() → monitoring/sites.json       │
+└──────────┬───────────────────────────────────────────────────┘
+           │  (after bulk scan completes)
+           ▼
+┌──────────────────────────────────────────────────────────────┐
+│  MARKET INTELLIGENCE DASHBOARD  (buildMarketDashboard.ts)    │
+│                                                              │
+│  Input: BulkScanResult (already completed, no new scans)     │
+│  Enrichment: loads individual report.json per site           │
+│  Rankings: top performers, weakest, revenue leak, outreach   │
+│  Output saved to reports/market-dashboards/<id>.json         │
+└──────────┬───────────────────────────────────────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────────────────────┐
+│  LEAD IDENTIFICATION                                         │
+│                                                              │
+│  bestOpportunityTargets ranked by outreach score             │
+│  (score < 70, high-priority issues, revenue leak, data       │
+│   confidence, opportunity count)                             │
+│  "Add to Monitoring" button tracks selected prospects        │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ## Data Flow: Scan Request to Result
 

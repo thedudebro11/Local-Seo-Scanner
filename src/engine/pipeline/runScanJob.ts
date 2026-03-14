@@ -28,6 +28,7 @@ import { competitorStage }  from './stages/competitorStage'
 import { confidenceStage }  from './stages/confidenceStage'
 import { roadmapStage }     from './stages/roadmapStage'
 import { revenueStage }     from './stages/revenueStage'
+import { opportunityStage } from './stages/opportunityStage'
 import { reportStage }      from './stages/reportStage'
 import { buildJsonPath, buildHtmlPath } from '../storage/pathResolver'
 
@@ -64,7 +65,8 @@ export async function runScanJob(
     // ── Optional (browser no longer needed) ──────────────────────────────────
     await runOptional('confidence', ctx, emit, confidenceStage)
     await runOptional('roadmap',    ctx, emit, roadmapStage)
-    await runOptional('revenue',    ctx, emit, revenueStage)
+    await runOptional('revenue',      ctx, emit, revenueStage)
+    await runOptional('opportunity',  ctx, emit, opportunityStage)
 
     // ── Required (write files) ───────────────────────────────────────────────
     await reportStage(ctx, emit)

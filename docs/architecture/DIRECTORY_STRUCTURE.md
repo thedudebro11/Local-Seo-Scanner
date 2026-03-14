@@ -12,6 +12,9 @@ Local Seo Engine/
 │   ├── preload.ts                     contextBridge — exposes window.api to renderer
 │   └── ipc/
 │       ├── scanHandlers.ts            Handles scan:start, dynamically imports runAudit
+│       ├── bulkScanHandlers.ts        Handles bulk:start, calls runBulkScan (Phase 13)
+│       ├── discoveryHandlers.ts       Handles discovery:run, calls runMarketDiscovery (Phase 14)
+│       ├── marketHandlers.ts          Handles market:build and monitoring:add-site (Phase 15)
 │       ├── fileHandlers.ts            Handles file:list-scans, file:open-report, etc.
 │       └── appHandlers.ts            Handles app:version, app:platform, app:reports-path
 │
@@ -20,7 +23,7 @@ Local Seo Engine/
 │   │
 │   ├── app/
 │   │   ├── main.tsx                   React root — renders RouterProvider
-│   │   └── routes.tsx                 Hash router: /, /scan/new, /scan/results/:id, /scans, /settings
+│   │   └── routes.tsx                 Hash router: /, /scan/new, /scan/results/:id, /scan/bulk, /scan/discovery, /market, /scans, /settings
 │   │
 │   ├── components/
 │   │   ├── layout/
@@ -54,6 +57,13 @@ Local Seo Engine/
 │   │   │   ├── SavedScansPage.tsx    Lists saved scans from index.json
 │   │   │   └── state/
 │   │   │       └── useScanStore.ts   Zustand store: isScanning, progress, latestResult, savedScans
+│   │   ├── bulk/
+│   │   │   ├── BulkScanPage.tsx      Bulk scan UI: form → progress → comparison results table (Phase 13)
+│   │   │   └── useBulkScanStore.ts   Zustand store: bulk phase, progress, result, startBulkScan, reset
+│   │   ├── discovery/
+│   │   │   └── MarketDiscoveryPage.tsx  Discovery form → candidate review → bulk scan → results (Phase 14)
+│   │   ├── market/
+│   │   │   └── MarketDashboardPage.tsx  Market intelligence dashboard — builds from last bulk result (Phase 15)
 │   │   └── settings/
 │   │       └── SettingsPage.tsx      App settings page
 │   │
@@ -137,8 +147,32 @@ Local Seo Engine/
 │       │   ├── runLighthouse.ts      Launches Chrome, runs Lighthouse, returns LighthouseMetrics
 │       │   └── lighthouseAnalyzer.ts Converts LighthouseMetrics into Finding objects
 │       │
+│       ├── monitoring/                    Phase 11 — multi-site monitoring
+│       │   ├── monitoringTypes.ts         TrackedSite, SiteScanSummary interfaces
+│       │   ├── monitoringPaths.ts         initMonitoringDir, getSitesPath, getSiteHistoryDir, getScanSummaryPath
+│       │   ├── siteManager.ts             addTrackedSite, listTrackedSites, getTrackedSite, updateTrackedSiteLastScan
+│       │   └── scanHistory.ts             saveScanSummary, getScanHistory, getLatestScanSummary
+│       │
+│       ├── bulk/                          Phase 13 — bulk scan engine
+│       │   ├── bulkTypes.ts               BulkScanRequest, BulkScanItemResult, BulkScanResult, BulkScanProgressEvent
+│       │   ├── runBulkScan.ts             Sequential multi-domain scan orchestrator; normalizeDomains, saveBulkResult
+│       │   └── buildBulkSummary.ts        rankItems, lowestScoreItem, worstRevenueItem helpers
+│       │
+│       ├── discovery/                     Phase 14 — market discovery
+│       │   ├── discoveryTypes.ts          MarketDiscoveryRequest, DiscoveredBusiness, MarketDiscoveryResult
+│       │   ├── marketDiscovery.ts         DuckDuckGo Lite scraper → candidate businesses; saveDiscoveryResult
+│       │   ├── normalizeDomain.ts         normalizeToDomain() — strips www, enforces https, validates
+│       │   ├── filterCandidates.ts        filterCandidates() — removes blocked dirs, normalizes, deduplicates
+│       │   └── directoryBlocklist.ts      isBlockedDomain() — 50+ blocked aggregators (Yelp, Angi, etc.)
+│       │
+│       ├── market/                        Phase 15 — market intelligence dashboard
+│       │   ├── marketTypes.ts             MarketDashboardBusiness, MarketSummaryStats, MarketDashboard
+│       │   ├── marketRanking.ts           rankBusinesses, topN — sort by score/revenue/outreach/issues
+│       │   ├── marketOpportunity.ts       computeOutreachScore() — 0–11pt prospect priority heuristic
+│       │   └── buildMarketDashboard.ts    Main builder: BulkScanResult → enriched → ranked → MarketDashboard
+│       │
 │       ├── storage/
-│       │   ├── pathResolver.ts       initReportsDir, getReportsDir, getScreenshotsDir, buildJsonPath, buildHtmlPath, generateScanId (no Electron import — uses initReportsDir setter)
+│       │   ├── pathResolver.ts       initReportsDir, getReportsDir, getScreenshotsDir, buildJsonPath, buildHtmlPath, getBulkScansDir, getBulkScanPath, getDiscoveryDir, getDiscoveryPath, getMarketDashboardsDir, getMarketDashboardPath, generateScanId
 │       │   └── scanRepository.ts     listSavedScans, loadScanById, saveScan, deleteScan
 │       │
 │       ├── pipeline/

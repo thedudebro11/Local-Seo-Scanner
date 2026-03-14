@@ -26,6 +26,18 @@
 - It does not auto-discover competitor URLs (manual entry only; `noopDiscovery` stub always returns `[]`)
 - It does not check Google Search Console, Google My Business, or any third-party data sources
 - It does not use a headless API — it crawls the live public website
+- `runAudit()` processes a **single site** — bulk scanning and market analysis are handled by separate systems that call `runAudit()` in a loop
+
+## Systems That Wrap the Engine
+
+Several higher-order modules call `runAudit()` or build on engine outputs without modifying the pipeline:
+
+| Module | Location | Purpose |
+|---|---|---|
+| Bulk Scan | `src/engine/bulk/runBulkScan.ts` | Scans multiple domains sequentially |
+| Market Discovery | `src/engine/discovery/marketDiscovery.ts` | Finds candidate business domains via DuckDuckGo Lite |
+| Market Dashboard | `src/engine/market/buildMarketDashboard.ts` | Aggregates completed bulk results into market-level insights |
+| Monitoring | `src/engine/monitoring/` | Tracks site scan history via the `AuditRequest.siteId` hook |
 
 ## Engine Entry Point
 

@@ -16,6 +16,40 @@ const api = {
     electron.ipcRenderer.on("scan:progress", listener);
     return () => electron.ipcRenderer.off("scan:progress", listener);
   },
+  // ── Bulk scan ──────────────────────────────────────────────────────────────
+  /**
+   * Start a bulk scan across multiple domains.
+   * Returns a BulkScanResult when all domains are complete.
+   * Per-domain progress arrives via onBulkScanProgress.
+   */
+  startBulkScan: (request) => electron.ipcRenderer.invoke("bulk:start", request),
+  /**
+   * Subscribe to bulk scan progress events.
+   * Returns an unsubscribe function — call it in useEffect cleanup.
+   */
+  onBulkScanProgress: (callback) => {
+    const listener = (_, data) => callback(data);
+    electron.ipcRenderer.on("bulk:progress", listener);
+    return () => electron.ipcRenderer.off("bulk:progress", listener);
+  },
+  // ── Market discovery ───────────────────────────────────────────────────────
+  /**
+   * Run a market discovery search.
+   * Returns candidate businesses + normalized valid domains.
+   * Does NOT start any scans.
+   */
+  runDiscovery: (request) => electron.ipcRenderer.invoke("discovery:run", request),
+  // ── Market Intelligence ────────────────────────────────────────────────────
+  /**
+   * Build a market intelligence dashboard from a completed bulk scan result.
+   * Loads individual report.json files for enrichment, then saves dashboard JSON.
+   */
+  buildMarketDashboard: (payload) => electron.ipcRenderer.invoke("market:build", payload),
+  /**
+   * Add a domain to the monitoring tracked-sites list.
+   * Returns the generated siteId.
+   */
+  addMonitoredSite: (domain) => electron.ipcRenderer.invoke("monitoring:add-site", domain),
   // ── File / Report ──────────────────────────────────────────────────────────
   /** Return the list of previously saved scans. */
   getSavedScans: () => electron.ipcRenderer.invoke("file:list-scans"),

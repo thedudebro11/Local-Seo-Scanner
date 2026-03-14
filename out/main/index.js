@@ -11,7 +11,7 @@ function registerScanHandlers(mainWindow2) {
       }
     };
     try {
-      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-DoPaN4PN.js"));
+      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-Vst0ahwN.js"));
       const result = await runAudit(request, emitProgress);
       return result;
     } catch (err) {
@@ -20,9 +20,53 @@ function registerScanHandlers(mainWindow2) {
     }
   });
 }
+function registerBulkScanHandlers(mainWindow2) {
+  electron.ipcMain.handle("bulk:start", async (_, request) => {
+    const emitProgress = (event) => {
+      if (!mainWindow2.isDestroyed()) {
+        mainWindow2.webContents.send("bulk:progress", event);
+      }
+    };
+    try {
+      const { runBulkScan } = await Promise.resolve().then(() => require("./chunks/runBulkScan-DuBJnfts.js"));
+      return await runBulkScan(request, emitProgress);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(`Bulk scan failed: ${message}`);
+    }
+  });
+}
+function registerDiscoveryHandlers() {
+  electron.ipcMain.handle("discovery:run", async (_, request) => {
+    try {
+      const { runMarketDiscovery } = await Promise.resolve().then(() => require("./chunks/marketDiscovery-DYZniIye.js"));
+      return await runMarketDiscovery(request);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(`Discovery failed: ${message}`);
+    }
+  });
+}
+function registerMarketHandlers() {
+  electron.ipcMain.handle(
+    "market:build",
+    async (_, payload) => {
+      const { buildMarketDashboard } = await Promise.resolve().then(() => require("./chunks/buildMarketDashboard-BbxLLYuT.js"));
+      return buildMarketDashboard({ bulkResult: payload.bulkResult, label: payload.label });
+    }
+  );
+  electron.ipcMain.handle(
+    "monitoring:add-site",
+    async (_, domain) => {
+      const { addTrackedSite } = await Promise.resolve().then(() => require("./chunks/siteManager-D5Sop0bC.js"));
+      const site = await addTrackedSite(domain);
+      return site.siteId;
+    }
+  );
+}
 function registerFileHandlers() {
   electron.ipcMain.handle("file:list-scans", async () => {
-    const { listSavedScans } = await Promise.resolve().then(() => require("./chunks/scanRepository-CxNMbKnN.js")).then((n) => n.scanRepository);
+    const { listSavedScans } = await Promise.resolve().then(() => require("./chunks/scanRepository-D1_fs6er.js"));
     return listSavedScans();
   });
   electron.ipcMain.handle("file:open-report", async (_, reportPath) => {
@@ -32,7 +76,7 @@ function registerFileHandlers() {
     electron.shell.showItemInFolder(folderPath);
   });
   electron.ipcMain.handle("file:load-scan", async (_, scanId) => {
-    const { loadScanById } = await Promise.resolve().then(() => require("./chunks/scanRepository-CxNMbKnN.js")).then((n) => n.scanRepository);
+    const { loadScanById } = await Promise.resolve().then(() => require("./chunks/scanRepository-D1_fs6er.js"));
     return loadScanById(scanId);
   });
 }
@@ -80,17 +124,62 @@ function generateScanId(domain) {
   const ts = Date.now();
   return `${safeDomain}_${ts}`;
 }
+function getBulkScansDir() {
+  return path.join(getReportsDir(), "bulk");
+}
+function getBulkScanPath(batchId) {
+  return path.join(getBulkScansDir(), `${batchId}.json`);
+}
+function getDiscoveryDir() {
+  return path.join(getReportsDir(), "discovery");
+}
+function getDiscoveryPath(discoveryId) {
+  return path.join(getDiscoveryDir(), `${discoveryId}.json`);
+}
+function getMarketDashboardsDir() {
+  return path.join(getReportsDir(), "market-dashboards");
+}
+function getMarketDashboardPath(dashboardId) {
+  return path.join(getMarketDashboardsDir(), `${dashboardId}.json`);
+}
 const pathResolver = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   buildHtmlPath,
   buildJsonPath,
   generateScanId,
+  getBulkScanPath,
+  getBulkScansDir,
+  getDiscoveryDir,
+  getDiscoveryPath,
   getIndexPath,
+  getMarketDashboardPath,
+  getMarketDashboardsDir,
   getReportsDir,
   getScanArtifactsDir,
   getScreenshotsDir,
   initReportsDir
 }, Symbol.toStringTag, { value: "Module" }));
+let _monitoringDir = null;
+function initMonitoringDir(userDataPath) {
+  _monitoringDir = path.join(userDataPath, "monitoring");
+}
+function getMonitoringDir() {
+  if (!_monitoringDir) {
+    throw new Error(
+      "monitoringPaths: initMonitoringDir() has not been called. Call it from the Electron main process before using monitoring features."
+    );
+  }
+  return _monitoringDir;
+}
+function getSitesPath() {
+  return path.join(getMonitoringDir(), "sites.json");
+}
+function getSiteHistoryDir(siteId) {
+  return path.join(getMonitoringDir(), "history", siteId);
+}
+function getScanSummaryPath(siteId, scanId) {
+  return path.join(getSiteHistoryDir(siteId), `${scanId}.json`);
+}
 const isDev = process.env.NODE_ENV === "development";
 let mainWindow = null;
 function createWindow() {
@@ -127,14 +216,19 @@ function createWindow() {
 }
 electron.app.whenReady().then(() => {
   initReportsDir(electron.app.getPath("userData"));
+  initMonitoringDir(electron.app.getPath("userData"));
   mainWindow = createWindow();
   registerScanHandlers(mainWindow);
+  registerBulkScanHandlers(mainWindow);
+  registerDiscoveryHandlers();
+  registerMarketHandlers();
   registerFileHandlers();
   registerAppHandlers();
   electron.app.on("activate", () => {
     if (electron.BrowserWindow.getAllWindows().length === 0) {
       mainWindow = createWindow();
       registerScanHandlers(mainWindow);
+      registerBulkScanHandlers(mainWindow);
     }
   });
 });
@@ -156,5 +250,14 @@ electron.app.on("web-contents-created", (_, contents) => {
 exports.buildHtmlPath = buildHtmlPath;
 exports.buildJsonPath = buildJsonPath;
 exports.generateScanId = generateScanId;
+exports.getBulkScanPath = getBulkScanPath;
+exports.getBulkScansDir = getBulkScansDir;
+exports.getDiscoveryDir = getDiscoveryDir;
+exports.getDiscoveryPath = getDiscoveryPath;
 exports.getIndexPath = getIndexPath;
+exports.getMarketDashboardPath = getMarketDashboardPath;
+exports.getMarketDashboardsDir = getMarketDashboardsDir;
+exports.getScanSummaryPath = getScanSummaryPath;
 exports.getScreenshotsDir = getScreenshotsDir;
+exports.getSiteHistoryDir = getSiteHistoryDir;
+exports.getSitesPath = getSitesPath;

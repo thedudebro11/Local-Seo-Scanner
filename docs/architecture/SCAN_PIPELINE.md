@@ -299,3 +299,50 @@ Browser is closed in the orchestrator's `finally` block (after all stages, regar
 | roadmap | Optional | Logged as warning — scan completes without roadmap |
 | revenue | Optional | Logged as warning — scan completes without revenue estimate |
 | report | Required | Throws — would propagate (browser already closed) |
+
+---
+
+## Systems Built Around the Pipeline
+
+The 12-stage pipeline processes a **single site**. Several higher-order systems added in Phases 11–15 wrap the pipeline without modifying its stages.
+
+### Multi-Site Monitoring (Phase 11)
+
+`src/engine/monitoring/` stores a list of tracked sites and per-scan summaries. The pipeline is unchanged — `reportStage` checks `AuditRequest.siteId` and, if set, calls `saveScanSummary()` to append the result to that site's history. Monitoring writes are wrapped in try/catch and never abort a scan.
+
+To enable monitoring for a scan:
+1. Call `addTrackedSite(domain)` to obtain a `siteId`
+2. Include `siteId` on the `AuditRequest`
+3. `reportStage` automatically records the summary after saving the report
+
+### Bulk Scan Engine (Phase 13)
+
+`src/engine/bulk/runBulkScan.ts` iterates over a normalized list of domains and calls `runAudit()` for each one **sequentially**. Progress events are emitted over the `bulk:progress` IPC channel. Per-domain failures are recorded in the result; the batch continues regardless.
+
+```
+BulkScanRequest → normalize domains → for each domain: runAudit() → BulkScanResult
+```
+
+Initiated via the `bulk:start` IPC channel. Results are saved to `userData/reports/bulk/<batchId>.json`.
+
+### Market Discovery Mode (Phase 14)
+
+`src/engine/discovery/marketDiscovery.ts` queries DuckDuckGo Lite (HTML POST, no API key) for a given industry + location, parses domain links from the response, normalizes them, and filters out directory aggregators (Yelp, Angi, Facebook, etc.). It returns a candidate domain list. No scanning occurs here — the caller hands the candidate list to the Bulk Scan Engine.
+
+```
+MarketDiscoveryRequest → DDG query → parse HTML → normalize + filter → MarketDiscoveryResult
+```
+
+Discovery results are saved to `userData/reports/discovery/<discoveryId>.json`.
+
+### Crawler Domain Guard (Phase 14)
+
+Added to `discoverUrls.ts`: after each `fetchHtml()` call, the final URL (`result.finalUrl`) is checked against the target domain via `isSameDomain()`. If the page redirected off-domain, it is silently skipped. This prevents cross-domain redirect hijacking during bulk and discovery-initiated scans.
+
+### Market Intelligence Dashboard (Phase 15)
+
+`src/engine/market/buildMarketDashboard.ts` consumes a completed `BulkScanResult` and builds a `MarketDashboard` **without running any new scans**. It optionally loads each site's `report.json` to enrich with opportunity counts, biggest problems, and category scores. Rankings, summary stats, and outreach scoring are computed in memory. Dashboard JSON is saved to `userData/reports/market-dashboards/<dashboardId>.json`.
+
+```
+BulkScanResult → (optional) load report.json files → rank/score → MarketDashboard saved
+```

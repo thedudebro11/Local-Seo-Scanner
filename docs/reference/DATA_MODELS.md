@@ -71,6 +71,7 @@ interface AuditRequest {
   businessType: BusinessType   // User's selection (may be 'auto')
   maxPages: number             // Hard limit on pages to crawl
   competitorUrls?: string[]    // Up to 3 competitor URLs for gap analysis (Phase 10)
+  siteId?: string              // Phase 11: if set, scan summary is saved to monitoring history
 }
 ```
 
@@ -336,6 +337,9 @@ interface ScoreOutput {
 ```typescript
 type IpcChannel =
   | 'scan:start' | 'scan:progress'
+  | 'bulk:start' | 'bulk:progress'
+  | 'discovery:run'
+  | 'market:build' | 'monitoring:add-site'
   | 'file:list-scans' | 'file:open-report' | 'file:open-folder' | 'file:load-scan'
   | 'app:version' | 'app:platform' | 'app:reports-path'
 ```
@@ -375,6 +379,11 @@ Stored in `index.json`. Paths are absolute so the app can open them without reco
 interface ElectronAPI {
   startScan: (request: AuditRequest) => Promise<AuditResult>
   onScanProgress: (callback: (event: ScanProgressEvent) => void) => () => void
+  startBulkScan: (request: BulkScanRequest) => Promise<BulkScanResult>
+  onBulkScanProgress: (callback: (event: BulkScanProgressEvent) => void) => () => void
+  runDiscovery: (request: MarketDiscoveryRequest) => Promise<MarketDiscoveryResult>
+  buildMarketDashboard: (payload: { bulkResult: BulkScanResult; label?: string }) => Promise<MarketDashboard>
+  addMonitoredSite: (domain: string) => Promise<string>
   getSavedScans: () => Promise<SavedScanMeta[]>
   openReport: (path: string) => Promise<void>
   openFolder: (path: string) => Promise<void>
@@ -396,3 +405,215 @@ declare global {
 ```
 
 This gives renderer TypeScript code full type safety on `window.api.*` without importing Electron or the preload.
+
+---
+
+## monitoring/ — Phase 11
+
+Defined in `src/engine/monitoring/monitoringTypes.ts`.
+
+### TrackedSite
+
+```typescript
+interface TrackedSite {
+  siteId: string           // Auto-generated: 'site_<timestamp>'
+  domain: string           // e.g. 'example.com'
+  businessType?: string    // Optional business type hint
+  dateAdded: string        // ISO timestamp when first tracked
+  lastScanId?: string      // Scan ID of the most recent recorded scan
+}
+```
+
+Stored in `<userData>/monitoring/sites.json` as a JSON array. `addTrackedSite()` deduplicates by domain — if the domain already exists, it returns the existing entry.
+
+### SiteScanSummary
+
+```typescript
+interface SiteScanSummary {
+  siteId: string
+  scanId: string
+  timestamp: string                 // ISO timestamp
+  overallScore: number
+  scoreLabel: string
+  confidenceLevel?: 'High' | 'Medium' | 'Low'
+  issueCount: number
+  highPriorityIssueCount: number
+  revenueImpactSummary?: {
+    leadLossLow?: number; leadLossHigh?: number
+    revenueLossLow?: number; revenueLossHigh?: number
+  }
+}
+```
+
+Stored as `<userData>/monitoring/history/<siteId>/<scanId>.json`. Built from an `AuditResult` by `saveScanSummary()` after each scan that includes a `siteId`.
+
+---
+
+## bulk/ — Phase 13
+
+Defined in `src/engine/bulk/bulkTypes.ts`.
+
+### BulkScanRequest
+
+```typescript
+interface BulkScanRequest {
+  domains: string[]          // Raw domain/URL strings — normalized before scanning
+  scanMode: ScanMode
+  businessType?: BusinessType  // Applied to every domain in the batch; defaults to 'auto'
+  maxPages?: number            // Per-domain limit; defaults to mode default
+}
+```
+
+### BulkScanItemResult
+
+```typescript
+interface BulkScanItemResult {
+  domain: string
+  ok: boolean                // true = scan completed without thrown error
+  overallScore?: number
+  scoreLabel?: string
+  issueCount?: number
+  highPriorityIssueCount?: number
+  revenueImpact?: {
+    leadLossLow?: number; leadLossHigh?: number
+    revenueLossLow?: number; revenueLossHigh?: number
+  }
+  confidence?: { level: 'High' | 'Medium' | 'Low'; reason: string }
+  reportPaths?: { htmlPath?: string; jsonPath?: string }
+  error?: string             // Set when ok === false
+}
+```
+
+### BulkScanResult
+
+```typescript
+interface BulkScanResult {
+  batchId: string            // e.g. 'bulk_1710000000000'
+  startedAt: string          // ISO timestamp
+  completedAt?: string
+  totalDomains: number
+  successfulScans: number
+  failedScans: number
+  items: BulkScanItemResult[]
+}
+```
+
+Saved to `<userData>/reports/bulk/<batchId>.json`.
+
+### BulkScanProgressEvent
+
+```typescript
+interface BulkScanProgressEvent {
+  batchId: string
+  domain: string
+  domainIndex: number    // 0-based index of current domain
+  totalDomains: number
+  domainStep: string     // Pipeline step label for the current domain
+  domainPercent: number  // Current domain progress 0–100
+  batchPercent: number   // Overall batch progress 0–100
+}
+```
+
+---
+
+## discovery/ — Phase 14
+
+Defined in `src/engine/discovery/discoveryTypes.ts`.
+
+### MarketDiscoveryRequest
+
+```typescript
+interface MarketDiscoveryRequest {
+  industry: string    // e.g. 'plumber'
+  location: string    // e.g. 'Austin TX'
+  maxResults: number  // Max candidates to return (capped by search results available)
+}
+```
+
+### DiscoveredBusiness
+
+```typescript
+interface DiscoveredBusiness {
+  name: string
+  domain?: string          // Normalized domain if extractable from the search result link
+  source: string           // e.g. 'duckduckgo-lite'
+  rankingPosition?: number // 1-based position in search results
+  hasWebsite: boolean
+}
+```
+
+### MarketDiscoveryResult
+
+```typescript
+interface MarketDiscoveryResult {
+  discoveryId: string                   // e.g. 'discovery_1710000000000'
+  request: MarketDiscoveryRequest
+  discoveredAt: string                  // ISO timestamp
+  discovered: DiscoveredBusiness[]      // All candidates (including filtered-out ones)
+  validDomains: string[]                // Scannable domains after normalization + filtering
+}
+```
+
+Saved to `<userData>/reports/discovery/<discoveryId>.json`.
+
+---
+
+## market/ — Phase 15
+
+Defined in `src/engine/market/marketTypes.ts`.
+
+### MarketDashboardBusiness
+
+```typescript
+interface MarketDashboardBusiness {
+  domain: string
+  overallScore?: number
+  scoreLabel?: string
+  confidenceLevel?: 'High' | 'Medium' | 'Low'
+  issueCount?: number
+  highPriorityIssueCount?: number
+  estimatedRevenueLossLow?: number      // From revenueImpact.revenueLossLow
+  estimatedRevenueLossHigh?: number
+  opportunityCount?: number             // From seoOpportunities.length in report.json
+  biggestProblem?: string              // Title of first high-severity finding
+  strongestCategory?: string           // Category key with highest score value
+  weakestCategory?: string             // Category key with lowest score value
+  reportPaths?: { htmlPath?: string; jsonPath?: string }
+  outreachScore: number                // Computed by computeOutreachScore() (0–11)
+  ok: boolean
+  error?: string
+}
+```
+
+### MarketSummaryStats
+
+```typescript
+interface MarketSummaryStats {
+  totalBusinesses: number
+  scannedSuccessfully: number
+  averageScore: number
+  highestScore: number
+  lowestScore: number
+  totalEstimatedRevenueLeak: number    // Sum of estimatedRevenueLossLow across all sites
+  sitesBelow55: number
+  sitesBelow70: number
+}
+```
+
+### MarketDashboard
+
+```typescript
+interface MarketDashboard {
+  dashboardId: string                          // e.g. 'market_1710000000000'
+  generatedAt: string                          // ISO timestamp
+  marketLabel: string                          // User-supplied label or auto-generated
+  summary: MarketSummaryStats
+  topPerformers: MarketDashboardBusiness[]     // Top 5 by score descending
+  weakestSites: MarketDashboardBusiness[]      // Bottom 5 by score ascending
+  highestRevenueLeakSites: MarketDashboardBusiness[]  // Top 5 by estimated revenue loss
+  bestOpportunityTargets: MarketDashboardBusiness[]   // Top 5 by outreach score
+  allBusinesses: MarketDashboardBusiness[]     // All businesses, sorted by score descending
+}
+```
+
+Saved to `<userData>/reports/market-dashboards/<dashboardId>.json`.

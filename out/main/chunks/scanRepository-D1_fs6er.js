@@ -1,44 +1,11 @@
 "use strict";
+Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const path = require("path");
 const fs = require("fs-extra");
 const index = require("../index.js");
-const LEVELS = {
-  debug: 0,
-  info: 1,
-  warn: 2,
-  error: 3
-};
-const CURRENT_LEVEL = process.env.NODE_ENV === "development" ? "debug" : "info";
-function timestamp() {
-  return (/* @__PURE__ */ new Date()).toISOString().substring(11, 23);
-}
-function log$1(level, prefix, message, ...args) {
-  if (LEVELS[level] < LEVELS[CURRENT_LEVEL]) return;
-  const label = `[${timestamp()}] [${level.toUpperCase().padEnd(5)}] [${prefix}]`;
-  switch (level) {
-    case "debug":
-      console.debug(label, message, ...args);
-      break;
-    case "info":
-      console.info(label, message, ...args);
-      break;
-    case "warn":
-      console.warn(label, message, ...args);
-      break;
-    case "error":
-      console.error(label, message, ...args);
-      break;
-  }
-}
-function createLogger(prefix) {
-  return {
-    debug: (msg, ...args) => log$1("debug", prefix, msg, ...args),
-    info: (msg, ...args) => log$1("info", prefix, msg, ...args),
-    warn: (msg, ...args) => log$1("warn", prefix, msg, ...args),
-    error: (msg, ...args) => log$1("error", prefix, msg, ...args)
-  };
-}
-const log = createLogger("scanRepository");
+const logger = require("./logger-DOTeCaxX.js");
+require("electron");
+const log = logger.createLogger("scanRepository");
 function readIndex() {
   const indexPath = index.getIndexPath();
   try {
@@ -91,12 +58,6 @@ async function saveScan(result) {
   await writeIndex([...existing, meta]);
   log.info(`saveScan: saved ${result.id} (overall=${meta.overallScore})`);
 }
-const scanRepository = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  listSavedScans,
-  loadScanById,
-  saveScan
-}, Symbol.toStringTag, { value: "Module" }));
-exports.createLogger = createLogger;
+exports.listSavedScans = listSavedScans;
+exports.loadScanById = loadScanById;
 exports.saveScan = saveScan;
-exports.scanRepository = scanRepository;

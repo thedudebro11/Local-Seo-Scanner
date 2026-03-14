@@ -7,6 +7,11 @@
 export type IpcChannel =
   | 'scan:start'
   | 'scan:progress'
+  | 'bulk:start'
+  | 'bulk:progress'
+  | 'discovery:run'
+  | 'market:build'
+  | 'monitoring:add-site'
   | 'file:list-scans'
   | 'file:open-report'
   | 'file:open-folder'
@@ -40,10 +45,18 @@ export interface SavedScanMeta {
 // This mirrors the object exposed via contextBridge in preload.ts
 
 import type { AuditRequest, AuditResult } from './audit'
+import type { BulkScanRequest, BulkScanResult, BulkScanProgressEvent } from '../bulk/bulkTypes'
+import type { MarketDiscoveryRequest, MarketDiscoveryResult } from '../discovery/discoveryTypes'
+import type { MarketDashboard } from '../market/marketTypes'
 
 export interface ElectronAPI {
   startScan: (request: AuditRequest) => Promise<AuditResult>
   onScanProgress: (callback: (event: ScanProgressEvent) => void) => () => void
+  startBulkScan: (request: BulkScanRequest) => Promise<BulkScanResult>
+  onBulkScanProgress: (callback: (event: BulkScanProgressEvent) => void) => () => void
+  runDiscovery: (request: MarketDiscoveryRequest) => Promise<MarketDiscoveryResult>
+  buildMarketDashboard: (payload: { bulkResult: BulkScanResult; label?: string }) => Promise<MarketDashboard>
+  addMonitoredSite: (domain: string) => Promise<string>
   getSavedScans: () => Promise<SavedScanMeta[]>
   openReport: (path: string) => Promise<void>
   openFolder: (path: string) => Promise<void>

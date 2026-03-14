@@ -2,6 +2,8 @@ import { buildJsonReport } from '../../reports/buildJsonReport'
 import { buildHtmlReport } from '../../reports/buildHtmlReport'
 import { saveScan } from '../../storage/scanRepository'
 import { buildJsonPath, buildHtmlPath } from '../../storage/pathResolver'
+import { saveScanSummary } from '../../monitoring/scanHistory'
+import { updateTrackedSiteLastScan } from '../../monitoring/siteManager'
 import { createLogger } from '../../utils/logger'
 import type { AuditResult } from '../../types/audit'
 import type { ScanJobContext, PipelineProgressEmitter } from '../types'
@@ -40,6 +42,15 @@ export async function reportStage(
       : undefined,
   }
 
+  // ── Monitoring (optional — never throws) ─────────────────────────────────
+  // If the request includes a siteId, save a lightweight scan summary for
+  // trend tracking. Failures are logged and swallowed so they never affect
+  // the main scan result.
+  const siteId = ctx.request.siteId
+  if (siteId) {
+    await saveMonitoringData(siteId, result)
+  }
+
   log.info(`Reports saved: ${jsonPath}`)
 }
 
@@ -71,6 +82,7 @@ export function buildAuditResult(
     scoreConfidence: ctx.scoreConfidence,
     revenueImpact: ctx.revenueImpact,
     roadmap: ctx.roadmap,
+    seoOpportunities: ctx.seoOpportunities,
     artifacts: {
       jsonPath,
       htmlPath,
@@ -78,5 +90,14 @@ export function buildAuditResult(
         ? ctx.screenshotPaths
         : undefined,
     },
+  }
+}
+
+async function saveMonitoringData(siteId: string, result: AuditResult): Promise<void> {
+  try {
+    await saveScanSummary(siteId, result)
+    await updateTrackedSiteLastScan(siteId, result.id)
+  } catch (err) {
+    log.warn(`Monitoring save failed for siteId=${siteId}: ${(err as Error).message}`)
   }
 }

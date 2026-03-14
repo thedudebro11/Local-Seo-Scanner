@@ -20,6 +20,10 @@ All phases are complete, including additional phases added after the original pl
 | Post-10a | Score Confidence + Priority Fix Roadmap + Revenue Impact Estimator | Done |
 | Post-10b | Pipeline/Job Architecture Refactor — named stages, ScanJobContext | Done |
 | Bug fix | Removed computeImpactPenalty — was double-penalizing findings in overall score | Done |
+| Phase 11 | Multi-Site Monitoring Foundation — tracked sites + per-scan history | Done |
+| Phase 13 | Bulk Scan Engine — scan multiple domains sequentially in one batch | Done |
+| Phase 14 | Market Discovery Mode — find businesses via DuckDuckGo Lite + candidate review UI | Done |
+| Phase 15 | Market Intelligence Dashboard — aggregate bulk results into market-level insights | Done |
 
 ### Phase 9 — Visual UX Analysis
 
@@ -82,6 +86,55 @@ Also fixed a scoring bug: `computeImpactPenalty` was removed because it double-p
 
 `runAudit.ts` is now a 24-line thin wrapper calling `runScanJob`. The public API is unchanged.
 
+### Phase 11 — Multi-Site Monitoring Foundation
+
+Added lightweight persistent monitoring around the existing scan pipeline.
+
+- `src/engine/monitoring/monitoringTypes.ts` — `TrackedSite` and `SiteScanSummary` interfaces
+- `src/engine/monitoring/monitoringPaths.ts` — path helpers for `userData/monitoring/`; `initMonitoringDir(userDataPath)` called from `electron/main.ts`
+- `src/engine/monitoring/siteManager.ts` — `addTrackedSite(domain, businessType?)` (deduplicates by domain), `listTrackedSites()`, `updateTrackedSiteLastScan()`
+- `src/engine/monitoring/scanHistory.ts` — `saveScanSummary(siteId, result)`, `getScanHistory(siteId)`, `getLatestScanSummary(siteId)`
+- `src/engine/pipeline/stages/reportStage.ts` — after saving the report, checks `AuditRequest.siteId`; if set, calls `saveScanSummary()` + `updateTrackedSiteLastScan()`. Wrapped in try/catch — monitoring failures never abort a scan.
+- `monitoring:add-site` IPC channel (`electron/ipc/marketHandlers.ts`) — renderer calls `window.api.addMonitoredSite(domain)` from the Market Intelligence Dashboard to track any scanned site.
+
+Storage layout: `userData/monitoring/sites.json` (array of TrackedSite) and `userData/monitoring/history/<siteId>/<scanId>.json` (SiteScanSummary per scan).
+
+### Phase 13 — Bulk Scan Engine
+
+Sequential multi-site scan capability with comparison results.
+
+- `src/engine/bulk/bulkTypes.ts` — `BulkScanRequest`, `BulkScanItemResult`, `BulkScanResult`, `BulkScanProgressEvent`
+- `src/engine/bulk/runBulkScan.ts` — iterates domains, calls `runAudit()` per domain, emits `bulk:progress` events, saves `BulkScanResult` to `reports/bulk/<batchId>.json`
+- `src/engine/bulk/buildBulkSummary.ts` — `rankItems()` helper for sorting bulk results
+- `electron/ipc/bulkScanHandlers.ts` — handles `bulk:start` IPC channel
+- `src/features/bulk/useBulkScanStore.ts` — Zustand store: phase (idle/running/done/error), progress, result
+- `src/features/bulk/BulkScanPage.tsx` — three-phase UI: form (textarea + scan mode + business type) → progress (batch + per-domain bars) → comparison table
+
+### Phase 14 — Market Discovery Mode
+
+Automated business discovery using DuckDuckGo Lite HTML scraping (no API key required).
+
+- `src/engine/discovery/discoveryTypes.ts` — `MarketDiscoveryRequest`, `DiscoveredBusiness`, `MarketDiscoveryResult`
+- `src/engine/discovery/marketDiscovery.ts` — POST to `https://lite.duckduckgo.com/lite/`, parse `td.result-link a` with cheerio, fallback to `table a[href^="http"]`; saves discovery result JSON
+- `src/engine/discovery/normalizeDomain.ts` — `normalizeToDomain()` strips www, enforces https, rejects bare labels and IPs
+- `src/engine/discovery/filterCandidates.ts` — removes blocked directory sites, failed normalizations, duplicates
+- `src/engine/discovery/directoryBlocklist.ts` — `isBlockedDomain()` — suffix-matched blocklist of 50+ aggregators (Yelp, Angi, Facebook, Google, HomeAdvisor, etc.)
+- `src/engine/crawl/discoverUrls.ts` — added domain guard: after each `fetchHtml()`, checks `isSameDomain(result.finalUrl, targetDomain)`; off-domain redirects are silently skipped (critical safety feature)
+- `electron/ipc/discoveryHandlers.ts` — handles `discovery:run` IPC channel
+- `src/features/discovery/MarketDiscoveryPage.tsx` — 5-phase UI: form → discovering → candidate review (checkbox table with excluded collapsible) → bulk scanning → results
+
+### Phase 15 — Market Intelligence Dashboard
+
+Market-level comparison built from completed bulk scan results without re-scanning.
+
+- `src/engine/market/marketTypes.ts` — `MarketDashboardBusiness`, `MarketSummaryStats`, `MarketDashboard`
+- `src/engine/market/marketRanking.ts` — `rankBusinesses()`, `topN()` with 5 sort keys (score-asc/desc, revenue-desc, outreach-desc, issues-desc)
+- `src/engine/market/marketOpportunity.ts` — `computeOutreachScore()`: 0–11pt heuristic (score<70 +3, score<55 +2, highPriority≥3 +2, revenueLoss>$1k +2, confidence≠Low +1, opportunities≥3 +1)
+- `src/engine/market/buildMarketDashboard.ts` — maps `BulkScanResult` items to `MarketDashboardBusiness`, optionally enriches by loading each `report.json`, computes rankings and summary stats, saves dashboard JSON
+- `electron/ipc/marketHandlers.ts` — handles `market:build` (build dashboard) and `monitoring:add-site` (add tracked site)
+- `src/features/market/MarketDashboardPage.tsx` — shows empty state → build form → building spinner → full dashboard (summary stats grid, 4 quadrant cards, sortable comparison table with "Open Report" and "+ Monitor" actions)
+- New path helpers: `getMarketDashboardsDir()`, `getMarketDashboardPath(id)` in `pathResolver.ts`
+
 ## Feature-Level Status
 
 | Feature | Status | File(s) | Notes |
@@ -91,7 +144,7 @@ Also fixed a scoring bug: `computeImpactPenalty` was removed because it double-p
 | IPC scan handler | Done | `electron/ipc/scanHandlers.ts` | |
 | IPC file handlers | Done | `electron/ipc/fileHandlers.ts` | |
 | IPC app handlers | Done | `electron/ipc/appHandlers.ts` | |
-| React router (5 routes) | Done | `src/app/routes.tsx` | |
+| React router (9 routes) | Done | `src/app/routes.tsx` | Added /scan/bulk, /scan/discovery, /market |
 | AppShell layout | Done | `src/components/layout/` | |
 | Dashboard page | Done | `src/features/dashboard/DashboardPage.tsx` | |
 | New scan page | Done | `src/features/scans/NewScanPage.tsx` | |
@@ -159,6 +212,30 @@ Also fixed a scoring bug: `computeImpactPenalty` was removed because it double-p
 | Pipeline orchestrator | Done | `src/engine/pipeline/runScanJob.ts` | 12 named stages, ScanJobContext |
 | Pipeline stage modules | Done | `src/engine/pipeline/stages/` | validate, crawl, extract, analysis, visual, impact, score, competitor, confidence, roadmap, revenue, report |
 | Audit entry point | Done | `src/engine/orchestrator/runAudit.ts` | Thin wrapper around runScanJob |
+| IPC bulk scan handler | Done | `electron/ipc/bulkScanHandlers.ts` | bulk:start channel |
+| IPC discovery handler | Done | `electron/ipc/discoveryHandlers.ts` | discovery:run channel |
+| IPC market handler | Done | `electron/ipc/marketHandlers.ts` | market:build + monitoring:add-site |
+| Monitoring types | Done | `src/engine/monitoring/monitoringTypes.ts` | TrackedSite, SiteScanSummary |
+| Monitoring paths | Done | `src/engine/monitoring/monitoringPaths.ts` | Path helpers for userData/monitoring/ |
+| Site manager | Done | `src/engine/monitoring/siteManager.ts` | add/list/get/update tracked sites |
+| Scan history | Done | `src/engine/monitoring/scanHistory.ts` | save/get/getLatest scan summaries |
+| Bulk types | Done | `src/engine/bulk/bulkTypes.ts` | BulkScanRequest/Result/ProgressEvent |
+| Bulk scan runner | Done | `src/engine/bulk/runBulkScan.ts` | Sequential multi-domain runAudit loop |
+| Bulk summary helpers | Done | `src/engine/bulk/buildBulkSummary.ts` | rankItems, worstRevenueItem |
+| Bulk scan page | Done | `src/features/bulk/BulkScanPage.tsx` | Form → progress → comparison table |
+| Bulk scan store | Done | `src/features/bulk/useBulkScanStore.ts` | Zustand: phase/progress/result |
+| Discovery types | Done | `src/engine/discovery/discoveryTypes.ts` | MarketDiscoveryRequest/Result |
+| Market discovery engine | Done | `src/engine/discovery/marketDiscovery.ts` | DuckDuckGo Lite scraper |
+| Domain normalizer (discovery) | Done | `src/engine/discovery/normalizeDomain.ts` | normalizeToDomain() |
+| Candidate filter | Done | `src/engine/discovery/filterCandidates.ts` | Filter + deduplicate candidates |
+| Directory blocklist | Done | `src/engine/discovery/directoryBlocklist.ts` | 50+ blocked aggregators |
+| Crawler domain guard | Done | `src/engine/crawl/discoverUrls.ts` | isSameDomain check after each fetch |
+| Market discovery page | Done | `src/features/discovery/MarketDiscoveryPage.tsx` | 5-phase discovery + bulk UI |
+| Market types | Done | `src/engine/market/marketTypes.ts` | MarketDashboard, MarketDashboardBusiness |
+| Market ranking | Done | `src/engine/market/marketRanking.ts` | rankBusinesses, topN |
+| Market opportunity scorer | Done | `src/engine/market/marketOpportunity.ts` | computeOutreachScore() |
+| Market dashboard builder | Done | `src/engine/market/buildMarketDashboard.ts` | Enrich + rank + save MarketDashboard |
+| Market dashboard page | Done | `src/features/market/MarketDashboardPage.tsx` | Summary stats + quadrants + table |
 
 ## Not Implemented
 

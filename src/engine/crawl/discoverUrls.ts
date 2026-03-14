@@ -73,6 +73,14 @@ export async function discoverUrls(
         continue
       }
 
+      // Domain guard: skip pages where the final URL (after redirects) is on a
+      // different domain. This prevents directory redirects, ad trackers, and
+      // search-engine-discovered URLs from accidentally crawling an unrelated site.
+      if (!isSameDomain(result.finalUrl, `https://${domain}`)) {
+        log.warn(`Domain guard: ${url} → ${result.finalUrl} (off-domain, skipping)`)
+        continue
+      }
+
       fetchedPages.push(result)
       onProgress?.(fetchedPages.length, fetchedPages.length + queue.length)
 
