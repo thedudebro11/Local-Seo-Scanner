@@ -11514,33 +11514,33 @@ const NAV_ITEMS = [
   { to: "/settings", label: "Settings", icon: "⚙" }
 ];
 function Sidebar() {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("nav", { style: styles$g.sidebar, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$g.brand, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$g.brandIcon, children: "◉" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$g.brandName, children: "SEO Scanner" })
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("nav", { style: styles$k.sidebar, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$k.brand, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$k.brandIcon, children: "◉" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$k.brandName, children: "SEO Scanner" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { style: styles$g.navList, children: NAV_ITEMS.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { style: styles$k.navList, children: NAV_ITEMS.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
       NavLink,
       {
         to: item.to,
         end: item.to === "/",
         style: ({ isActive }) => ({
-          ...styles$g.navLink,
-          ...isActive ? styles$g.navLinkActive : {}
+          ...styles$k.navLink,
+          ...isActive ? styles$k.navLinkActive : {}
         }),
         children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$g.navIcon, children: item.icon }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$k.navIcon, children: item.icon }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: item.label })
         ]
       }
     ) }, item.to)) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$g.sidebarFooter, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$g.footerText, children: "Local SEO Scanner" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$g.footerVersion, children: "v1.0.0" })
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$k.sidebarFooter, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$k.footerText, children: "Local SEO Scanner" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$k.footerVersion, children: "v1.0.0" })
     ] })
   ] });
 }
-const styles$g = {
+const styles$k = {
   sidebar: {
     width: "var(--sidebar-width)",
     minWidth: "var(--sidebar-width)",
@@ -11628,19 +11628,19 @@ function Topbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const label = getLabel(location.pathname);
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { style: styles$f.topbar, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { style: styles$f.title, children: label }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$f.actions, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { style: styles$j.topbar, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { style: styles$j.title, children: label }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$j.actions, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
       "button",
       {
-        style: styles$f.newScanBtn,
+        style: styles$j.newScanBtn,
         onClick: () => navigate("/scan/new"),
         children: "+ New Scan"
       }
     ) })
   ] });
 }
-const styles$f = {
+const styles$j = {
   topbar: {
     height: 52,
     minHeight: 52,
@@ -11675,15 +11675,15 @@ const styles$f = {
   }
 };
 function AppShell() {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$e.shell, children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$i.shell, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(Sidebar, {}),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$e.main, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$i.main, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Topbar, {}),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("main", { style: styles$e.content, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {}) })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("main", { style: styles$i.content, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {}) })
     ] })
   ] });
 }
-const styles$e = {
+const styles$i = {
   shell: {
     display: "flex",
     height: "100vh",
@@ -11948,7 +11948,8 @@ const useScanStore = create((set) => ({
     }
   },
   clearError: () => set({ error: null }),
-  clearResult: () => set({ latestResult: null, progress: 0, stepLabel: "", currentRequest: null })
+  clearResult: () => set({ latestResult: null, progress: 0, stepLabel: "", currentRequest: null }),
+  setResult: (result) => set({ latestResult: result })
 }));
 function Button({
   variant = "primary",
@@ -13510,15 +13511,15 @@ function DashboardPage() {
   reactExports.useEffect(() => {
     loadSavedScans();
   }, [loadSavedScans]);
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$d.page, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$d.topRow, children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$h.page, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$h.topRow, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$d.heading, children: "Local Business Revenue Leak Detector" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$d.subheading, children: "Scan local business websites to find what's hurting their visibility, conversions, and trust — then generate a client-ready report." })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$h.heading, children: "Local Business Revenue Leak Detector" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$h.subheading, children: "Scan local business websites to find what's hurting their visibility, conversions, and trust — then generate a client-ready report." })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { size: "lg", onClick: () => navigate("/scan/new"), children: "+ New Scan" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$d.statsRow, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$h.statsRow, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         StatCard,
         {
@@ -13549,10 +13550,10 @@ function DashboardPage() {
         }
       )
     ] }),
-    latestResult && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$d.latestBanner, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$d.latestInfo, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$d.latestLabel, children: "Latest scan" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$d.latestDomain, children: latestResult.domain }),
+    latestResult && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$h.latestBanner, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$h.latestInfo, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$h.latestLabel, children: "Latest scan" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$h.latestDomain, children: latestResult.domain }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "span",
           {
@@ -13586,7 +13587,7 @@ function DashboardPage() {
         action: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { onClick: () => navigate("/scan/new"), children: "Start a New Scan" })
       }
     ),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$d.featureGrid, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$h.featureGrid, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         FeatureCard,
         {
@@ -13627,20 +13628,20 @@ function SavedScansList({
   onOpen
 }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$d.sectionTitle, children: "Recent Scans" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$d.scanList, children: scans.slice(0, 10).map((scan) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$h.sectionTitle, children: "Recent Scans" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$h.scanList, children: scans.slice(0, 10).map((scan) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "button",
       {
-        style: styles$d.scanRow,
+        style: styles$h.scanRow,
         onClick: () => onOpen(scan.id),
         children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$d.scanDomain, children: scan.domain }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$d.scanDate, children: format(new Date(scan.scannedAt), "MMM d, yyyy") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$h.scanDomain, children: scan.domain }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$h.scanDate, children: format(new Date(scan.scannedAt), "MMM d, yyyy") }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "span",
             {
               style: {
-                ...styles$d.scanScore,
+                ...styles$h.scanScore,
                 color: scoreBandColor(scan.overallScore)
               },
               children: scan.overallScore
@@ -13659,7 +13660,7 @@ function FeatureCard({ icon, title, text }) {
     /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.6 }, children: text })
   ] });
 }
-const styles$d = {
+const styles$h = {
   page: {
     display: "flex",
     flexDirection: "column",
@@ -13966,8 +13967,8 @@ function ScanForm({ onSubmit, isLoading = false }) {
     }).filter(Boolean);
     onSubmit({ url: finalUrl, scanMode, businessType, maxPages, competitorUrls: filteredCompetitors.length > 0 ? filteredCompetitors : void 0 });
   }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, style: styles$c.form, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$c.section, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, style: styles$g.form, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$g.section, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
       Input,
       {
         label: "Website URL",
@@ -13983,10 +13984,10 @@ function ScanForm({ onSubmit, isLoading = false }) {
         autoFocus: true
       }
     ) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$c.row, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$c.fieldGroup, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$c.fieldLabel, children: "Scan Mode" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$c.radioGroup, children: ["quick", "full"].map((mode) => /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: styles$c.radioLabel, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$g.row, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$g.fieldGroup, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$g.fieldLabel, children: "Scan Mode" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$g.radioGroup, children: ["quick", "full"].map((mode) => /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: styles$g.radioLabel, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "input",
             {
@@ -13996,12 +13997,12 @@ function ScanForm({ onSubmit, isLoading = false }) {
               checked: scanMode === mode,
               onChange: () => handleModeChange(mode),
               disabled: isLoading,
-              style: styles$c.radioInput
+              style: styles$g.radioInput
             }
           ),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$c.radioCard, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$c.radioTitle, children: mode === "quick" ? "Quick" : "Full" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$c.radioHint, children: mode === "quick" ? "~1–2 min · up to 10 pages" : "~5–10 min · up to 50 pages" })
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$g.radioCard, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$g.radioTitle, children: mode === "quick" ? "Quick" : "Full" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$g.radioHint, children: mode === "quick" ? "~1–2 min · up to 10 pages" : "~5–10 min · up to 50 pages" })
           ] })
         ] }, mode)) })
       ] }),
@@ -14027,8 +14028,8 @@ function ScanForm({ onSubmit, isLoading = false }) {
         disabled: isLoading
       }
     ) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$c.section, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: styles$c.fieldLabel, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$g.section, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: styles$g.fieldLabel, children: [
         "Competitor URLs ",
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontWeight: 400, textTransform: "none", letterSpacing: 0 }, children: "(optional — up to 3)" })
       ] }),
@@ -14049,7 +14050,7 @@ function ScanForm({ onSubmit, isLoading = false }) {
       )) }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 11, color: "var(--color-text-muted)" }, children: "Leave blank to skip competitor analysis. Each site is crawled up to 5 pages." })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$c.submitRow, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$g.submitRow, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         Button,
         {
@@ -14061,11 +14062,11 @@ function ScanForm({ onSubmit, isLoading = false }) {
           children: isLoading ? "Scanning…" : "Start Scan"
         }
       ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$c.submitHint, children: scanMode === "quick" ? "Quick scan: homepage + key pages, ~1–2 minutes" : "Full scan: deep crawl + Lighthouse audit, ~5–10 minutes" })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$g.submitHint, children: scanMode === "quick" ? "Quick scan: homepage + key pages, ~1–2 minutes" : "Full scan: deep crawl + Lighthouse audit, ~5–10 minutes" })
     ] })
   ] }) });
 }
-const styles$c = {
+const styles$g = {
   form: {
     display: "flex",
     flexDirection: "column",
@@ -14221,10 +14222,10 @@ const STEPS = [
   { label: "Complete", threshold: 100 }
 ];
 function ScanProgress({ progress, stepLabel, domain }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { style: styles$b.card, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$b.header, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$b.title, children: "Scanning in progress…" }),
-      domain && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$b.domain, children: domain })
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { style: styles$f.card, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$f.header, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$f.title, children: "Scanning in progress…" }),
+      domain && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$f.domain, children: domain })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(
       Progress,
@@ -14237,15 +14238,15 @@ function ScanProgress({ progress, stepLabel, domain }) {
         style: { marginBottom: "var(--space-6)" }
       }
     ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$b.stepList, children: STEPS.map((step) => {
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$f.stepList, children: STEPS.map((step) => {
       const done = progress > step.threshold;
       const active = progress >= step.threshold && progress < step.threshold + 10;
-      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$b.stepRow, children: [
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$f.stepRow, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "span",
           {
             style: {
-              ...styles$b.stepIcon,
+              ...styles$f.stepIcon,
               color: done ? "var(--color-score-strong)" : active ? "var(--color-brand)" : "var(--color-text-muted)"
             },
             children: done ? "✓" : active ? "◉" : "○"
@@ -14255,7 +14256,7 @@ function ScanProgress({ progress, stepLabel, domain }) {
           "span",
           {
             style: {
-              ...styles$b.stepText,
+              ...styles$f.stepText,
               color: done ? "var(--color-text-secondary)" : active ? "var(--color-text-primary)" : "var(--color-text-muted)",
               fontWeight: active ? 600 : 400
             },
@@ -14264,10 +14265,10 @@ function ScanProgress({ progress, stepLabel, domain }) {
         )
       ] }, step.label);
     }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$b.disclaimer, children: "Do not close the app while scanning is in progress." })
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$f.disclaimer, children: "Do not close the app while scanning is in progress." })
   ] });
 }
-const styles$b = {
+const styles$f = {
   card: {
     maxWidth: 560
   },
@@ -14338,15 +14339,15 @@ function NewScanPage() {
     await startScan(request);
   }
   const domain = currentRequest ? getDomain(currentRequest.url) : void 0;
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.page, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.header, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$a.title, children: "New Scan" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$a.subtitle, children: "Enter a local business URL to detect what's hurting their visibility, conversions, and trust." })
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$e.page, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$e.header, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$e.title, children: "New Scan" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$e.subtitle, children: "Enter a local business URL to detect what's hurting their visibility, conversions, and trust." })
     ] }),
-    error && !isScanning && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.errorBanner, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$a.errorIcon, children: "✕" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$a.errorText, children: error }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { style: styles$a.errorDismiss, onClick: clearError, children: "Dismiss" })
+    error && !isScanning && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$e.errorBanner, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$e.errorIcon, children: "✕" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$e.errorText, children: error }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { style: styles$e.errorDismiss, onClick: clearError, children: "Dismiss" })
     ] }),
     isScanning ? /* @__PURE__ */ jsxRuntimeExports.jsx(
       ScanProgress,
@@ -14364,7 +14365,7 @@ function NewScanPage() {
     )
   ] });
 }
-const styles$a = {
+const styles$e = {
   page: {
     display: "flex",
     flexDirection: "column",
@@ -14422,15 +14423,15 @@ function ScoreCard({ label, score, isOverall, emoji }) {
     "div",
     {
       style: {
-        ...cardStyles.card,
-        ...isOverall ? cardStyles.overallCard : {}
+        ...cardStyles$1.card,
+        ...isOverall ? cardStyles$1.overallCard : {}
       },
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: cardStyles.header, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: cardStyles.emoji, children: emoji }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: cardStyles.label, children: label })
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: cardStyles$1.header, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: cardStyles$1.emoji, children: emoji }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: cardStyles$1.label, children: label })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: cardStyles.scoreRow, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: cardStyles$1.scoreRow, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "span",
             {
@@ -14462,16 +14463,16 @@ function ScoreCard({ label, score, isOverall, emoji }) {
             children: score.label
           }
         ),
-        score.rationale.length > 0 && !isOverall && /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { style: cardStyles.rationale, children: score.rationale.slice(0, 2).map((r2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: cardStyles.rationaleItem, children: r2 }, i)) })
+        score.rationale.length > 0 && !isOverall && /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { style: cardStyles$1.rationale, children: score.rationale.slice(0, 2).map((r2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: cardStyles$1.rationaleItem, children: r2 }, i)) })
       ]
     }
   );
 }
 function ScoreOverview({ scores, domain }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$9.wrapper, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$9.sectionHeader, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$9.sectionTitle, children: "Score Overview" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$9.domainLabel, children: domain })
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$d.wrapper, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$d.sectionHeader, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$d.sectionTitle, children: "Score Overview" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$d.domainLabel, children: domain })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(
       ScoreCard,
@@ -14482,7 +14483,7 @@ function ScoreOverview({ scores, domain }) {
         emoji: "◉"
       }
     ),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$9.grid, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$d.grid, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreCard, { label: "Technical SEO", score: scores.technical, emoji: "⚙" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreCard, { label: "Local SEO", score: scores.localSeo, emoji: "📍" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreCard, { label: "Conversion", score: scores.conversion, emoji: "⚡" }),
@@ -14491,7 +14492,7 @@ function ScoreOverview({ scores, domain }) {
     ] })
   ] });
 }
-const styles$9 = {
+const styles$d = {
   wrapper: {
     display: "flex",
     flexDirection: "column",
@@ -14518,7 +14519,7 @@ const styles$9 = {
     gap: "var(--space-3)"
   }
 };
-const cardStyles = {
+const cardStyles$1 = {
   card: {
     backgroundColor: "var(--color-bg-surface)",
     border: "1px solid var(--color-border)",
@@ -14657,38 +14658,38 @@ const CATEGORY_EMOJIS = {
 };
 function FindingRow({ finding }) {
   const [expanded, setExpanded] = reactExports.useState(false);
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.wrapper, children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles$1.wrapper, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "button",
       {
-        style: rowStyles.header,
+        style: rowStyles$1.header,
         onClick: () => setExpanded(!expanded),
         children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.headerLeft, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles$1.headerLeft, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: finding.severity, children: finding.severity.toUpperCase() }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles.title, children: finding.title })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles$1.title, children: finding.title })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles.chevron, children: expanded ? "▲" : "▼" })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles$1.chevron, children: expanded ? "▲" : "▼" })
         ]
       }
     ),
-    expanded && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.detail, children: [
-      finding.summary && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: rowStyles.summary, children: finding.summary }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.metaGrid, children: [
-        finding.whyItMatters && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.metaBlock, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles.metaLabel, children: "Why it matters" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: rowStyles.metaText, children: finding.whyItMatters })
+    expanded && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles$1.detail, children: [
+      finding.summary && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: rowStyles$1.summary, children: finding.summary }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles$1.metaGrid, children: [
+        finding.whyItMatters && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles$1.metaBlock, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles$1.metaLabel, children: "Why it matters" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: rowStyles$1.metaText, children: finding.whyItMatters })
         ] }),
-        finding.recommendation && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.metaBlock, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles.metaLabel, children: "Recommendation" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: rowStyles.metaText, children: finding.recommendation })
+        finding.recommendation && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles$1.metaBlock, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles$1.metaLabel, children: "Recommendation" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: rowStyles$1.metaText, children: finding.recommendation })
         ] })
       ] }),
-      finding.affectedUrls && finding.affectedUrls.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.metaBlock, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles.metaLabel, children: "Affected pages" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { style: rowStyles.urlList, children: [
-          finding.affectedUrls.slice(0, 5).map((url) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: rowStyles.urlItem, children: url }, url)),
-          finding.affectedUrls.length > 5 && /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: { ...rowStyles.urlItem, color: "var(--color-text-muted)" }, children: [
+      finding.affectedUrls && finding.affectedUrls.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles$1.metaBlock, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles$1.metaLabel, children: "Affected pages" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { style: rowStyles$1.urlList, children: [
+          finding.affectedUrls.slice(0, 5).map((url) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: rowStyles$1.urlItem, children: url }, url)),
+          finding.affectedUrls.length > 5 && /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: { ...rowStyles$1.urlItem, color: "var(--color-text-muted)" }, children: [
             "+",
             finding.affectedUrls.length - 5,
             " more"
@@ -14700,7 +14701,7 @@ function FindingRow({ finding }) {
 }
 function IssueList({ findings }) {
   if (findings.length === 0) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$8.empty, children: [
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$c.empty, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 24 }, children: "✓" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { fontSize: 13, color: "var(--color-text-muted)" }, children: "No findings recorded." })
     ] });
@@ -14712,18 +14713,18 @@ function IssueList({ findings }) {
     },
     { technical: [], localSeo: [], conversion: [], content: [], trust: [] }
   );
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$8.wrapper, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$8.sectionTitle, children: "Findings" }),
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$c.wrapper, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$c.sectionTitle, children: "Findings" }),
     CATEGORY_ORDER.map((cat) => {
       const catFindings = byCategory[cat];
       if (catFindings.length === 0) return null;
       const highCount = catFindings.filter((f2) => f2.severity === "high").length;
       const medCount = catFindings.filter((f2) => f2.severity === "medium").length;
-      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$8.group, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$8.groupHeader, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$8.groupEmoji, children: CATEGORY_EMOJIS[cat] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$8.groupLabel, children: CATEGORY_LABELS[cat] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: styles$8.groupCount, children: [
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$c.group, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$c.groupHeader, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$c.groupEmoji, children: CATEGORY_EMOJIS[cat] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$c.groupLabel, children: CATEGORY_LABELS[cat] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: styles$c.groupCount, children: [
             catFindings.length,
             " issue",
             catFindings.length !== 1 ? "s" : ""
@@ -14737,7 +14738,7 @@ function IssueList({ findings }) {
             " medium"
           ] })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$8.findingList, children: catFindings.sort((a, b) => {
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$c.findingList, children: catFindings.sort((a, b) => {
           const order = { high: 0, medium: 1, low: 2 };
           return order[a.severity] - order[b.severity];
         }).map((f2) => /* @__PURE__ */ jsxRuntimeExports.jsx(FindingRow, { finding: f2 }, f2.id)) })
@@ -14745,7 +14746,7 @@ function IssueList({ findings }) {
     })
   ] });
 }
-const styles$8 = {
+const styles$c = {
   wrapper: {
     display: "flex",
     flexDirection: "column",
@@ -14797,7 +14798,7 @@ const styles$8 = {
     color: "var(--color-score-strong)"
   }
 };
-const rowStyles = {
+const rowStyles$1 = {
   wrapper: {
     borderRadius: "var(--radius-md)",
     overflow: "hidden",
@@ -14885,32 +14886,32 @@ const rowStyles = {
 };
 function QuickWins({ quickWins, moneyLeaks }) {
   if (quickWins.length === 0 && moneyLeaks.length === 0) return /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, {});
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$7.wrapper, children: [
-    quickWins.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { style: styles$7.card, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$7.header, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$7.icon, children: "⚡" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$7.title, children: "Quick Wins" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$7.subtitle, children: "High impact, fastest to fix" })
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$b.wrapper, children: [
+    quickWins.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { style: styles$b.card, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$b.header, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$b.icon, children: "⚡" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$b.title, children: "Quick Wins" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$b.subtitle, children: "High impact, fastest to fix" })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("ol", { style: styles$7.list, children: quickWins.map((win, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: styles$7.item, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...styles$7.index, color: "var(--color-brand)" }, children: String(i + 1).padStart(2, "0") }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$7.text, children: win })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("ol", { style: styles$b.list, children: quickWins.map((win, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: styles$b.item, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...styles$b.index, color: "var(--color-brand)" }, children: String(i + 1).padStart(2, "0") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$b.text, children: win })
       ] }, i)) })
     ] }),
-    moneyLeaks.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { style: styles$7.card, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$7.header, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$7.icon, children: "💸" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$7.title, children: "Money Leaks" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$7.subtitle, children: "Issues costing this business leads right now" })
+    moneyLeaks.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { style: styles$b.card, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$b.header, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$b.icon, children: "💸" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { style: styles$b.title, children: "Money Leaks" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$b.subtitle, children: "Issues costing this business leads right now" })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("ol", { style: styles$7.list, children: moneyLeaks.map((leak, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: styles$7.item, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...styles$7.index, color: "var(--color-high)" }, children: String(i + 1).padStart(2, "0") }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$7.text, children: leak })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("ol", { style: styles$b.list, children: moneyLeaks.map((leak, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: styles$b.item, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...styles$b.index, color: "var(--color-high)" }, children: String(i + 1).padStart(2, "0") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$b.text, children: leak })
       ] }, i)) })
     ] })
   ] });
 }
-const styles$7 = {
+const styles$b = {
   wrapper: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
@@ -14989,8 +14990,8 @@ function ReportActions({ result, onNewScan }) {
       setOpeningFolder(false);
     }
   }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$6.wrapper, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$6.actions, children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.wrapper, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.actions, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         Button,
         {
@@ -15014,20 +15015,20 @@ function ReportActions({ result, onNewScan }) {
       ),
       onNewScan && /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: "ghost", onClick: onNewScan, children: "← New Scan" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$6.meta, children: [
-      hasHtmlReport && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$6.metaRow, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$6.metaLabel, children: "HTML Report" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$6.metaPath, children: result.artifacts.htmlPath })
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.meta, children: [
+      hasHtmlReport && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.metaRow, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$a.metaLabel, children: "HTML Report" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$a.metaPath, children: result.artifacts.htmlPath })
       ] }),
-      hasJsonReport && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$6.metaRow, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$6.metaLabel, children: "JSON Data" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$6.metaPath, children: result.artifacts.jsonPath })
+      hasJsonReport && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$a.metaRow, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$a.metaLabel, children: "JSON Data" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$a.metaPath, children: result.artifacts.jsonPath })
       ] }),
-      !hasHtmlReport && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$6.noteSaved, children: "Report saving is implemented in Phase 7. Run a full scan after that phase to generate on-disk artifacts." })
+      !hasHtmlReport && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$a.noteSaved, children: "Report saving is implemented in Phase 7. Run a full scan after that phase to generate on-disk artifacts." })
     ] })
   ] });
 }
-const styles$6 = {
+const styles$a = {
   wrapper: {
     display: "flex",
     flexDirection: "column",
@@ -15073,31 +15074,734 @@ const styles$6 = {
     fontStyle: "italic"
   }
 };
+function TabNav({ tabs, active, onChange }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$9.container, children: tabs.map((tab) => {
+    const isActive = tab.id === active;
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "button",
+      {
+        style: { ...styles$9.tab, ...isActive ? styles$9.activeTab : {} },
+        onClick: () => onChange(tab.id),
+        children: [
+          tab.label,
+          tab.count != null && tab.count > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...styles$9.count, ...isActive ? styles$9.activeCount : {} }, children: tab.count })
+        ]
+      },
+      tab.id
+    );
+  }) });
+}
+const styles$9 = {
+  container: {
+    display: "flex",
+    gap: 0,
+    borderBottom: "1px solid var(--color-border)",
+    overflowX: "auto",
+    flexShrink: 0
+  },
+  tab: {
+    padding: "10px 18px",
+    background: "none",
+    border: "none",
+    borderBottom: "2px solid transparent",
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: 500,
+    color: "var(--color-text-secondary)",
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    whiteSpace: "nowrap",
+    marginBottom: -1,
+    lineHeight: 1.4,
+    transition: "color 0.12s"
+  },
+  activeTab: {
+    color: "var(--color-brand)",
+    borderBottomColor: "var(--color-brand)",
+    fontWeight: 600
+  },
+  count: {
+    fontSize: 10,
+    fontWeight: 700,
+    padding: "1px 5px",
+    borderRadius: 99,
+    backgroundColor: "var(--color-bg-raised)",
+    color: "var(--color-text-muted)",
+    lineHeight: 1.6
+  },
+  activeCount: {
+    backgroundColor: "var(--color-bg-raised)",
+    color: "var(--color-brand)"
+  }
+};
+function RevenueImpactCard({ impact }) {
+  const confColor2 = impact.confidence === "High" ? "#34d399" : impact.confidence === "Medium" ? "#facc15" : "#f87171";
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$8.header, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$8.title, children: "Revenue Impact Estimate" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: {
+        ...styles$8.confBadge,
+        color: confColor2,
+        borderColor: `${confColor2}55`,
+        backgroundColor: `${confColor2}18`
+      }, children: [
+        impact.confidence,
+        " Confidence"
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$8.metricsRow, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Metric,
+        {
+          value: `${impact.estimatedLeadLossRange.low}–${impact.estimatedLeadLossRange.high}`,
+          label: "Leads/mo lost"
+        }
+      ),
+      impact.estimatedRevenueLossRange && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Metric,
+        {
+          value: `$${impact.estimatedRevenueLossRange.low.toLocaleString()}–$${impact.estimatedRevenueLossRange.high.toLocaleString()}`,
+          label: "Revenue/mo at risk",
+          valueColor: "#f87171"
+        }
+      )
+    ] }),
+    impact.impactDrivers.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$8.driversSection, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$8.driversLabel, children: "Top drivers" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { style: styles$8.driversList, children: impact.impactDrivers.slice(0, 4).map((d, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: styles$8.driverItem, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$8.driverBullet, children: "›" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: d })
+      ] }, i)) })
+    ] }),
+    impact.explanation && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$8.explanation, children: impact.explanation }),
+    impact.assumptions.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("details", { style: styles$8.assumptions, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("summary", { style: styles$8.assumptionsSummary, children: "Assumptions" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { style: styles$8.assumptionsList, children: impact.assumptions.map((a, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: styles$8.assumptionItem, children: a }, i)) })
+    ] })
+  ] });
+}
+function Metric({ value, label, valueColor }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: metricStyles.cell, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...metricStyles.value, color: valueColor ?? "var(--color-text-primary)" }, children: value }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: metricStyles.label, children: label })
+  ] });
+}
+const styles$8 = {
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "var(--space-4)",
+    gap: "var(--space-3)",
+    flexWrap: "wrap"
+  },
+  title: { fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)" },
+  confBadge: {
+    fontSize: 11,
+    fontWeight: 600,
+    padding: "2px 9px",
+    borderRadius: 99,
+    border: "1px solid",
+    flexShrink: 0
+  },
+  metricsRow: {
+    display: "flex",
+    gap: "var(--space-8)",
+    marginBottom: "var(--space-4)",
+    flexWrap: "wrap"
+  },
+  driversSection: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    marginBottom: "var(--space-3)"
+  },
+  driversLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "var(--color-text-muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em"
+  },
+  driversList: { listStyle: "none", display: "flex", flexDirection: "column", gap: 3 },
+  driverItem: {
+    display: "flex",
+    gap: 6,
+    fontSize: 13,
+    color: "var(--color-text-secondary)",
+    alignItems: "flex-start",
+    lineHeight: 1.5
+  },
+  driverBullet: { color: "#f87171", flexShrink: 0, fontWeight: 700, marginTop: 1 },
+  explanation: {
+    fontSize: 12,
+    color: "var(--color-text-muted)",
+    lineHeight: 1.7,
+    fontStyle: "italic",
+    borderTop: "1px solid var(--color-border)",
+    paddingTop: "var(--space-3)",
+    marginTop: "var(--space-2)"
+  },
+  assumptions: { marginTop: "var(--space-2)" },
+  assumptionsSummary: {
+    fontSize: 11,
+    color: "var(--color-text-muted)",
+    cursor: "pointer",
+    userSelect: "none"
+  },
+  assumptionsList: { listStyleType: "disc", paddingLeft: 18, marginTop: 6, display: "flex", flexDirection: "column", gap: 3 },
+  assumptionItem: { fontSize: 11, color: "var(--color-text-muted)", lineHeight: 1.5 }
+};
+const metricStyles = {
+  cell: { display: "flex", flexDirection: "column", gap: 2 },
+  value: { fontSize: 24, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums" },
+  label: {
+    fontSize: 11,
+    color: "var(--color-text-muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em"
+  }
+};
+function OpportunityList({ opportunities }) {
+  if (opportunities.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: emptyStyles$2.wrap, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: emptyStyles$2.icon, children: "✦" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: emptyStyles$2.title, children: "No opportunities detected" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: emptyStyles$2.hint, children: "Run a full scan with competitor URLs to unlock SEO growth opportunities." })
+    ] });
+  }
+  const high = opportunities.filter((o) => o.opportunityLevel === "High");
+  const medium = opportunities.filter((o) => o.opportunityLevel === "Medium");
+  const low = opportunities.filter((o) => o.opportunityLevel === "Low");
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$7.wrapper, children: [
+    high.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(OppGroup, { level: "High", items: high }),
+    medium.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(OppGroup, { level: "Medium", items: medium }),
+    low.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(OppGroup, { level: "Low", items: low })
+  ] });
+}
+function OppGroup({ level, items }) {
+  const color = level === "High" ? "#34d399" : level === "Medium" ? "#facc15" : "var(--color-text-muted)";
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$7.group, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$7.groupHeader, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: {
+        ...styles$7.levelBadge,
+        color,
+        borderColor: `${color}55`,
+        backgroundColor: `${color}18`
+      }, children: [
+        level,
+        " Priority"
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: styles$7.groupCount, children: [
+        items.length,
+        " opportunit",
+        items.length !== 1 ? "ies" : "y"
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$7.cards, children: items.map((opp, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(OppCard, { opp }, i)) })
+  ] });
+}
+function OppCard({ opp }) {
+  const hasValue = opp.estimatedMonthlyValueRange.high > 0;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: cardStyles.card, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: cardStyles.header, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: cardStyles.title, children: opp.title }),
+      hasValue && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: cardStyles.value, children: [
+        "+$",
+        opp.estimatedMonthlyValueRange.low.toLocaleString(),
+        "– $",
+        opp.estimatedMonthlyValueRange.high.toLocaleString(),
+        "/mo"
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: cardStyles.description, children: opp.description }),
+    opp.reason && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: cardStyles.reason, children: opp.reason }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: cardStyles.footer, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("code", { style: cardStyles.slug, children: [
+        "/",
+        opp.suggestedPageSlug
+      ] }),
+      opp.competitorCoverage && opp.competitorCoverage.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: cardStyles.coverage, children: [
+        opp.competitorCoverage.length,
+        " competitor",
+        opp.competitorCoverage.length !== 1 ? "s" : "",
+        " have this"
+      ] })
+    ] })
+  ] });
+}
+const emptyStyles$2 = {
+  wrap: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "var(--space-3)",
+    padding: "var(--space-8) var(--space-4)",
+    textAlign: "center"
+  },
+  icon: { fontSize: 28, opacity: 0.3 },
+  title: { fontSize: 14, fontWeight: 600, color: "var(--color-text-secondary)" },
+  hint: { fontSize: 13, color: "var(--color-text-muted)", maxWidth: 380, lineHeight: 1.6 }
+};
+const styles$7 = {
+  wrapper: { display: "flex", flexDirection: "column", gap: "var(--space-6)" },
+  group: { display: "flex", flexDirection: "column", gap: "var(--space-3)" },
+  groupHeader: { display: "flex", alignItems: "center", gap: "var(--space-3)" },
+  levelBadge: {
+    fontSize: 11,
+    fontWeight: 700,
+    padding: "2px 9px",
+    borderRadius: 99,
+    border: "1px solid"
+  },
+  groupCount: { fontSize: 12, color: "var(--color-text-muted)" },
+  cards: { display: "flex", flexDirection: "column", gap: "var(--space-2)" }
+};
+const cardStyles = {
+  card: {
+    backgroundColor: "var(--color-bg-surface)",
+    border: "1px solid var(--color-border)",
+    borderRadius: "var(--radius-md)",
+    padding: "var(--space-4)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-2)"
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "var(--space-4)"
+  },
+  title: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "var(--color-text-primary)",
+    flex: 1
+  },
+  value: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#34d399",
+    flexShrink: 0,
+    whiteSpace: "nowrap"
+  },
+  description: {
+    fontSize: 13,
+    color: "var(--color-text-secondary)",
+    lineHeight: 1.6
+  },
+  reason: {
+    fontSize: 12,
+    color: "var(--color-text-muted)",
+    lineHeight: 1.5,
+    fontStyle: "italic"
+  },
+  footer: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-4)",
+    marginTop: "var(--space-1)",
+    paddingTop: "var(--space-2)",
+    borderTop: "1px solid var(--color-border)",
+    flexWrap: "wrap"
+  },
+  slug: {
+    fontSize: 11,
+    color: "var(--color-brand)",
+    fontFamily: "var(--font-mono)",
+    backgroundColor: "var(--color-bg-raised)",
+    padding: "1px 6px",
+    borderRadius: 4,
+    border: "1px solid var(--color-border)"
+  },
+  coverage: {
+    fontSize: 11,
+    color: "#facc15",
+    fontWeight: 600
+  }
+};
+function RoadmapList({ items }) {
+  if (items.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: emptyStyles$1.wrap, children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: emptyStyles$1.text, children: "No roadmap items generated for this scan." }) });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$6.wrapper, children: items.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx(RoadmapRow, { item }, item.priority)) });
+}
+function RoadmapRow({ item }) {
+  const impactColor = item.impact === "Critical" ? "#f87171" : item.impact === "High" ? "#fb923c" : item.impact === "Medium" ? "#facc15" : "var(--color-text-muted)";
+  const effortColor = item.effort === "Low" ? "#34d399" : item.effort === "Medium" ? "#facc15" : "#f87171";
+  const categoryLabel = {
+    technical: "⚙ Technical",
+    localSeo: "📍 Local SEO",
+    conversion: "⚡ Conversion",
+    content: "📝 Content",
+    trust: "🛡 Trust"
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.row, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: rowStyles.priorityWrap, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: rowStyles.priority, children: [
+      "#",
+      item.priority
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.content, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.header, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles.title, children: item.title }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.badges, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: {
+            ...rowStyles.badge,
+            color: impactColor,
+            borderColor: `${impactColor}55`,
+            backgroundColor: `${impactColor}18`
+          }, children: item.impact }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: {
+            ...rowStyles.badge,
+            color: effortColor,
+            borderColor: `${effortColor}55`,
+            backgroundColor: `${effortColor}18`
+          }, children: [
+            item.effort,
+            " effort"
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles.categoryBadge, children: categoryLabel[item.category] ?? item.category })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: rowStyles.fix, children: item.plainEnglishFix }),
+      item.whyItMatters && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: rowStyles.why, children: item.whyItMatters }),
+      item.affectedUrls && item.affectedUrls.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: rowStyles.urlsRow, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: rowStyles.urlsLabel, children: "Affects:" }),
+        item.affectedUrls.slice(0, 3).map((u2) => /* @__PURE__ */ jsxRuntimeExports.jsx("code", { style: rowStyles.url, children: u2 }, u2)),
+        item.affectedUrls.length > 3 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: rowStyles.urlsMore, children: [
+          "+",
+          item.affectedUrls.length - 3,
+          " more"
+        ] })
+      ] })
+    ] })
+  ] });
+}
+const emptyStyles$1 = {
+  wrap: { padding: "var(--space-6)", textAlign: "center" },
+  text: { fontSize: 13, color: "var(--color-text-muted)" }
+};
+const styles$6 = {
+  wrapper: { display: "flex", flexDirection: "column", gap: "var(--space-3)" }
+};
+const rowStyles = {
+  row: {
+    display: "flex",
+    gap: "var(--space-4)",
+    padding: "var(--space-4)",
+    backgroundColor: "var(--color-bg-surface)",
+    border: "1px solid var(--color-border)",
+    borderRadius: "var(--radius-md)",
+    alignItems: "flex-start"
+  },
+  priorityWrap: {
+    flexShrink: 0,
+    width: 36,
+    height: 36,
+    borderRadius: "50%",
+    backgroundColor: "var(--color-bg-raised)",
+    border: "1px solid var(--color-border)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  priority: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "var(--color-text-secondary)"
+  },
+  content: { flex: 1, display: "flex", flexDirection: "column", gap: "var(--space-2)", minWidth: 0 },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "var(--space-3)",
+    flexWrap: "wrap"
+  },
+  title: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "var(--color-text-primary)",
+    flex: 1,
+    minWidth: 180
+  },
+  badges: { display: "flex", gap: "var(--space-2)", flexWrap: "wrap", flexShrink: 0 },
+  badge: {
+    fontSize: 10,
+    fontWeight: 700,
+    padding: "2px 7px",
+    borderRadius: 99,
+    border: "1px solid",
+    whiteSpace: "nowrap"
+  },
+  categoryBadge: {
+    fontSize: 10,
+    fontWeight: 600,
+    padding: "2px 7px",
+    borderRadius: 99,
+    backgroundColor: "var(--color-bg-raised)",
+    border: "1px solid var(--color-border)",
+    color: "var(--color-text-muted)",
+    whiteSpace: "nowrap"
+  },
+  fix: {
+    fontSize: 13,
+    color: "var(--color-text-secondary)",
+    lineHeight: 1.6
+  },
+  why: {
+    fontSize: 12,
+    color: "var(--color-text-muted)",
+    lineHeight: 1.5,
+    fontStyle: "italic"
+  },
+  urlsRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
+    marginTop: "var(--space-1)"
+  },
+  urlsLabel: {
+    fontSize: 11,
+    color: "var(--color-text-muted)",
+    fontWeight: 600
+  },
+  url: {
+    fontSize: 11,
+    color: "var(--color-text-muted)",
+    fontFamily: "var(--font-mono)",
+    backgroundColor: "var(--color-bg-raised)",
+    padding: "1px 5px",
+    borderRadius: 3,
+    border: "1px solid var(--color-border)"
+  },
+  urlsMore: { fontSize: 11, color: "var(--color-text-muted)" }
+};
+function LighthouseCard({ lighthouse, visual }) {
+  const hasLighthouse = lighthouse && lighthouse.length > 0;
+  const hasVisual = visual && visual.pagesAnalyzed.length > 0;
+  if (!hasLighthouse && !hasVisual) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: emptyStyles.wrap, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: emptyStyles.icon, children: "◌" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: emptyStyles.title, children: "No performance data" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: emptyStyles.hint, children: "Run a Full scan to collect Lighthouse scores and visual analysis." })
+    ] }) });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: "var(--space-4)" }, children: [
+    hasLighthouse && lighthouse.map((m2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(LighthousePanel, { metrics: m2 }, i)),
+    hasVisual && /* @__PURE__ */ jsxRuntimeExports.jsx(VisualChecksPanel, { visual })
+  ] });
+}
+function LighthousePanel({ metrics }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: lhStyles.header, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: lhStyles.title, children: [
+      "Lighthouse — ",
+      metrics.url
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: lhStyles.scoreGrid, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(ScorePill, { label: "Performance", score: metrics.performanceScore }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(ScorePill, { label: "SEO", score: metrics.seoScore }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(ScorePill, { label: "Accessibility", score: metrics.accessibilityScore })
+    ] }),
+    (metrics.firstContentfulPaint != null || metrics.largestContentfulPaint != null || metrics.totalBlockingTime != null || metrics.cumulativeLayoutShift != null) && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: lhStyles.vitals, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: lhStyles.vitalsLabel, children: "Core Web Vitals" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: lhStyles.vitalsGrid, children: [
+        metrics.firstContentfulPaint != null && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Vital,
+          {
+            label: "FCP",
+            value: `${(metrics.firstContentfulPaint / 1e3).toFixed(1)}s`,
+            good: metrics.firstContentfulPaint < 1800
+          }
+        ),
+        metrics.largestContentfulPaint != null && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Vital,
+          {
+            label: "LCP",
+            value: `${(metrics.largestContentfulPaint / 1e3).toFixed(1)}s`,
+            good: metrics.largestContentfulPaint < 2500
+          }
+        ),
+        metrics.totalBlockingTime != null && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Vital,
+          {
+            label: "TBT",
+            value: `${metrics.totalBlockingTime}ms`,
+            good: metrics.totalBlockingTime < 200
+          }
+        ),
+        metrics.cumulativeLayoutShift != null && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Vital,
+          {
+            label: "CLS",
+            value: metrics.cumulativeLayoutShift.toFixed(3),
+            good: metrics.cumulativeLayoutShift < 0.1
+          }
+        ),
+        metrics.speedIndex != null && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Vital,
+          {
+            label: "Speed Index",
+            value: `${(metrics.speedIndex / 1e3).toFixed(1)}s`,
+            good: metrics.speedIndex < 3400
+          }
+        )
+      ] })
+    ] })
+  ] });
+}
+function ScorePill({ label, score }) {
+  const color = score >= 90 ? "#34d399" : score >= 50 ? "#facc15" : "#f87171";
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: lhStyles.scorePill, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...lhStyles.scoreNum, color }, children: score }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: lhStyles.scoreLabel, children: label })
+  ] });
+}
+function Vital({ label, value, good }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: lhStyles.vital, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...lhStyles.vitalValue, color: good ? "#34d399" : "#f87171" }, children: value }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: lhStyles.vitalLabel, children: label })
+  ] });
+}
+function VisualChecksPanel({ visual }) {
+  const checkLabels = {
+    hasAboveFoldCta: "Above-fold CTA button",
+    hasPhoneVisible: "Phone number visible",
+    hasTrustSignalsVisible: "Trust signals visible",
+    hasHeroClarity: "Hero headline clarity"
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: vcStyles.header, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: vcStyles.title, children: "Visual Analysis" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: vcStyles.subtitle, children: "Above-the-fold checks per page" })
+    ] }),
+    visual.pagesAnalyzed.map((page, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: vcStyles.page, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: vcStyles.pageHeader, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: vcStyles.pageType, children: page.pageType }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: vcStyles.pageUrl, children: page.url })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: vcStyles.checksGrid, children: Object.entries(page.checks).map(([key, result]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: vcStyles.checkRow, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...vcStyles.checkIcon, color: result.passed ? "#34d399" : "#f87171" }, children: result.passed ? "✓" : "✗" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: vcStyles.checkLabel, children: checkLabels[key] ?? key }),
+        result.detail && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: vcStyles.checkDetail, children: result.detail })
+      ] }, key)) })
+    ] }, i))
+  ] });
+}
+const emptyStyles = {
+  wrap: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "var(--space-3)",
+    padding: "var(--space-8)",
+    textAlign: "center"
+  },
+  icon: { fontSize: 28, opacity: 0.3 },
+  title: { fontSize: 14, fontWeight: 600, color: "var(--color-text-secondary)" },
+  hint: { fontSize: 13, color: "var(--color-text-muted)", maxWidth: 360, lineHeight: 1.6 }
+};
+const lhStyles = {
+  header: { marginBottom: "var(--space-3)" },
+  title: { fontSize: 12, fontWeight: 700, color: "var(--color-text-primary)", fontFamily: "var(--font-mono)" },
+  scoreGrid: {
+    display: "flex",
+    gap: "var(--space-6)",
+    marginBottom: "var(--space-4)",
+    flexWrap: "wrap"
+  },
+  scorePill: { display: "flex", flexDirection: "column", alignItems: "center", gap: 3 },
+  scoreNum: { fontSize: 32, fontWeight: 800, lineHeight: 1 },
+  scoreLabel: { fontSize: 10, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" },
+  vitals: { display: "flex", flexDirection: "column", gap: 6 },
+  vitalsLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "var(--color-text-muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em"
+  },
+  vitalsGrid: { display: "flex", gap: "var(--space-5)", flexWrap: "wrap" },
+  vital: { display: "flex", flexDirection: "column", alignItems: "center", gap: 2 },
+  vitalValue: { fontSize: 16, fontWeight: 700, lineHeight: 1 },
+  vitalLabel: { fontSize: 10, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }
+};
+const vcStyles = {
+  header: { display: "flex", alignItems: "baseline", gap: "var(--space-3)", marginBottom: "var(--space-4)" },
+  title: { fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)" },
+  subtitle: { fontSize: 12, color: "var(--color-text-muted)" },
+  page: {
+    marginBottom: "var(--space-4)",
+    paddingBottom: "var(--space-4)",
+    borderBottom: "1px solid var(--color-border)"
+  },
+  pageHeader: { display: "flex", alignItems: "baseline", gap: "var(--space-3)", marginBottom: "var(--space-2)" },
+  pageType: {
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: "capitalize",
+    color: "var(--color-text-secondary)",
+    backgroundColor: "var(--color-bg-raised)",
+    border: "1px solid var(--color-border)",
+    padding: "1px 7px",
+    borderRadius: 99
+  },
+  pageUrl: { fontSize: 12, color: "var(--color-text-muted)", fontFamily: "var(--font-mono)" },
+  checksGrid: { display: "flex", flexDirection: "column", gap: 6 },
+  checkRow: { display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13 },
+  checkIcon: { fontWeight: 700, fontSize: 13, flexShrink: 0, width: 16, textAlign: "center" },
+  checkLabel: { color: "var(--color-text-secondary)", flex: 1 },
+  checkDetail: { fontSize: 12, color: "var(--color-text-muted)", fontStyle: "italic" }
+};
 function ScanResultsPage() {
   const { id: id2 } = useParams();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = reactExports.useState("overview");
+  const [loading, setLoading] = reactExports.useState(false);
   const latestResult = useScanStore((s) => s.latestResult);
+  const setResult = useScanStore((s) => s.setResult);
   reactExports.useEffect(() => {
-    if (!latestResult || latestResult.id !== id2) {
-      window.api.loadScan(id2 ?? "").then((result2) => {
-      });
-    }
-  }, [id2, latestResult]);
+    if (!id2) return;
+    if (latestResult?.id === id2) return;
+    setLoading(true);
+    window.api.loadScan(id2).then((loaded) => {
+      if (loaded) setResult(loaded);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [id2, latestResult, setResult]);
   const result = latestResult?.id === id2 ? latestResult : null;
+  if (loading) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$5.page, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.loadingWrap, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$5.spinner }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: styles$5.loadingText, children: "Loading scan result…" })
+    ] }) });
+  }
   if (!result) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: styles$5.page, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
       EmptyState,
       {
         icon: "◌",
         title: "Scan result not found",
-        description: id2 ? `No result in memory for scan ID "${id2}". Results are kept in memory for the current session. Run a new scan or check Saved Scans after Phase 7 report persistence is wired up.` : "No scan ID provided. Run a new scan to see results.",
+        description: id2 ? `No result found for scan "${id2}". The report may have been deleted, or the session was restarted.` : "No scan ID provided.",
         action: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: "primary", onClick: () => navigate("/scan/new"), children: "Run a New Scan" })
       }
     ) });
   }
+  const findingCount = result.findings.length;
+  const opportunityCount = (result.seoOpportunities?.length ?? 0) + (result.roadmap?.length ?? 0);
+  const tabs = [
+    { id: "overview", label: "Overview" },
+    { id: "findings", label: "Findings", count: findingCount },
+    { id: "opportunities", label: "Opportunities", count: opportunityCount },
+    { id: "performance", label: "Performance" },
+    { id: "export", label: "Export" }
+  ];
   const scannedAt = format(new Date(result.scannedAt), "MMM d, yyyy — h:mm a");
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.page, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.resultHeader, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.pageHeader, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.resultMeta, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: styles$5.domain, children: result.domain }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.metaRow, children: [
@@ -15106,52 +15810,139 @@ function ScanResultsPage() {
             " scan"
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$5.metaBadge, children: result.detectedBusinessType }),
+          result.scoreConfidence && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: {
+            ...styles$5.metaBadge,
+            color: result.scoreConfidence.level === "High" ? "#34d399" : result.scoreConfidence.level === "Medium" ? "#facc15" : "#f87171"
+          }, children: [
+            result.scoreConfidence.level,
+            " confidence"
+          ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: styles$5.metaTime, children: scannedAt })
         ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/scan/new", style: styles$5.backLink, children: "← New Scan" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(ReportActions, { result, onNewScan: () => navigate("/scan/new") }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(TabNav, { tabs, active: activeTab, onChange: (id22) => setActiveTab(id22) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.tabContent, children: [
+      activeTab === "overview" && /* @__PURE__ */ jsxRuntimeExports.jsx(OverviewTab, { result }),
+      activeTab === "findings" && /* @__PURE__ */ jsxRuntimeExports.jsx(IssueList, { findings: result.findings }),
+      activeTab === "opportunities" && /* @__PURE__ */ jsxRuntimeExports.jsx(OpportunitiesTab, { result }),
+      activeTab === "performance" && /* @__PURE__ */ jsxRuntimeExports.jsx(LighthouseCard, { lighthouse: result.lighthouse, visual: result.visual }),
+      activeTab === "export" && /* @__PURE__ */ jsxRuntimeExports.jsx(ExportTab, { result })
+    ] })
+  ] });
+}
+function OverviewTab({ result }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: tabStyles.wrapper, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreOverview, { scores: result.scores, domain: result.domain }),
-    (result.quickWins.length > 0 || result.moneyLeaks.length > 0) && /* @__PURE__ */ jsxRuntimeExports.jsx(
-      QuickWins,
-      {
-        quickWins: result.quickWins,
-        moneyLeaks: result.moneyLeaks
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(IssueList, { findings: result.findings }),
+    result.scoreConfidence && /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: tabStyles.confidenceRow, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: tabStyles.confidenceIcon, children: result.scoreConfidence.level === "High" ? "◉" : result.scoreConfidence.level === "Medium" ? "◎" : "○" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: tabStyles.confidenceLabel, children: "Score Confidence: " }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: {
+          ...tabStyles.confidenceLevel,
+          color: result.scoreConfidence.level === "High" ? "#34d399" : result.scoreConfidence.level === "Medium" ? "#facc15" : "#f87171"
+        }, children: result.scoreConfidence.level }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: tabStyles.confidenceReason, children: result.scoreConfidence.reason })
+      ] })
+    ] }) }),
+    result.revenueImpact && /* @__PURE__ */ jsxRuntimeExports.jsx(RevenueImpactCard, { impact: result.revenueImpact }),
+    (result.quickWins.length > 0 || result.moneyLeaks.length > 0) && /* @__PURE__ */ jsxRuntimeExports.jsx(QuickWins, { quickWins: result.quickWins, moneyLeaks: result.moneyLeaks }),
+    result.competitor && result.competitor.gaps.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(CompetitorSummary, { gaps: result.competitor.gaps })
+  ] });
+}
+function OpportunitiesTab({ result }) {
+  const hasOpportunities = result.seoOpportunities && result.seoOpportunities.length > 0;
+  const hasRoadmap = result.roadmap && result.roadmap.length > 0;
+  if (!hasOpportunities && !hasRoadmap) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: tabStyles.emptyTab, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: tabStyles.emptyIcon, children: "✦" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: tabStyles.emptyTitle, children: "No opportunities or roadmap data" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: tabStyles.emptyHint, children: "Run a full scan with competitor URLs to generate SEO opportunities and a priority fix roadmap." })
+    ] });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: tabStyles.wrapper, children: [
+    hasOpportunities && /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { style: tabStyles.sectionTitle, children: [
+        "SEO Growth Opportunities",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: tabStyles.sectionCount, children: result.seoOpportunities.length })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(OpportunityList, { opportunities: result.seoOpportunities })
+    ] }),
+    hasRoadmap && /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { style: tabStyles.sectionTitle, children: [
+        "Priority Fix Roadmap",
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: tabStyles.sectionCount, children: [
+          result.roadmap.length,
+          " actions"
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(RoadmapList, { items: result.roadmap })
+    ] })
+  ] });
+}
+function ExportTab({ result }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: tabStyles.wrapper, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(ReportActions, { result, onNewScan: () => {
+    } }),
     result.pages.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(PageInventory, { pages: result.pages })
   ] });
 }
-function PageInventory({ pages }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.section, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { style: styles$5.sectionTitle, children: [
-      "Page Inventory (",
-      pages.length,
-      ")"
+function CompetitorSummary({ gaps }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: compStyles.header, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: compStyles.title, children: "Competitor Gaps" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: compStyles.count, children: [
+        gaps.length,
+        " gap",
+        gaps.length !== 1 ? "s" : "",
+        " identified"
+      ] })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: styles$5.pageTable, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: tableStyles.header, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: compStyles.gapList, children: [
+      gaps.slice(0, 5).map((gap) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: compStyles.gapRow, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: compStyles.gapLeft, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: compStyles.gapTitle, children: gap.title }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: compStyles.gapDesc, children: gap.description })
+        ] }),
+        gap.competitorDomains.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: compStyles.gapCompetitors, children: [
+          gap.competitorDomains.slice(0, 2).join(", "),
+          gap.competitorDomains.length > 2 ? ` +${gap.competitorDomains.length - 2}` : ""
+        ] })
+      ] }, gap.id)),
+      gaps.length > 5 && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: compStyles.more, children: [
+        "+",
+        gaps.length - 5,
+        " more gaps — see full report"
+      ] })
+    ] })
+  ] });
+}
+function PageInventory({ pages }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { style: piStyles.title, children: [
+      "Page Inventory ",
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: piStyles.count, children: [
+        "(",
+        pages.length,
+        ")"
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: piStyles.table, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: piStyles.header, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { flex: 2 }, children: "URL" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 80, textAlign: "center" }, children: "Type" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 60, textAlign: "center" }, children: "Status" })
       ] }),
-      pages.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: tableStyles.row, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...tableStyles.url, flex: 2 }, children: p2.url }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 80, textAlign: "center", ...tableStyles.type }, children: p2.pageType }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "span",
-          {
-            style: {
-              width: 60,
-              textAlign: "center",
-              fontSize: 12,
-              color: p2.statusCode === 200 ? "var(--color-score-strong)" : "var(--color-high)"
-            },
-            children: p2.statusCode
-          }
-        )
+      pages.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: piStyles.row, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { ...piStyles.url, flex: 2 }, children: p2.url }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 80, textAlign: "center", fontSize: 11, color: "var(--color-text-muted)", textTransform: "capitalize" }, children: p2.pageType }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: {
+          width: 60,
+          textAlign: "center",
+          fontSize: 12,
+          color: p2.statusCode === 200 ? "var(--color-score-strong)" : "#f87171"
+        }, children: p2.statusCode })
       ] }, p2.url))
     ] })
   ] });
@@ -15160,25 +15951,22 @@ const styles$5 = {
   page: {
     display: "flex",
     flexDirection: "column",
-    gap: "var(--space-6)",
+    gap: "var(--space-4)",
     maxWidth: 960
   },
-  resultHeader: {
+  pageHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "var(--space-4)"
   },
-  resultMeta: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "var(--space-2)"
-  },
+  resultMeta: { display: "flex", flexDirection: "column", gap: "var(--space-2)" },
   domain: {
     fontSize: 22,
     fontWeight: 700,
     color: "var(--color-text-primary)",
-    fontFamily: "var(--font-mono)"
+    fontFamily: "var(--font-mono)",
+    margin: 0
   },
   metaRow: {
     display: "flex",
@@ -15196,33 +15984,103 @@ const styles$5 = {
     border: "1px solid var(--color-border)",
     textTransform: "capitalize"
   },
-  metaTime: {
-    fontSize: 12,
-    color: "var(--color-text-muted)"
-  },
+  metaTime: { fontSize: 12, color: "var(--color-text-muted)" },
   backLink: {
     fontSize: 13,
     color: "var(--color-text-secondary)",
     textDecoration: "none",
-    flexShrink: 0
+    flexShrink: 0,
+    marginTop: 4
   },
-  section: {
+  tabContent: {
+    paddingTop: "var(--space-2)"
+  },
+  loadingWrap: {
     display: "flex",
     flexDirection: "column",
+    alignItems: "center",
+    gap: "var(--space-3)",
+    padding: "var(--space-8)"
+  },
+  spinner: {
+    width: 28,
+    height: 28,
+    border: "3px solid var(--color-border)",
+    borderTopColor: "var(--color-brand)",
+    borderRadius: "50%",
+    animation: "spin 0.8s linear infinite"
+  },
+  loadingText: { fontSize: 13, color: "var(--color-text-secondary)" }
+};
+const tabStyles = {
+  wrapper: { display: "flex", flexDirection: "column", gap: "var(--space-5)" },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: 700,
+    color: "var(--color-text-primary)",
+    marginBottom: "var(--space-3)",
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-2)"
+  },
+  sectionCount: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "var(--color-text-muted)",
+    backgroundColor: "var(--color-bg-raised)",
+    border: "1px solid var(--color-border)",
+    borderRadius: 99,
+    padding: "1px 7px"
+  },
+  confidenceRow: {
+    display: "flex",
+    alignItems: "flex-start",
     gap: "var(--space-3)"
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 700,
-    color: "var(--color-text-primary)"
+  confidenceIcon: { fontSize: 18, flexShrink: 0, marginTop: 1 },
+  confidenceLabel: { fontSize: 13, fontWeight: 600, color: "var(--color-text-secondary)" },
+  confidenceLevel: { fontSize: 13, fontWeight: 700 },
+  confidenceReason: {
+    fontSize: 12,
+    color: "var(--color-text-muted)",
+    marginTop: 3,
+    lineHeight: 1.5
   },
-  pageTable: {
-    border: "1px solid var(--color-border)",
-    borderRadius: "var(--radius-lg)",
-    overflow: "hidden"
-  }
+  emptyTab: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "var(--space-3)",
+    padding: "var(--space-8)",
+    textAlign: "center"
+  },
+  emptyIcon: { fontSize: 28, opacity: 0.3 },
+  emptyTitle: { fontSize: 14, fontWeight: 600, color: "var(--color-text-secondary)" },
+  emptyHint: { fontSize: 13, color: "var(--color-text-muted)", maxWidth: 400, lineHeight: 1.6 }
 };
-const tableStyles = {
+const compStyles = {
+  header: { display: "flex", alignItems: "baseline", gap: "var(--space-3)", marginBottom: "var(--space-3)" },
+  title: { fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)" },
+  count: { fontSize: 12, color: "var(--color-text-muted)" },
+  gapList: { display: "flex", flexDirection: "column", gap: "var(--space-3)" },
+  gapRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "var(--space-4)",
+    paddingBottom: "var(--space-2)",
+    borderBottom: "1px solid var(--color-border)"
+  },
+  gapLeft: { display: "flex", flexDirection: "column", gap: 3, flex: 1 },
+  gapTitle: { fontSize: 13, fontWeight: 600, color: "var(--color-text-primary)" },
+  gapDesc: { fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.5 },
+  gapCompetitors: { fontSize: 11, color: "#facc15", flexShrink: 0, fontFamily: "var(--font-mono)" },
+  more: { fontSize: 12, color: "var(--color-text-muted)", fontStyle: "italic", margin: 0 }
+};
+const piStyles = {
+  title: { fontSize: 14, fontWeight: 700, color: "var(--color-text-primary)", marginBottom: "var(--space-3)" },
+  count: { fontWeight: 400, color: "var(--color-text-muted)", fontSize: 13 },
+  table: { border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", overflow: "hidden" },
   header: {
     display: "flex",
     gap: "var(--space-4)",
@@ -15249,11 +16107,6 @@ const tableStyles = {
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap"
-  },
-  type: {
-    fontSize: 11,
-    color: "var(--color-text-muted)",
-    textTransform: "capitalize"
   }
 };
 function SavedScansPage() {
@@ -15481,7 +16334,10 @@ function BulkProgress$1(props) {
   ] }) });
 }
 function BulkResults$1({ result, onReset }) {
-  const ranked = rankItems(result, "score-asc");
+  const [sortKey, setSortKey] = reactExports.useState("score-asc");
+  const [filter, setFilter] = reactExports.useState("");
+  const ranked = rankItems(result, sortKey);
+  const visible = filter.trim() ? ranked.filter((i) => i.domain.toLowerCase().includes(filter.trim().toLowerCase())) : ranked;
   const failed = result.items.filter((i) => !i.ok);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: "var(--space-4)" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: resultsStyles.summary, children: [
@@ -15500,26 +16356,65 @@ function BulkResults$1({ result, onReset }) {
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginLeft: "auto" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { size: "sm", onClick: onReset, children: "New Batch" }) })
     ] }) }),
     ranked.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: resultsStyles.tableTitle, children: "Score Comparison (lowest first)" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: resultsStyles.controls, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "input",
+          {
+            type: "text",
+            placeholder: "Filter by domain…",
+            value: filter,
+            onChange: (e) => setFilter(e.target.value),
+            style: resultsStyles.filterInput
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "select",
+          {
+            value: sortKey,
+            onChange: (e) => setSortKey(e.target.value),
+            style: resultsStyles.sortSelect,
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "score-asc", children: "Score ↑ (lowest first)" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "score-desc", children: "Score ↓ (highest first)" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "issues-desc", children: "Most issues first" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "revenue-desc", children: "Revenue leak ↓" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: resultsStyles.countLabel, children: [
+          visible.length,
+          " of ",
+          ranked.length,
+          " site",
+          ranked.length !== 1 ? "s" : ""
+        ] })
+      ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: resultsStyles.tableWrap, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { style: resultsStyles.table, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("tr", { children: ["Domain", "Score", "Label", "Issues", "High Priority", "Confidence", "Est. Revenue Loss", "Report"].map((h) => /* @__PURE__ */ jsxRuntimeExports.jsx("th", { style: resultsStyles.th, children: h }, h)) }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("tbody", { children: ranked.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { style: resultsStyles.tr, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: resultsStyles.td, children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: item.domain }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: { ...resultsStyles.td, ...scoreColor(item.overallScore) }, children: item.overallScore ?? "—" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: resultsStyles.td, children: item.scoreLabel ?? "—" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: resultsStyles.td, children: item.issueCount ?? "—" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: { ...resultsStyles.td, color: (item.highPriorityIssueCount ?? 0) > 0 ? "#f87171" : "inherit" }, children: item.highPriorityIssueCount ?? "—" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: resultsStyles.td, children: item.confidence ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: confidenceColor(item.confidence.level), children: item.confidence.level }) : "—" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: resultsStyles.td, children: item.revenueImpact?.revenueLossHigh != null ? `$${item.revenueImpact.revenueLossLow?.toLocaleString() ?? "?"} – $${item.revenueImpact.revenueLossHigh.toLocaleString()}/mo` : item.revenueImpact?.leadLossHigh != null ? `~${item.revenueImpact.leadLossHigh} leads/mo` : "—" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: resultsStyles.td, children: item.reportPaths?.htmlPath ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              style: resultsStyles.openBtn,
-              onClick: () => window.api.openReport(item.reportPaths.htmlPath),
-              children: "Open"
-            }
-          ) : "—" })
-        ] }, item.domain)) })
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("tbody", { children: [
+          visible.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { style: resultsStyles.tr, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: resultsStyles.td, children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: item.domain }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: { ...resultsStyles.td, ...scoreColor(item.overallScore) }, children: item.overallScore ?? "—" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: resultsStyles.td, children: item.scoreLabel ?? "—" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: resultsStyles.td, children: item.issueCount ?? "—" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: { ...resultsStyles.td, color: (item.highPriorityIssueCount ?? 0) > 0 ? "#f87171" : "inherit" }, children: item.highPriorityIssueCount ?? "—" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: resultsStyles.td, children: item.confidence ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: confidenceColor(item.confidence.level), children: item.confidence.level }) : "—" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: resultsStyles.td, children: item.revenueImpact?.revenueLossHigh != null ? `$${item.revenueImpact.revenueLossLow?.toLocaleString() ?? "?"} – $${item.revenueImpact.revenueLossHigh.toLocaleString()}/mo` : item.revenueImpact?.leadLossHigh != null ? `~${item.revenueImpact.leadLossHigh} leads/mo` : "—" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("td", { style: resultsStyles.td, children: item.reportPaths?.htmlPath ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                style: resultsStyles.openBtn,
+                onClick: () => window.api.openReport(item.reportPaths.htmlPath),
+                children: "Open"
+              }
+            ) : "—" })
+          ] }, item.domain)),
+          visible.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("tr", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { colSpan: 8, style: { ...resultsStyles.td, textAlign: "center", color: "var(--color-text-muted)", padding: 24 }, children: [
+            'No domains match "',
+            filter,
+            '"'
+          ] }) })
+        ] })
       ] }) })
     ] }),
     failed.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
@@ -15603,6 +16498,37 @@ const resultsStyles = {
   statNum: { fontSize: 28, fontWeight: 700, color: "var(--color-text-primary)", lineHeight: 1 },
   statLabel: { fontSize: 11, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" },
   tableTitle: { fontSize: 13, fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: 12 },
+  controls: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-3)",
+    marginBottom: 12,
+    flexWrap: "wrap"
+  },
+  filterInput: {
+    flex: 1,
+    minWidth: 160,
+    backgroundColor: "var(--color-bg-input)",
+    border: "1px solid var(--color-border)",
+    borderRadius: "var(--radius-sm)",
+    color: "var(--color-text-primary)",
+    fontSize: 12,
+    padding: "6px 10px"
+  },
+  sortSelect: {
+    backgroundColor: "var(--color-bg-input)",
+    border: "1px solid var(--color-border)",
+    borderRadius: "var(--radius-sm)",
+    color: "var(--color-text-primary)",
+    fontSize: 12,
+    padding: "5px 8px",
+    flexShrink: 0
+  },
+  countLabel: {
+    fontSize: 11,
+    color: "var(--color-text-muted)",
+    whiteSpace: "nowrap"
+  },
   tableWrap: { overflowX: "auto" },
   table: { width: "100%", borderCollapse: "collapse", fontSize: 12 },
   th: { padding: "8px 12px", textAlign: "left", color: "var(--color-text-muted)", fontWeight: 600, borderBottom: "1px solid var(--color-border)", whiteSpace: "nowrap" },
@@ -15901,14 +16827,20 @@ function CandidateTable({ result, scanMode, onScanModeChange, onScanSelected, on
           );
         }) })
       ] }) }),
-      excluded.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("details", { style: candStyles.excludedDetails, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("summary", { style: candStyles.excludedSummary, children: [
-          excluded.length,
-          " excluded (directories / no website)"
+      excluded.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: candStyles.rejectedSection, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: candStyles.rejectedHeader, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: candStyles.rejectedTitle, children: "Rejected Candidates" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: candStyles.rejectedCount, children: [
+            excluded.length,
+            " filtered out"
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: candStyles.rejectedHint, children: "These domains were blocked by the directory filter or candidate classifier" })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: candStyles.excludedList, children: excluded.map((biz, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: candStyles.excludedRow, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: biz.name }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "var(--color-text-muted)", fontSize: 11 }, children: biz.domain ? new URL(biz.domain).hostname : "no website" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: candStyles.rejectedList, children: excluded.map((biz, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: candStyles.excludedRow, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: candStyles.rejectedLeft, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: candStyles.rejectedName, children: biz.name }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "var(--color-text-muted)", fontSize: 11, fontFamily: "monospace" }, children: biz.domain ? new URL(biz.domain).hostname : "no website" })
+          ] }),
           biz.rejectionReason && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: candStyles.rejectionBadge, children: biz.rejectionReason })
         ] }, i)) })
       ] }),
@@ -16082,11 +17014,16 @@ const candStyles = {
   th: { padding: "8px 12px", textAlign: "left", color: "var(--color-text-muted)", fontWeight: 600, borderBottom: "1px solid var(--color-border)", whiteSpace: "nowrap" },
   tr: { borderBottom: "1px solid var(--color-border)" },
   td: { padding: "10px 12px", color: "var(--color-text-primary)", verticalAlign: "middle" },
-  excludedDetails: { marginTop: 12, borderTop: "1px solid var(--color-border)", paddingTop: 8 },
-  excludedSummary: { fontSize: 12, color: "var(--color-text-muted)", cursor: "pointer", userSelect: "none" },
-  excludedList: { marginTop: 8, display: "flex", flexDirection: "column", gap: 4 },
-  excludedRow: { display: "flex", gap: "var(--space-4)", alignItems: "baseline", padding: "2px 0", fontSize: 12, color: "var(--color-text-secondary)", flexWrap: "wrap" },
-  rejectionBadge: { fontSize: 10, fontWeight: 600, color: "#94a3b8", backgroundColor: "var(--color-bg-base)", border: "1px solid var(--color-border)", borderRadius: 3, padding: "1px 5px", letterSpacing: "0.03em", whiteSpace: "nowrap" },
+  excludedRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-4)", padding: "6px 0", borderBottom: "1px solid var(--color-border)", flexWrap: "wrap" },
+  rejectedSection: { marginTop: "var(--space-4)", borderTop: "2px solid var(--color-border)", paddingTop: "var(--space-4)" },
+  rejectedHeader: { display: "flex", alignItems: "baseline", gap: "var(--space-3)", marginBottom: "var(--space-3)", flexWrap: "wrap" },
+  rejectedTitle: { fontSize: 12, fontWeight: 700, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" },
+  rejectedCount: { fontSize: 12, color: "#f87171", fontWeight: 600 },
+  rejectedHint: { fontSize: 11, color: "var(--color-text-muted)", fontStyle: "italic" },
+  rejectedList: { display: "flex", flexDirection: "column", gap: 0 },
+  rejectedLeft: { display: "flex", flexDirection: "column", gap: 2, minWidth: 0 },
+  rejectedName: { fontSize: 13, color: "var(--color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  rejectionBadge: { fontSize: 10, fontWeight: 600, color: "#94a3b8", backgroundColor: "var(--color-bg-base)", border: "1px solid var(--color-border)", borderRadius: 3, padding: "2px 6px", letterSpacing: "0.03em", whiteSpace: "nowrap", flexShrink: 0 },
   actionRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingTop: 12, borderTop: "1px solid var(--color-border)" }
 };
 function MarketDashboardPage() {

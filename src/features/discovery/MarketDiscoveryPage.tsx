@@ -331,19 +331,25 @@ function CandidateTable({ result, scanMode, onScanModeChange, onScanSelected, on
             </table>
           </div>
 
-          {/* Excluded section (collapsed) */}
+          {/* Rejected candidates — separate section with classification badges */}
           {excluded.length > 0 && (
-            <details style={candStyles.excludedDetails}>
-              <summary style={candStyles.excludedSummary}>
-                {excluded.length} excluded (directories / no website)
-              </summary>
-              <div style={candStyles.excludedList}>
+            <div style={candStyles.rejectedSection}>
+              <div style={candStyles.rejectedHeader}>
+                <span style={candStyles.rejectedTitle}>Rejected Candidates</span>
+                <span style={candStyles.rejectedCount}>{excluded.length} filtered out</span>
+                <span style={candStyles.rejectedHint}>
+                  These domains were blocked by the directory filter or candidate classifier
+                </span>
+              </div>
+              <div style={candStyles.rejectedList}>
                 {excluded.map((biz, i) => (
                   <div key={i} style={candStyles.excludedRow}>
-                    <span>{biz.name}</span>
-                    <span style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>
-                      {biz.domain ? new URL(biz.domain).hostname : 'no website'}
-                    </span>
+                    <div style={candStyles.rejectedLeft}>
+                      <span style={candStyles.rejectedName}>{biz.name}</span>
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: 11, fontFamily: 'monospace' }}>
+                        {biz.domain ? new URL(biz.domain).hostname : 'no website'}
+                      </span>
+                    </div>
                     {biz.rejectionReason && (
                       <span style={candStyles.rejectionBadge}>
                         {biz.rejectionReason}
@@ -352,7 +358,7 @@ function CandidateTable({ result, scanMode, onScanModeChange, onScanSelected, on
                   </div>
                 ))}
               </div>
-            </details>
+            </div>
           )}
 
           {/* Scan action row */}
@@ -594,10 +600,15 @@ const candStyles: Record<string, React.CSSProperties> = {
   th: { padding: '8px 12px', textAlign: 'left', color: 'var(--color-text-muted)', fontWeight: 600, borderBottom: '1px solid var(--color-border)', whiteSpace: 'nowrap' },
   tr: { borderBottom: '1px solid var(--color-border)' },
   td: { padding: '10px 12px', color: 'var(--color-text-primary)', verticalAlign: 'middle' },
-  excludedDetails: { marginTop: 12, borderTop: '1px solid var(--color-border)', paddingTop: 8 },
-  excludedSummary: { fontSize: 12, color: 'var(--color-text-muted)', cursor: 'pointer', userSelect: 'none' },
-  excludedList: { marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 },
-  excludedRow: { display: 'flex', gap: 'var(--space-4)', alignItems: 'baseline', padding: '2px 0', fontSize: 12, color: 'var(--color-text-secondary)', flexWrap: 'wrap' },
-  rejectionBadge: { fontSize: 10, fontWeight: 600, color: '#94a3b8', backgroundColor: 'var(--color-bg-base)', border: '1px solid var(--color-border)', borderRadius: 3, padding: '1px 5px', letterSpacing: '0.03em', whiteSpace: 'nowrap' as const },
+  excludedRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-4)', padding: '6px 0', borderBottom: '1px solid var(--color-border)', flexWrap: 'wrap' as const },
+  rejectedSection: { marginTop: 'var(--space-4)', borderTop: '2px solid var(--color-border)', paddingTop: 'var(--space-4)' },
+  rejectedHeader: { display: 'flex', alignItems: 'baseline', gap: 'var(--space-3)', marginBottom: 'var(--space-3)', flexWrap: 'wrap' as const },
+  rejectedTitle: { fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' },
+  rejectedCount: { fontSize: 12, color: '#f87171', fontWeight: 600 },
+  rejectedHint: { fontSize: 11, color: 'var(--color-text-muted)', fontStyle: 'italic' as const },
+  rejectedList: { display: 'flex', flexDirection: 'column' as const, gap: 0 },
+  rejectedLeft: { display: 'flex', flexDirection: 'column' as const, gap: 2, minWidth: 0 },
+  rejectedName: { fontSize: 13, color: 'var(--color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const },
+  rejectionBadge: { fontSize: 10, fontWeight: 600, color: '#94a3b8', backgroundColor: 'var(--color-bg-base)', border: '1px solid var(--color-border)', borderRadius: 3, padding: '2px 6px', letterSpacing: '0.03em', whiteSpace: 'nowrap' as const, flexShrink: 0 },
   actionRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--color-border)' },
 }

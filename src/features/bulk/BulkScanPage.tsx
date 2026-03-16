@@ -214,8 +214,18 @@ interface ResultItem {
   items: BulkScanItemResult[]
 }
 
+type BulkSortKey = 'score-asc' | 'score-desc' | 'issues-desc' | 'revenue-desc' | 'confidence-asc'
+
 function BulkResults({ result, onReset }: { result: ResultItem; onReset: () => void }): JSX.Element {
-  const ranked = rankItems(result as Parameters<typeof rankItems>[0], 'score-asc')
+  const [sortKey, setSortKey] = useState<BulkSortKey>('score-asc')
+  const [filter, setFilter] = useState('')
+
+  const ranked = rankItems(result as Parameters<typeof rankItems>[0], sortKey as Parameters<typeof rankItems>[1])
+
+  const visible = filter.trim()
+    ? ranked.filter((i) => i.domain.toLowerCase().includes(filter.trim().toLowerCase()))
+    : ranked
+
   const failed = result.items.filter((i) => !i.ok)
 
   return (
@@ -246,7 +256,30 @@ function BulkResults({ result, onReset }: { result: ResultItem; onReset: () => v
       {/* Comparison table */}
       {ranked.length > 0 && (
         <Card>
-          <div style={resultsStyles.tableTitle}>Score Comparison (lowest first)</div>
+          {/* Controls: search + sort */}
+          <div style={resultsStyles.controls}>
+            <input
+              type="text"
+              placeholder="Filter by domain…"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              style={resultsStyles.filterInput}
+            />
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as BulkSortKey)}
+              style={resultsStyles.sortSelect}
+            >
+              <option value="score-asc">Score ↑ (lowest first)</option>
+              <option value="score-desc">Score ↓ (highest first)</option>
+              <option value="issues-desc">Most issues first</option>
+              <option value="revenue-desc">Revenue leak ↓</option>
+            </select>
+            <span style={resultsStyles.countLabel}>
+              {visible.length} of {ranked.length} site{ranked.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
           <div style={resultsStyles.tableWrap}>
             <table style={resultsStyles.table}>
               <thead>
@@ -257,7 +290,7 @@ function BulkResults({ result, onReset }: { result: ResultItem; onReset: () => v
                 </tr>
               </thead>
               <tbody>
-                {ranked.map((item) => (
+                {visible.map((item) => (
                   <tr key={item.domain} style={resultsStyles.tr}>
                     <td style={resultsStyles.td}><strong>{item.domain}</strong></td>
                     <td style={{ ...resultsStyles.td, ...scoreColor(item.overallScore) }}>
@@ -294,6 +327,13 @@ function BulkResults({ result, onReset }: { result: ResultItem; onReset: () => v
                     </td>
                   </tr>
                 ))}
+                {visible.length === 0 && (
+                  <tr>
+                    <td colSpan={8} style={{ ...resultsStyles.td, textAlign: 'center', color: 'var(--color-text-muted)', padding: 24 }}>
+                      No domains match "{filter}"
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -399,6 +439,37 @@ const resultsStyles: Record<string, React.CSSProperties> = {
   statNum: { fontSize: 28, fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1 },
   statLabel: { fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' },
   tableTitle: { fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 12 },
+  controls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--space-3)',
+    marginBottom: 12,
+    flexWrap: 'wrap',
+  },
+  filterInput: {
+    flex: 1,
+    minWidth: 160,
+    backgroundColor: 'var(--color-bg-input)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--color-text-primary)',
+    fontSize: 12,
+    padding: '6px 10px',
+  },
+  sortSelect: {
+    backgroundColor: 'var(--color-bg-input)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--color-text-primary)',
+    fontSize: 12,
+    padding: '5px 8px',
+    flexShrink: 0,
+  },
+  countLabel: {
+    fontSize: 11,
+    color: 'var(--color-text-muted)',
+    whiteSpace: 'nowrap',
+  },
   tableWrap: { overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
   th: { padding: '8px 12px', textAlign: 'left', color: 'var(--color-text-muted)', fontWeight: 600, borderBottom: '1px solid var(--color-border)', whiteSpace: 'nowrap' },

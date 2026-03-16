@@ -28,6 +28,8 @@ interface ScanState {
 
   clearError: () => void
   clearResult: () => void
+  /** Set a result directly (used when loading a scan from disk). */
+  setResult: (result: AuditResult) => void
 }
 
 export const useScanStore = create<ScanState>((set) => ({
@@ -90,4 +92,5 @@ export const useScanStore = create<ScanState>((set) => ({
 
   clearError: () => set({ error: null }),
   clearResult: () => set({ latestResult: null, progress: 0, stepLabel: '', currentRequest: null }),
+  setResult: (result: AuditResult) => set({ latestResult: result }),
 }))
