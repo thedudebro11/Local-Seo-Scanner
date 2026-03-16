@@ -11,12 +11,19 @@ export interface MarketDiscoveryRequest {
   maxResults: number
 }
 
+// ─── Candidate classification ─────────────────────────────────────────────────
+
+/** Classification assigned by the candidate classifier before acceptance. */
+export type CandidateClass = 'business' | 'directory' | 'marketplace' | 'social' | 'government' | 'unknown'
+
 // ─── Discovered business ──────────────────────────────────────────────────────
 
 export interface DiscoveredBusiness {
   name: string
   /** Normalized root domain, e.g. "goettl.com". Undefined when no website found. */
   domain?: string
+  /** Original full URL from the search result (before path stripping). */
+  sourceUrl?: string
   /** Search engine used, e.g. "duckduckgo" */
   source: string
   /** 1-based position in the original search results. */
@@ -24,6 +31,10 @@ export interface DiscoveredBusiness {
   rating?: number
   reviewCount?: number
   hasWebsite: boolean
+  /** Classification assigned by classifyCandidate(). */
+  classification?: CandidateClass
+  /** Human-readable reason for rejection (set when excluded by classifier or blocklist). */
+  rejectionReason?: string
 }
 
 // ─── Result ───────────────────────────────────────────────────────────────────

@@ -175,6 +175,7 @@ function parseDdgResults(html: string, maxResults: number): DiscoveredBusiness[]
     results.push({
       name: title,
       domain: domain ?? undefined,
+      sourceUrl: href,
       source: 'duckduckgo',
       rankingPosition: results.length + 1,
       hasWebsite: domain !== null,
@@ -192,6 +193,7 @@ function parseDdgResults(html: string, maxResults: number): DiscoveredBusiness[]
       results.push({
         name: title,
         domain: domain ?? undefined,
+        sourceUrl: href,
         source: 'duckduckgo',
         rankingPosition: results.length + 1,
         hasWebsite: domain !== null,

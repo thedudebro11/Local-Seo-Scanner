@@ -39,7 +39,7 @@ function registerBulkScanHandlers(mainWindow2) {
 function registerDiscoveryHandlers() {
   electron.ipcMain.handle("discovery:run", async (_, request) => {
     try {
-      const { runMarketDiscovery } = await Promise.resolve().then(() => require("./chunks/marketDiscovery-DYZniIye.js"));
+      const { runMarketDiscovery } = await Promise.resolve().then(() => require("./chunks/marketDiscovery-DSeozUsk.js"));
       return await runMarketDiscovery(request);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

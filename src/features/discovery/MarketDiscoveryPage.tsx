@@ -262,7 +262,7 @@ function CandidateTable({ result, scanMode, onScanModeChange, onScanSelected, on
             </p>
             <p style={candStyles.subtext}>
               {scannable.length} scannable business{scannable.length !== 1 ? 'es' : ''} found
-              {excluded.length > 0 ? ` · ${excluded.length} excluded (directories/no website)` : ''}
+              {excluded.length > 0 ? ` · ${excluded.length} filtered out` : ''}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
@@ -342,8 +342,13 @@ function CandidateTable({ result, scanMode, onScanModeChange, onScanSelected, on
                   <div key={i} style={candStyles.excludedRow}>
                     <span>{biz.name}</span>
                     <span style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>
-                      {biz.domain ?? 'no website'}
+                      {biz.domain ? new URL(biz.domain).hostname : 'no website'}
                     </span>
+                    {biz.rejectionReason && (
+                      <span style={candStyles.rejectionBadge}>
+                        {biz.rejectionReason}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -592,6 +597,7 @@ const candStyles: Record<string, React.CSSProperties> = {
   excludedDetails: { marginTop: 12, borderTop: '1px solid var(--color-border)', paddingTop: 8 },
   excludedSummary: { fontSize: 12, color: 'var(--color-text-muted)', cursor: 'pointer', userSelect: 'none' },
   excludedList: { marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 },
-  excludedRow: { display: 'flex', gap: 'var(--space-4)', alignItems: 'baseline', padding: '2px 0', fontSize: 12, color: 'var(--color-text-secondary)' },
+  excludedRow: { display: 'flex', gap: 'var(--space-4)', alignItems: 'baseline', padding: '2px 0', fontSize: 12, color: 'var(--color-text-secondary)', flexWrap: 'wrap' },
+  rejectionBadge: { fontSize: 10, fontWeight: 600, color: '#94a3b8', backgroundColor: 'var(--color-bg-base)', border: '1px solid var(--color-border)', borderRadius: 3, padding: '1px 5px', letterSpacing: '0.03em', whiteSpace: 'nowrap' as const },
   actionRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--color-border)' },
 }

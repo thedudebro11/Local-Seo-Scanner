@@ -14,6 +14,7 @@ const BLOCKED_DOMAINS = new Set([
   'angieslist.com',
   'thumbtack.com',
   'yellowpages.com',
+  'superpages.com',
   'bbb.org',
   'porch.com',
   'fixr.com',
@@ -26,6 +27,19 @@ const BLOCKED_DOMAINS = new Set([
   'taskrabbit.com',
   'buildzoom.com',
   'homelight.com',
+  'manta.com',
+  'chamberofcommerce.com',
+  'merchantcircle.com',
+  'citysearch.com',
+
+  // Ranking / "best of" list sites
+  'threebestrated.com',
+  'bestprosintown.com',
+  'topratedlocal.com',
+  'expertise.com',
+  'upcity.com',
+  'clutch.co',
+  'sortlist.com',
 
   // Maps / navigation
   'mapquest.com',
@@ -40,6 +54,7 @@ const BLOCKED_DOMAINS = new Set([
   'nextdoor.com',
   'tiktok.com',
   'youtube.com',
+  'pinterest.com',
 
   // Search / information
   'google.com',
@@ -58,11 +73,20 @@ const BLOCKED_DOMAINS = new Set([
   'sitejabber.com',
   'birdeyereviews.com',
   'glassdoor.com',
+  'angieslist.com',
+
+  // Marketplaces / lead-gen platforms
+  'thumbtack.com',
+  'taskrabbit.com',
+  'takl.com',
+  'handy.com',
+  'amazon.com',
 
   // News / media
   'reddit.com',
   'bobvila.com',
   'thisoldhouse.com',
+  'houselogic.com',
 ])
 
 /**
