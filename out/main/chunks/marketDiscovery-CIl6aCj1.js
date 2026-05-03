@@ -316,32 +316,58 @@ function deriveBlocklistReason(hostname) {
 }
 const log = logger.createLogger("marketDiscovery");
 const DDG_LITE_URL = "https://lite.duckduckgo.com/lite/";
+const BING_SEARCH_URL = "https://www.bing.com/search";
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 LocalSEOScanner/1.0";
 async function runMarketDiscovery(request) {
   const discoveryId = `discovery_${Date.now()}`;
   const discoveredAt = (/* @__PURE__ */ new Date()).toISOString();
-  log.info(`Market discovery starting: "${request.industry} ${request.location}"`);
+  const query = `${request.industry} ${request.location}`;
+  log.info(`Market discovery starting: "${query}"`);
   let raw = [];
+  let searchSource = "none";
+  let searchWarning;
   try {
-    const query = `${request.industry} ${request.location}`;
     const html = await fetchDdgLite(query);
-    raw = parseDdgResults(html, request.maxResults);
-    log.info(`Parsed ${raw.length} raw results from DuckDuckGo`);
+    raw = parseDdgResults(html, request.maxResults, "duckduckgo");
+    if (raw.length > 0) {
+      searchSource = "ddg-lite";
+      log.info(`Parsed ${raw.length} raw results from DuckDuckGo Lite`);
+    } else {
+      log.warn("DDG Lite returned 0 results — trying Bing fallback");
+    }
   } catch (err) {
-    log.warn(`Discovery search failed: ${err.message}`);
-    return buildResult(discoveryId, discoveredAt, request, [], []);
+    log.warn(`DDG Lite failed: ${err.message} — trying Bing fallback`);
+  }
+  if (raw.length === 0) {
+    try {
+      const html = await fetchBing(query);
+      raw = parseBingResults(html, request.maxResults);
+      if (raw.length > 0) {
+        searchSource = "bing";
+        searchWarning = "DuckDuckGo returned no results — results sourced from Bing.";
+        log.info(`Parsed ${raw.length} raw results from Bing fallback`);
+      } else {
+        searchSource = "none";
+        searchWarning = "Both DuckDuckGo and Bing returned no results. Check your query or try again later.";
+        log.warn("Both DDG and Bing returned 0 results");
+      }
+    } catch (err) {
+      searchSource = "none";
+      searchWarning = `Search unavailable: ${err.message}`;
+      log.warn(`Bing fallback also failed: ${err.message}`);
+    }
   }
   const { scannable, excluded, validDomains } = filterCandidates(raw);
   const discovered = [...scannable, ...excluded];
-  const result = buildResult(discoveryId, discoveredAt, request, discovered, validDomains);
+  const result = buildResult(discoveryId, discoveredAt, request, discovered, validDomains, searchSource, searchWarning);
   await saveDiscoveryResult(result);
   log.info(
-    `Discovery complete: ${scannable.length} scannable, ${excluded.length} excluded, discoveryId=${discoveryId}`
+    `Discovery complete: ${scannable.length} scannable, ${excluded.length} excluded, source=${searchSource}, discoveryId=${discoveryId}`
   );
   return result;
 }
-function buildResult(discoveryId, discoveredAt, request, discovered, validDomains) {
-  return { discoveryId, request, discoveredAt, discovered, validDomains };
+function buildResult(discoveryId, discoveredAt, request, discovered, validDomains, searchSource, searchWarning) {
+  return { discoveryId, request, discoveredAt, discovered, validDomains, searchSource, searchWarning };
 }
 function fetchDdgLite(query) {
   return new Promise((resolve, reject) => {
@@ -410,13 +436,41 @@ function fetchDdgLiteGet(url) {
     req.end();
   });
 }
-function parseDdgResults(html, maxResults) {
+function fetchBing(query) {
+  return new Promise((resolve, reject) => {
+    const path = `/search?q=${encodeURIComponent(query)}&count=20`;
+    const options = {
+      hostname: "www.bing.com",
+      path,
+      method: "GET",
+      headers: {
+        "User-Agent": USER_AGENT,
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": BING_SEARCH_URL
+      }
+    };
+    const req = https.request(options, (res) => {
+      let data = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk) => {
+        data += chunk;
+      });
+      res.on("end", () => {
+        if (!data.trim()) reject(new Error(`Bing returned empty response (status ${res.statusCode})`));
+        else resolve(data);
+      });
+    });
+    req.on("error", reject);
+    req.setTimeout(15e3, () => req.destroy(new Error("Bing request timed out after 15s")));
+    req.end();
+  });
+}
+function parseDdgResults(html, maxResults, source) {
   const $ = cheerio__namespace.load(html);
   const results = [];
-  $("td.result-link a").each((_, el) => {
+  const addResult = (title, href) => {
     if (results.length >= maxResults) return;
-    const title = $(el).text().trim();
-    const href = $(el).attr("href") ?? "";
     if (!title || !href) return;
     if (href.startsWith("/") || href.includes("duckduckgo.com")) return;
     const domain = normalizeToDomain(href);
@@ -424,28 +478,41 @@ function parseDdgResults(html, maxResults) {
       name: title,
       domain: domain ?? void 0,
       sourceUrl: href,
-      source: "duckduckgo",
+      source,
+      rankingPosition: results.length + 1,
+      hasWebsite: domain !== null
+    });
+  };
+  $("td.result-link a").each((_, el) => addResult($(el).text().trim(), $(el).attr("href") ?? ""));
+  if (results.length === 0) {
+    $("a.result__a, .result__a").each((_, el) => addResult($(el).text().trim(), $(el).attr("href") ?? ""));
+  }
+  if (results.length === 0) {
+    $('table a[href^="http"]').each((_, el) => {
+      const href = $(el).attr("href") ?? "";
+      if (!href.includes("duckduckgo.com")) addResult($(el).text().trim(), href);
+    });
+  }
+  return results;
+}
+function parseBingResults(html, maxResults) {
+  const $ = cheerio__namespace.load(html);
+  const results = [];
+  $("li.b_algo h2 a, li.b_algo .b_title a").each((_, el) => {
+    if (results.length >= maxResults) return;
+    const title = $(el).text().trim();
+    const href = $(el).attr("href") ?? "";
+    if (!title || !href || href.startsWith("/") || href.includes("bing.com")) return;
+    const domain = normalizeToDomain(href);
+    results.push({
+      name: title,
+      domain: domain ?? void 0,
+      sourceUrl: href,
+      source: "bing",
       rankingPosition: results.length + 1,
       hasWebsite: domain !== null
     });
   });
-  if (results.length === 0) {
-    $('table a[href^="http"]').each((_, el) => {
-      if (results.length >= maxResults) return;
-      const title = $(el).text().trim();
-      const href = $(el).attr("href") ?? "";
-      if (!title || !href || href.includes("duckduckgo.com")) return;
-      const domain = normalizeToDomain(href);
-      results.push({
-        name: title,
-        domain: domain ?? void 0,
-        sourceUrl: href,
-        source: "duckduckgo",
-        rankingPosition: results.length + 1,
-        hasWebsite: domain !== null
-      });
-    });
-  }
   return results;
 }
 async function saveDiscoveryResult(result) {

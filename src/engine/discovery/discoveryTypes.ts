@@ -46,4 +46,8 @@ export interface MarketDiscoveryResult {
   discovered: DiscoveredBusiness[]
   /** Deduplicated, normalized root domains ready to pass to bulk scan. */
   validDomains: string[]
+  /** Which search source successfully returned results. */
+  searchSource?: 'ddg-lite' | 'bing' | 'none'
+  /** Present when a fallback was used or results are degraded. */
+  searchWarning?: string
 }

@@ -6,8 +6,12 @@ import { registerDiscoveryHandlers } from './ipc/discoveryHandlers'
 import { registerMarketHandlers } from './ipc/marketHandlers'
 import { registerFileHandlers } from './ipc/fileHandlers'
 import { registerAppHandlers } from './ipc/appHandlers'
+import { registerLicenseHandlers } from './ipc/licenseHandlers'
+import { registerSettingsHandlers } from './ipc/settingsHandlers'
 import { initReportsDir } from '../src/engine/storage/pathResolver'
 import { initMonitoringDir } from '../src/engine/monitoring/monitoringPaths'
+import { initLicenseDir } from '../src/engine/license/licensePaths'
+import { initSettingsDir } from '../src/engine/settings/settingsPaths'
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -53,8 +57,11 @@ function createWindow(): BrowserWindow {
 
 app.whenReady().then(() => {
   // Initialize engine storage paths before any IPC handler can trigger a scan
-  initReportsDir(app.getPath('userData'))
-  initMonitoringDir(app.getPath('userData'))
+  const userData = app.getPath('userData')
+  initReportsDir(userData)
+  initMonitoringDir(userData)
+  initLicenseDir(userData)
+  initSettingsDir(userData)
 
   mainWindow = createWindow()
 
@@ -65,6 +72,8 @@ app.whenReady().then(() => {
   registerMarketHandlers()
   registerFileHandlers()
   registerAppHandlers()
+  registerLicenseHandlers()
+  registerSettingsHandlers()
 
   app.on('activate', () => {
     // On macOS, re-create the window when the dock icon is clicked

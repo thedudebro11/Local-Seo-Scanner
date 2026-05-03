@@ -64,10 +64,14 @@ export interface EstimateInput {
   findings: Finding[]
   detectedBusinessType: BusinessType
   scoreConfidence?: ScoreConfidence
+  currencySymbol?: string
+  currencyMultiplier?: number
 }
 
 export function estimateRevenueImpact(input: EstimateInput): RevenueImpactEstimate {
   const { findings, detectedBusinessType, scoreConfidence } = input
+  const currencySymbol = input.currencySymbol ?? '$'
+  const currencyMultiplier = input.currencyMultiplier ?? 1.0
   const leadValueConfig = LEAD_VALUE[detectedBusinessType] ?? LEAD_VALUE.other
 
   // ── Step 1: Weighted issue score ────────────────────────────────────────────
@@ -85,8 +89,8 @@ export function estimateRevenueImpact(input: EstimateInput): RevenueImpactEstima
   const CONVERSION_LOW  = 0.20
   const CONVERSION_HIGH = 0.40
 
-  const revLow  = Math.round(leadLoss.low  * CONVERSION_LOW  * leadValueConfig.low  / 100) * 100
-  const revHigh = Math.round(leadLoss.high * CONVERSION_HIGH * leadValueConfig.high / 100) * 100
+  const revLow  = Math.round(leadLoss.low  * CONVERSION_LOW  * leadValueConfig.low  * currencyMultiplier / 100) * 100
+  const revHigh = Math.round(leadLoss.high * CONVERSION_HIGH * leadValueConfig.high * currencyMultiplier / 100) * 100
 
   const estimatedRevenueLossRange = revLow > 0
     ? { low: revLow, high: revHigh }
@@ -103,11 +107,12 @@ export function estimateRevenueImpact(input: EstimateInput): RevenueImpactEstima
   const confidence = deriveConfidence(findings, scoreConfidence)
 
   // ── Step 7: Assumptions ─────────────────────────────────────────────────────
-  const assumptions = buildAssumptions(detectedBusinessType, leadValueConfig, confidence)
+  const assumptions = buildAssumptions(detectedBusinessType, leadValueConfig, confidence, currencySymbol)
 
   return {
     estimatedLeadLossRange: leadLoss,
     estimatedRevenueLossRange,
+    currencySymbol,
     impactDrivers,
     explanation,
     assumptions,
@@ -230,10 +235,11 @@ function buildAssumptions(
   businessType: BusinessType,
   leadValueConfig: LeadValueConfig,
   confidence: RevenueImpactEstimate['confidence'],
+  sym = '$',
 ): string[] {
   return [
     `Business type: ${leadValueConfig.label}`,
-    `Estimated lead value assumed at $${leadValueConfig.low.toLocaleString()}–$${leadValueConfig.high.toLocaleString()} per converted customer (conservative range)`,
+    `Estimated lead value assumed at ${sym}${leadValueConfig.low.toLocaleString()}–${sym}${leadValueConfig.high.toLocaleString()} per converted customer (conservative range)`,
     'Lead-to-customer conversion rate assumed at 20–40% of enquiries',
     'Lead loss estimates are based on detected website issues only — actual traffic and market conditions are not known',
     'Revenue estimates assume current organic and direct traffic levels; paid traffic is not considered',

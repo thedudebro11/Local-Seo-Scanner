@@ -27,4 +27,16 @@ export function registerFileHandlers(): void {
     const { loadScanById } = await import('../../src/engine/storage/scanRepository')
     return loadScanById(scanId)
   })
+
+  // Highlight the report in Finder/Explorer and open the system mail client
+  ipcMain.handle('file:email-report', async (_, { htmlPath, domain }: { htmlPath: string; domain: string }): Promise<void> => {
+    shell.showItemInFolder(htmlPath)
+    const subject = encodeURIComponent(`SEO Audit Report — ${domain}`)
+    const body = encodeURIComponent(
+      `Hi,\n\nPlease find the SEO audit report for ${domain} attached.\n\n` +
+      `The report file has been highlighted in your file explorer — drag it directly into this email.\n\n` +
+      `Report: ${htmlPath}`,
+    )
+    await shell.openExternal(`mailto:?subject=${subject}&body=${body}`)
+  })
 }

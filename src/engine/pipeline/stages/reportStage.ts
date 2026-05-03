@@ -1,5 +1,6 @@
 import { buildJsonReport } from '../../reports/buildJsonReport'
 import { buildHtmlReport } from '../../reports/buildHtmlReport'
+import { readSettings } from '../../settings/settingsStorage'
 import { saveScan } from '../../storage/scanRepository'
 import { buildJsonPath, buildHtmlPath } from '../../storage/pathResolver'
 import { saveScanSummary } from '../../monitoring/scanHistory'
@@ -26,10 +27,14 @@ export async function reportStage(
   const htmlPath = buildHtmlPath(ctx.scanId)
 
   const result: AuditResult = buildAuditResult(ctx, jsonPath, htmlPath)
+  const settings = await readSettings()
 
   await Promise.all([
     buildJsonReport(result, jsonPath),
-    buildHtmlReport(result, htmlPath),
+    buildHtmlReport(result, htmlPath, {
+      agencyName: settings.agencyName,
+      agencyLogoBase64: settings.agencyLogoBase64,
+    }),
   ])
 
   await saveScan(result)

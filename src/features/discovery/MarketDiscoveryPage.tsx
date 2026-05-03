@@ -99,13 +99,24 @@ export default function MarketDiscoveryPage(): JSX.Element {
       )}
 
       {discPhase === 'candidates' && discResult && (
-        <CandidateTable
-          result={discResult}
-          scanMode={scanMode}
-          onScanModeChange={setScanMode}
-          onScanSelected={handleScanSelected}
-          onNewSearch={() => { setDiscPhase('form'); setDiscResult(null) }}
-        />
+        <>
+          {discResult.searchWarning && (
+            <div style={styles.searchWarning}>
+              <span>⚠</span>
+              <span>{discResult.searchWarning}</span>
+              {discResult.searchSource === 'bing' && (
+                <span style={styles.sourcePill}>via Bing</span>
+              )}
+            </div>
+          )}
+          <CandidateTable
+            result={discResult}
+            scanMode={scanMode}
+            onScanModeChange={setScanMode}
+            onScanSelected={handleScanSelected}
+            onNewSearch={() => { setDiscPhase('form'); setDiscResult(null) }}
+          />
+        </>
       )}
     </div>
   )
@@ -561,6 +572,17 @@ const styles: Record<string, React.CSSProperties> = {
   },
   discoveringText: { fontSize: 15, fontWeight: 600, color: 'var(--color-text-primary)', margin: 0 },
   discoveringHint: { fontSize: 12, color: 'var(--color-text-muted)', margin: 0 },
+  searchWarning: {
+    display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+    fontSize: 13, color: 'var(--color-medium)',
+    backgroundColor: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)',
+    borderRadius: 'var(--radius-md)', padding: '8px 12px',
+  },
+  sourcePill: {
+    marginLeft: 'auto', fontSize: 11, fontWeight: 600,
+    padding: '2px 8px', borderRadius: 12,
+    backgroundColor: 'rgba(245,158,11,0.2)', color: 'var(--color-medium)',
+  },
 }
 
 const formStyles: Record<string, React.CSSProperties> = {

@@ -19,6 +19,12 @@ export type IpcChannel =
   | 'app:version'
   | 'app:platform'
   | 'app:reports-path'
+  | 'license:activate'
+  | 'license:check'
+  | 'license:deactivate'
+  | 'settings:get'
+  | 'settings:save'
+  | 'file:email-report'
 
 // ─── Progress ─────────────────────────────────────────────────────────────────
 
@@ -48,6 +54,8 @@ import type { AuditRequest, AuditResult } from './audit'
 import type { BulkScanRequest, BulkScanResult, BulkScanProgressEvent } from '../bulk/bulkTypes'
 import type { MarketDiscoveryRequest, MarketDiscoveryResult } from '../discovery/discoveryTypes'
 import type { MarketDashboard } from '../market/marketTypes'
+import type { LicenseActivateResult, LicenseCheckResult } from '../license/licenseTypes'
+import type { AppSettings } from '../settings/settingsTypes'
 
 export interface ElectronAPI {
   startScan: (request: AuditRequest) => Promise<AuditResult>
@@ -64,6 +72,12 @@ export interface ElectronAPI {
   getVersion: () => Promise<string>
   getPlatform: () => Promise<string>
   getReportsPath: () => Promise<string>
+  activateLicense: (key: string) => Promise<LicenseActivateResult>
+  checkLicense: () => Promise<LicenseCheckResult>
+  deactivateLicense: () => Promise<void>
+  getSettings: () => Promise<AppSettings>
+  saveSettings: (partial: Partial<AppSettings>) => Promise<AppSettings>
+  emailReport: (payload: { htmlPath: string; domain: string }) => Promise<void>
 }
 
 // Augment the global Window type so renderer code gets proper types on window.api

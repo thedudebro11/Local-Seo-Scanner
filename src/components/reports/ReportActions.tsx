@@ -10,6 +10,8 @@ interface Props {
 export function ReportActions({ result, onNewScan }: Props): JSX.Element {
   const [openingReport, setOpeningReport] = useState(false)
   const [openingFolder, setOpeningFolder] = useState(false)
+  const [emailing, setEmailing] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
 
   const hasHtmlReport = Boolean(result.artifacts.htmlPath)
   const hasJsonReport = Boolean(result.artifacts.jsonPath)
@@ -36,6 +38,21 @@ export function ReportActions({ result, onNewScan }: Props): JSX.Element {
     }
   }
 
+  async function handleEmailReport(): Promise<void> {
+    if (!result.artifacts.htmlPath) return
+    setEmailing(true)
+    try {
+      await window.api.emailReport({
+        htmlPath: result.artifacts.htmlPath,
+        domain: result.domain,
+      })
+      setEmailSent(true)
+      setTimeout(() => setEmailSent(false), 4000)
+    } finally {
+      setEmailing(false)
+    }
+  }
+
   return (
     <div style={styles.wrapper}>
       <div style={styles.actions}>
@@ -44,9 +61,19 @@ export function ReportActions({ result, onNewScan }: Props): JSX.Element {
           onClick={handleOpenReport}
           loading={openingReport}
           disabled={!hasHtmlReport}
-          title={hasHtmlReport ? 'Open the HTML report in your browser' : 'Report not yet saved (available in Phase 7)'}
+          title={hasHtmlReport ? 'Open the HTML report in your browser' : 'No report saved yet'}
         >
           Open HTML Report
+        </Button>
+
+        <Button
+          variant="secondary"
+          onClick={handleEmailReport}
+          loading={emailing}
+          disabled={!hasHtmlReport}
+          title="Open mail client with subject pre-filled and report highlighted in Finder / Explorer"
+        >
+          {emailSent ? '✓ Mail client opened' : 'Email Report'}
         </Button>
 
         <Button

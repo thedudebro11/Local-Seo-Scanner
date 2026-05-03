@@ -11,7 +11,7 @@ function registerScanHandlers(mainWindow2) {
       }
     };
     try {
-      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-Vst0ahwN.js"));
+      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-CBkRarpM.js"));
       const result = await runAudit(request, emitProgress);
       return result;
     } catch (err) {
@@ -28,7 +28,7 @@ function registerBulkScanHandlers(mainWindow2) {
       }
     };
     try {
-      const { runBulkScan } = await Promise.resolve().then(() => require("./chunks/runBulkScan-DuBJnfts.js"));
+      const { runBulkScan } = await Promise.resolve().then(() => require("./chunks/runBulkScan-CaG1OoVw.js"));
       return await runBulkScan(request, emitProgress);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -39,7 +39,7 @@ function registerBulkScanHandlers(mainWindow2) {
 function registerDiscoveryHandlers() {
   electron.ipcMain.handle("discovery:run", async (_, request) => {
     try {
-      const { runMarketDiscovery } = await Promise.resolve().then(() => require("./chunks/marketDiscovery-DSeozUsk.js"));
+      const { runMarketDiscovery } = await Promise.resolve().then(() => require("./chunks/marketDiscovery-CIl6aCj1.js"));
       return await runMarketDiscovery(request);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -79,6 +79,20 @@ function registerFileHandlers() {
     const { loadScanById } = await Promise.resolve().then(() => require("./chunks/scanRepository-D1_fs6er.js"));
     return loadScanById(scanId);
   });
+  electron.ipcMain.handle("file:email-report", async (_, { htmlPath, domain }) => {
+    electron.shell.showItemInFolder(htmlPath);
+    const subject = encodeURIComponent(`SEO Audit Report — ${domain}`);
+    const body = encodeURIComponent(
+      `Hi,
+
+Please find the SEO audit report for ${domain} attached.
+
+The report file has been highlighted in your file explorer — drag it directly into this email.
+
+Report: ${htmlPath}`
+    );
+    await electron.shell.openExternal(`mailto:?subject=${subject}&body=${body}`);
+  });
 }
 function registerAppHandlers() {
   electron.ipcMain.handle("app:version", () => {
@@ -90,6 +104,33 @@ function registerAppHandlers() {
   electron.ipcMain.handle("app:reports-path", async () => {
     const { getReportsDir: getReportsDir2 } = await Promise.resolve().then(() => pathResolver);
     return getReportsDir2();
+  });
+}
+function registerLicenseHandlers() {
+  electron.ipcMain.handle("license:activate", async (_, key) => {
+    const { activateLicense } = await Promise.resolve().then(() => require("./chunks/licenseValidator-CPPF2-FB.js"));
+    return activateLicense(key);
+  });
+  electron.ipcMain.handle("license:check", async () => {
+    if (process.env.NODE_ENV === "development") {
+      return { valid: true, license: null };
+    }
+    const { checkLicense } = await Promise.resolve().then(() => require("./chunks/licenseValidator-CPPF2-FB.js"));
+    return checkLicense();
+  });
+  electron.ipcMain.handle("license:deactivate", async () => {
+    const { deactivateLicense } = await Promise.resolve().then(() => require("./chunks/licenseValidator-CPPF2-FB.js"));
+    return deactivateLicense();
+  });
+}
+function registerSettingsHandlers() {
+  electron.ipcMain.handle("settings:get", async () => {
+    const { readSettings } = await Promise.resolve().then(() => require("./chunks/settingsStorage-B4oQ_sNu.js")).then((n) => n.settingsStorage);
+    return readSettings();
+  });
+  electron.ipcMain.handle("settings:save", async (_, partial) => {
+    const { mergeSettings } = await Promise.resolve().then(() => require("./chunks/settingsStorage-B4oQ_sNu.js")).then((n) => n.settingsStorage);
+    return mergeSettings(partial);
   });
 }
 let _reportsDir = null;
@@ -180,6 +221,26 @@ function getSiteHistoryDir(siteId) {
 function getScanSummaryPath(siteId, scanId) {
   return path.join(getSiteHistoryDir(siteId), `${scanId}.json`);
 }
+let _userDataPath$1 = null;
+function initLicenseDir(userDataPath) {
+  _userDataPath$1 = userDataPath;
+}
+function getLicensePath() {
+  if (!_userDataPath$1) {
+    throw new Error("licensePaths: initLicenseDir() has not been called.");
+  }
+  return path.join(_userDataPath$1, "license.json");
+}
+let _userDataPath = null;
+function initSettingsDir(userDataPath) {
+  _userDataPath = userDataPath;
+}
+function getSettingsPath() {
+  if (!_userDataPath) {
+    throw new Error("settingsPaths: initSettingsDir() has not been called.");
+  }
+  return path.join(_userDataPath, "settings.json");
+}
 const isDev = process.env.NODE_ENV === "development";
 let mainWindow = null;
 function createWindow() {
@@ -215,8 +276,11 @@ function createWindow() {
   return win;
 }
 electron.app.whenReady().then(() => {
-  initReportsDir(electron.app.getPath("userData"));
-  initMonitoringDir(electron.app.getPath("userData"));
+  const userData = electron.app.getPath("userData");
+  initReportsDir(userData);
+  initMonitoringDir(userData);
+  initLicenseDir(userData);
+  initSettingsDir(userData);
   mainWindow = createWindow();
   registerScanHandlers(mainWindow);
   registerBulkScanHandlers(mainWindow);
@@ -224,6 +288,8 @@ electron.app.whenReady().then(() => {
   registerMarketHandlers();
   registerFileHandlers();
   registerAppHandlers();
+  registerLicenseHandlers();
+  registerSettingsHandlers();
   electron.app.on("activate", () => {
     if (electron.BrowserWindow.getAllWindows().length === 0) {
       mainWindow = createWindow();
@@ -255,9 +321,11 @@ exports.getBulkScansDir = getBulkScansDir;
 exports.getDiscoveryDir = getDiscoveryDir;
 exports.getDiscoveryPath = getDiscoveryPath;
 exports.getIndexPath = getIndexPath;
+exports.getLicensePath = getLicensePath;
 exports.getMarketDashboardPath = getMarketDashboardPath;
 exports.getMarketDashboardsDir = getMarketDashboardsDir;
 exports.getScanSummaryPath = getScanSummaryPath;
 exports.getScreenshotsDir = getScreenshotsDir;
+exports.getSettingsPath = getSettingsPath;
 exports.getSiteHistoryDir = getSiteHistoryDir;
 exports.getSitesPath = getSitesPath;

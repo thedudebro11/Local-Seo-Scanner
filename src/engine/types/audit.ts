@@ -112,8 +112,10 @@ export interface Finding {
 export interface RevenueImpactEstimate {
   /** Estimated number of leads the site may be losing per month. */
   estimatedLeadLossRange: { low: number; high: number }
-  /** Estimated monthly revenue loss range (USD). Optional — omitted when confidence is too low. */
+  /** Estimated monthly revenue loss range. Optional — omitted when confidence is too low. */
   estimatedRevenueLossRange?: { low: number; high: number }
+  /** Currency symbol used for revenue figures, e.g. '$', '£'. Defaults to '$'. */
+  currencySymbol?: string
   /** Plain-English drivers behind the estimate (top 5 findings). */
   impactDrivers: string[]
   /** Single-paragraph explanation for a non-technical reader. */

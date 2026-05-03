@@ -4,6 +4,8 @@ import type { ScanProgressEvent, SavedScanMeta } from '../src/engine/types/ipc'
 import type { BulkScanRequest, BulkScanResult, BulkScanProgressEvent } from '../src/engine/bulk/bulkTypes'
 import type { MarketDiscoveryRequest, MarketDiscoveryResult } from '../src/engine/discovery/discoveryTypes'
 import type { MarketDashboard } from '../src/engine/market/marketTypes'
+import type { LicenseActivateResult, LicenseCheckResult } from '../src/engine/license/licenseTypes'
+import type { AppSettings } from '../src/engine/settings/settingsTypes'
 
 /**
  * Safe, typed bridge between the renderer (React) and the main process.
@@ -102,6 +104,39 @@ const api = {
   getPlatform: (): Promise<string> => ipcRenderer.invoke('app:platform'),
 
   getReportsPath: (): Promise<string> => ipcRenderer.invoke('app:reports-path'),
+
+  // ── License ────────────────────────────────────────────────────────────────
+
+  /** Activate a Lemon Squeezy license key on this machine. */
+  activateLicense: (key: string): Promise<LicenseActivateResult> =>
+    ipcRenderer.invoke('license:activate', key),
+
+  /** Check if a valid license is stored (with offline grace period). */
+  checkLicense: (): Promise<LicenseCheckResult> =>
+    ipcRenderer.invoke('license:check'),
+
+  /** Deactivate license on this machine and delete local license file. */
+  deactivateLicense: (): Promise<void> =>
+    ipcRenderer.invoke('license:deactivate'),
+
+  // ── Settings ───────────────────────────────────────────────────────────────
+
+  /** Load all app settings from disk. */
+  getSettings: (): Promise<AppSettings> =>
+    ipcRenderer.invoke('settings:get'),
+
+  /** Merge a partial settings update and persist to disk. */
+  saveSettings: (partial: Partial<AppSettings>): Promise<AppSettings> =>
+    ipcRenderer.invoke('settings:save', partial),
+
+  // ── Email report ───────────────────────────────────────────────────────────
+
+  /**
+   * Open the report file in Finder/Explorer and launch the system mail client
+   * with subject + body pre-filled. User drags the highlighted file into email.
+   */
+  emailReport: (payload: { htmlPath: string; domain: string }): Promise<void> =>
+    ipcRenderer.invoke('file:email-report', payload),
 }
 
 contextBridge.exposeInMainWorld('api', api)

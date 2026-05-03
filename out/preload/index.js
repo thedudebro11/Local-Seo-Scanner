@@ -62,6 +62,24 @@ const api = {
   // ── App ────────────────────────────────────────────────────────────────────
   getVersion: () => electron.ipcRenderer.invoke("app:version"),
   getPlatform: () => electron.ipcRenderer.invoke("app:platform"),
-  getReportsPath: () => electron.ipcRenderer.invoke("app:reports-path")
+  getReportsPath: () => electron.ipcRenderer.invoke("app:reports-path"),
+  // ── License ────────────────────────────────────────────────────────────────
+  /** Activate a Lemon Squeezy license key on this machine. */
+  activateLicense: (key) => electron.ipcRenderer.invoke("license:activate", key),
+  /** Check if a valid license is stored (with offline grace period). */
+  checkLicense: () => electron.ipcRenderer.invoke("license:check"),
+  /** Deactivate license on this machine and delete local license file. */
+  deactivateLicense: () => electron.ipcRenderer.invoke("license:deactivate"),
+  // ── Settings ───────────────────────────────────────────────────────────────
+  /** Load all app settings from disk. */
+  getSettings: () => electron.ipcRenderer.invoke("settings:get"),
+  /** Merge a partial settings update and persist to disk. */
+  saveSettings: (partial) => electron.ipcRenderer.invoke("settings:save", partial),
+  // ── Email report ───────────────────────────────────────────────────────────
+  /**
+   * Open the report file in Finder/Explorer and launch the system mail client
+   * with subject + body pre-filled. User drags the highlighted file into email.
+   */
+  emailReport: (payload) => electron.ipcRenderer.invoke("file:email-report", payload)
 };
 electron.contextBridge.exposeInMainWorld("api", api);
