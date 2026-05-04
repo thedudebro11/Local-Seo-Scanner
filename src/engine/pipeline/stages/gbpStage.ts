@@ -93,7 +93,15 @@ export async function gbpStage(
     napConsistency: { phoneMatch: null },
   }
 
-  // ── Google Places API ─────────────────────────────────────────────────────
+  // ── Step 1: extract Place ID directly from HTML (free, no API key needed) ──
+  const directPlaceId = extractPlaceIdFromHtml(ctx)
+  if (directPlaceId) {
+    log.info(`GBP: Place ID found directly in HTML: ${directPlaceId}`)
+    gbpResult.found = true
+    gbpResult.placeId = directPlaceId
+  }
+
+  // ── Steps 2 & 3: Places API lookup (only when key is configured) ──────────
   const settings = await readSettings()
   const apiKey = settings.googlePlacesApiKey?.trim()
 
@@ -104,6 +112,17 @@ export async function gbpStage(
     } catch (err) {
       log.warn(`Places API error: ${(err as Error).message}`)
     }
+  } else if (!gbpResult.found) {
+    // No API key and no Place ID found in HTML — flag as unverified rather than "not found"
+    findings.push({
+      id: 'gbp-unverified',
+      category: 'localSeo',
+      severity: 'low',
+      title: 'Google Business Profile status unverified',
+      summary: 'No Google Places API key is configured, so GBP existence could not be verified via the API.',
+      whyItMatters: 'A missing or unclaimed GBP is the #1 local SEO issue for local businesses.',
+      recommendation: 'Add a Google Places API key in Settings to enable full GBP verification.',
+    })
   }
 
   ctx.gbpResult = gbpResult
@@ -123,11 +142,8 @@ async function runPlacesCheck(
   result: GbpCheckResult,
   findings: Finding[],
 ): Promise<void> {
-  // Step 1 — extract Place ID directly from the site's own HTML
-  let placeId = extractPlaceIdFromHtml(ctx)
-  if (placeId) {
-    log.info(`GBP: Place ID found directly in HTML: ${placeId}`)
-  }
+  // Place ID may already be set from Step 1 (HTML extraction before this runs)
+  let placeId = result.placeId ?? null
 
   // Step 2 — Find Place from Text with name + city + location bias
   if (!placeId) {
