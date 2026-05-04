@@ -375,12 +375,12 @@ function extractBusinessName(ctx: ScanJobContext): string {
     if (m) return m[1]
   }
 
-  // 2. og:site_name
+  // 2. og:site_name — skip if it contains separator chars (keyword-stuffed)
   for (const page of ctx.pages) {
     const html = page.html ?? ''
     const m = html.match(/property="og:site_name"\s+content="([^"]{2,80})"/) ??
               html.match(/content="([^"]{2,80})"\s+property="og:site_name"/)
-    if (m) return m[1]
+    if (m && !/[|\-–—]/.test(m[1])) return m[1]
   }
 
   // 3. Most common last-segment across page titles
