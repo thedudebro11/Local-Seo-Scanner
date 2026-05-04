@@ -138,6 +138,22 @@ const api = {
   emailReport: (payload: { htmlPath: string; domain: string }): Promise<void> =>
     ipcRenderer.invoke('file:email-report', payload),
 
+  /** Export the HTML report to PDF and return the PDF file path. */
+  exportPdf: (htmlPath: string): Promise<string> =>
+    ipcRenderer.invoke('file:export-pdf', htmlPath),
+
+  /** Return all monitored sites with their schedule info. */
+  listMonitoredSites: () =>
+    ipcRenderer.invoke('monitoring:list-sites'),
+
+  /** Remove a site from the monitoring schedule. */
+  removeMonitoredSite: (siteId: string): Promise<void> =>
+    ipcRenderer.invoke('monitoring:remove-site', siteId),
+
+  /** Set the re-scan interval for a monitored site. */
+  setMonitorSchedule: (siteId: string, intervalDays: number): Promise<void> =>
+    ipcRenderer.invoke('monitoring:set-schedule', siteId, intervalDays),
+
   // ── Auto-update ────────────────────────────────────────────────────────────
 
   installUpdate: (): Promise<void> =>

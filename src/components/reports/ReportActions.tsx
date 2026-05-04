@@ -12,6 +12,8 @@ export function ReportActions({ result, onNewScan }: Props): JSX.Element {
   const [openingFolder, setOpeningFolder] = useState(false)
   const [emailing, setEmailing] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
+  const [exportingPdf, setExportingPdf] = useState(false)
+  const [pdfExported, setPdfExported] = useState(false)
 
   const hasHtmlReport = Boolean(result.artifacts.htmlPath)
   const hasJsonReport = Boolean(result.artifacts.jsonPath)
@@ -35,6 +37,19 @@ export function ReportActions({ result, onNewScan }: Props): JSX.Element {
       await window.api.openFolder(folder)
     } finally {
       setOpeningFolder(false)
+    }
+  }
+
+  async function handleExportPdf(): Promise<void> {
+    if (!result.artifacts.htmlPath) return
+    setExportingPdf(true)
+    try {
+      const pdfPath = await window.api.exportPdf(result.artifacts.htmlPath)
+      setPdfExported(true)
+      setTimeout(() => setPdfExported(false), 4000)
+      await window.api.openReport(pdfPath)
+    } finally {
+      setExportingPdf(false)
     }
   }
 
@@ -64,6 +79,16 @@ export function ReportActions({ result, onNewScan }: Props): JSX.Element {
           title={hasHtmlReport ? 'Open the HTML report in your browser' : 'No report saved yet'}
         >
           Open HTML Report
+        </Button>
+
+        <Button
+          variant="secondary"
+          onClick={handleExportPdf}
+          loading={exportingPdf}
+          disabled={!hasHtmlReport}
+          title="Generate a PDF version of this report"
+        >
+          {pdfExported ? '✓ PDF Opened' : 'Export PDF'}
         </Button>
 
         <Button

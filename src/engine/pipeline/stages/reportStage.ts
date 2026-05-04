@@ -88,6 +88,7 @@ export function buildAuditResult(
     revenueImpact: ctx.revenueImpact,
     roadmap: ctx.roadmap,
     seoOpportunities: ctx.seoOpportunities,
+    gbpCheck: ctx.gbpResult,
     artifacts: {
       jsonPath,
       htmlPath,

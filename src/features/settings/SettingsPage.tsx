@@ -13,13 +13,18 @@ export default function SettingsPage(): JSX.Element {
   const [confirmDeactivate, setConfirmDeactivate] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
   const [agencyNameDraft, setAgencyNameDraft] = useState('')
+  const [apiKeyDraft, setApiKeyDraft] = useState('')
+  const [showApiKey, setShowApiKey] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { load() }, [load])
   useEffect(() => {
-    if (loaded) setAgencyNameDraft(settings.agencyName)
-  }, [loaded, settings.agencyName])
+    if (loaded) {
+      setAgencyNameDraft(settings.agencyName)
+      setApiKeyDraft(settings.googlePlacesApiKey ?? '')
+    }
+  }, [loaded, settings.agencyName, settings.googlePlacesApiKey])
 
   const flashSaved = (): void => {
     setSavedFlash(true)
@@ -45,6 +50,11 @@ export default function SettingsPage(): JSX.Element {
 
   const handleRemoveLogo = async (): Promise<void> => {
     await save({ agencyLogoBase64: '' })
+  }
+
+  const handleSaveApiKey = async (): Promise<void> => {
+    await save({ googlePlacesApiKey: apiKeyDraft.trim() })
+    flashSaved()
   }
 
   const handleCurrencyChange = async (currency: Currency): Promise<void> => {
@@ -150,6 +160,43 @@ export default function SettingsPage(): JSX.Element {
               <span style={styles.currencyLabel}>{cfg.label}</span>
             </button>
           ))}
+        </div>
+      </Card>
+
+      {/* ── Google Business Profile ──────────────────────────────────────── */}
+      <Card style={styles.section}>
+        <div style={styles.sectionHeader}>
+          <div>
+            <h3 style={styles.sectionTitle}>Google Business Profile Integration</h3>
+            <p style={styles.sectionSub}>
+              Optional. Adds GBP existence checks, review counts, and NAP consistency to every scan report.
+              Get a free key at <strong>console.cloud.google.com</strong> → enable Places API.
+            </p>
+          </div>
+        </div>
+
+        <div style={styles.fieldGroup}>
+          <label style={styles.label}>Google Places API key</label>
+          <div style={styles.inputRow}>
+            <input
+              style={styles.input}
+              type={showApiKey ? 'text' : 'password'}
+              placeholder="AIza…"
+              value={apiKeyDraft}
+              onChange={(e) => setApiKeyDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveApiKey() }}
+            />
+            <Button size="sm" variant="ghost" onClick={() => setShowApiKey((v) => !v)}>
+              {showApiKey ? 'Hide' : 'Show'}
+            </Button>
+            <Button size="sm" variant="secondary" onClick={handleSaveApiKey}>
+              Save
+            </Button>
+          </div>
+          {settings.googlePlacesApiKey
+            ? <span style={{ ...styles.hint, color: 'var(--color-low)' }}>✓ API key configured</span>
+            : <span style={styles.hint}>Leave blank to skip GBP API checks (on-site signals still checked)</span>
+          }
         </div>
       </Card>
 

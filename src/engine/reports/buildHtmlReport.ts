@@ -6,7 +6,7 @@
 
 import fs from 'fs-extra'
 import path from 'path'
-import type { AuditResult, FixRoadmapItem, OpportunityItem, RevenueImpactEstimate } from '../types/audit'
+import type { AuditResult, FixRoadmapItem, GbpCheckResult, OpportunityItem, RevenueImpactEstimate } from '../types/audit'
 import { createLogger } from '../utils/logger'
 import {
   scoreColor, renderScoreCard, renderFinding, renderBulletList,
@@ -109,6 +109,40 @@ function renderRoadmapItem(item: FixRoadmapItem): string {
       ${escHtml(item.plainEnglishFix)}
     </div>
     ${urlsHtml}
+  </div>`
+}
+
+// ─── GBP renderer ────────────────────────────────────────────────────────────
+
+function renderGbpSection(gbp: GbpCheckResult): string {
+  const tick = (v: boolean | null) =>
+    v === true ? '<span style="color:#16a34a">✓</span>' :
+    v === false ? '<span style="color:#dc2626">✗</span>' : '—'
+
+  const statusColor = gbp.found ? '#16a34a' : '#dc2626'
+  const statusText = gbp.found ? 'Found' : 'Not Found'
+
+  const apiRows = gbp.placeId ? `
+    <tr><td style="padding:6px 10px;color:#6b7280">Business name (GBP)</td><td style="padding:6px 10px">${escHtml(gbp.businessName ?? '—')}</td></tr>
+    <tr><td style="padding:6px 10px;color:#6b7280">Address</td><td style="padding:6px 10px">${escHtml(gbp.address ?? '—')}</td></tr>
+    <tr><td style="padding:6px 10px;color:#6b7280">Phone (GBP)</td><td style="padding:6px 10px">${escHtml(gbp.phone ?? '—')}</td></tr>
+    <tr><td style="padding:6px 10px;color:#6b7280">Phone matches website</td><td style="padding:6px 10px">${tick(gbp.napConsistency.phoneMatch)}</td></tr>
+    <tr><td style="padding:6px 10px;color:#6b7280">Rating</td><td style="padding:6px 10px">${gbp.rating !== undefined ? `${gbp.rating} ★` : '—'}</td></tr>
+    <tr><td style="padding:6px 10px;color:#6b7280">Review count</td><td style="padding:6px 10px">${gbp.reviewCount !== undefined ? gbp.reviewCount : '—'}</td></tr>
+    <tr><td style="padding:6px 10px;color:#6b7280">Status</td><td style="padding:6px 10px">${escHtml(gbp.businessStatus ?? '—')}</td></tr>` : ''
+
+  return `
+  <div class="section">
+    <h2>Google Business Profile</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:12px">
+      <tbody>
+        <tr><td style="padding:6px 10px;color:#6b7280">GBP found on Google</td><td style="padding:6px 10px;font-weight:700;color:${statusColor}">${statusText}</td></tr>
+        <tr><td style="padding:6px 10px;color:#6b7280">Google Maps embed on site</td><td style="padding:6px 10px">${tick(gbp.onSiteMapEmbed)}</td></tr>
+        <tr><td style="padding:6px 10px;color:#6b7280">Google review link on site</td><td style="padding:6px 10px">${tick(gbp.onSiteReviewLink)}</td></tr>
+        ${apiRows}
+      </tbody>
+    </table>
+    ${!gbp.placeId ? '<p style="font-size:12px;color:#9ca3af;font-style:italic">Configure a Google Places API key in Settings to enable full GBP verification and NAP consistency checks.</p>' : ''}
   </div>`
 }
 
@@ -465,6 +499,9 @@ function generateHtml(r: AuditResult, branding: ReportBranding = {}): string {
     <p style="font-size:13px;color:#374151;margin-bottom:20px">High-value pages and content this site is missing. Each opportunity can unlock new rankings and leads.</p>
     ${r.seoOpportunities.map(renderOpportunityItem).join('')}
   </div>` : ''}
+
+  <!-- Google Business Profile -->
+  ${r.gbpCheck ? renderGbpSection(r.gbpCheck) : ''}
 
   <!-- All findings -->
   <div class="section">

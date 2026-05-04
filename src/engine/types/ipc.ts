@@ -25,6 +25,10 @@ export type IpcChannel =
   | 'settings:get'
   | 'settings:save'
   | 'file:email-report'
+  | 'file:export-pdf'
+  | 'monitoring:list-sites'
+  | 'monitoring:remove-site'
+  | 'monitoring:set-schedule'
 
 // ─── Progress ─────────────────────────────────────────────────────────────────
 
@@ -51,6 +55,7 @@ export interface SavedScanMeta {
 // This mirrors the object exposed via contextBridge in preload.ts
 
 import type { AuditRequest, AuditResult } from './audit'
+import type { TrackedSite } from '../monitoring/monitoringTypes'
 import type { BulkScanRequest, BulkScanResult, BulkScanProgressEvent } from '../bulk/bulkTypes'
 import type { MarketDiscoveryRequest, MarketDiscoveryResult } from '../discovery/discoveryTypes'
 import type { MarketDashboard } from '../market/marketTypes'
@@ -78,6 +83,10 @@ export interface ElectronAPI {
   getSettings: () => Promise<AppSettings>
   saveSettings: (partial: Partial<AppSettings>) => Promise<AppSettings>
   emailReport: (payload: { htmlPath: string; domain: string }) => Promise<void>
+  exportPdf: (htmlPath: string) => Promise<string>
+  listMonitoredSites: () => Promise<TrackedSite[]>
+  removeMonitoredSite: (siteId: string) => Promise<void>
+  setMonitorSchedule: (siteId: string, intervalDays: number) => Promise<void>
   installUpdate: () => Promise<void>
   onUpdateAvailable: (cb: (info: { version: string }) => void) => () => void
   onUpdateDownloaded: (cb: (info: { version: string }) => void) => () => void

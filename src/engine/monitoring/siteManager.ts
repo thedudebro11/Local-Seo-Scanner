@@ -78,7 +78,7 @@ export function getTrackedSite(siteId: string): TrackedSite | null {
 }
 
 /**
- * Update the lastScanId for a tracked site after a successful scan.
+ * Update the lastScanId and advance nextScanAt by the site's interval.
  * Silently ignores unknown siteIds (site may have been deleted).
  */
 export async function updateTrackedSiteLastScan(
@@ -91,7 +91,41 @@ export async function updateTrackedSiteLastScan(
     log.warn(`updateTrackedSiteLastScan: unknown siteId — ${siteId}`)
     return
   }
-  sites[idx] = { ...sites[idx], lastScanId: scanId }
+  const site = sites[idx]
+  const intervalDays = site.scanIntervalDays ?? 7
+  const nextScanAt = new Date(Date.now() + intervalDays * 24 * 60 * 60 * 1000).toISOString()
+  sites[idx] = { ...site, lastScanId: scanId, nextScanAt }
   await writeSites(sites)
-  log.info(`updateTrackedSiteLastScan: ${siteId} → lastScanId=${scanId}`)
+  log.info(`updateTrackedSiteLastScan: ${siteId} → lastScanId=${scanId}, nextScanAt=${nextScanAt}`)
+}
+
+/**
+ * Return all tracked sites that are due for a re-scan (nextScanAt is in the past).
+ * Sites with no nextScanAt set are never automatically included.
+ */
+export function getSitesDue(): TrackedSite[] {
+  const now = new Date()
+  return readSites().filter((s) => s.nextScanAt && new Date(s.nextScanAt) <= now)
+}
+
+/**
+ * Set the scan interval for a tracked site and compute the next scan time.
+ */
+export async function setSiteSchedule(siteId: string, intervalDays: number): Promise<void> {
+  const sites = readSites()
+  const idx = sites.findIndex((s) => s.siteId === siteId)
+  if (idx === -1) return
+  const nextScanAt = new Date(Date.now() + intervalDays * 24 * 60 * 60 * 1000).toISOString()
+  sites[idx] = { ...sites[idx], scanIntervalDays: intervalDays, nextScanAt }
+  await writeSites(sites)
+  log.info(`setSiteSchedule: ${siteId} → every ${intervalDays}d, next=${nextScanAt}`)
+}
+
+/**
+ * Remove a tracked site from monitoring. Does not delete its scan history.
+ */
+export async function removeTrackedSite(siteId: string): Promise<void> {
+  const sites = readSites().filter((s) => s.siteId !== siteId)
+  await writeSites(sites)
+  log.info(`removeTrackedSite: ${siteId}`)
 }

@@ -20,6 +20,7 @@ import type {
   CompetitorAnalysisResult,
   Finding,
   FixRoadmapItem,
+  GbpCheckResult,
   LighthouseMetrics,
   OpportunityItem,
   RevenueImpactEstimate,
@@ -118,6 +119,7 @@ export interface ScanJobContext {
   roadmap?: FixRoadmapItem[]
   revenueImpact?: RevenueImpactEstimate
   seoOpportunities?: OpportunityItem[]
+  gbpResult?: GbpCheckResult
 
   // ── report stage ──────────────────────────────────────────────────────────
   artifacts: AuditResult['artifacts']

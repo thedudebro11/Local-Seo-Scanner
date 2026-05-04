@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain } from 'electron'
+import { app, BrowserWindow, Notification, shell, ipcMain } from 'electron'
 import { join } from 'path'
 import { autoUpdater } from 'electron-updater'
 import { registerScanHandlers } from './ipc/scanHandlers'
@@ -9,10 +9,12 @@ import { registerFileHandlers } from './ipc/fileHandlers'
 import { registerAppHandlers } from './ipc/appHandlers'
 import { registerLicenseHandlers } from './ipc/licenseHandlers'
 import { registerSettingsHandlers } from './ipc/settingsHandlers'
+import { registerMonitoringHandlers } from './ipc/monitoringHandlers'
 import { initReportsDir } from '../src/engine/storage/pathResolver'
 import { initMonitoringDir } from '../src/engine/monitoring/monitoringPaths'
 import { initLicenseDir } from '../src/engine/license/licensePaths'
 import { initSettingsDir } from '../src/engine/settings/settingsPaths'
+import { startMonitoringScheduler } from '../src/engine/monitoring/monitoringScheduler'
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -84,6 +86,14 @@ app.whenReady().then(() => {
   registerAppHandlers()
   registerLicenseHandlers()
   registerSettingsHandlers()
+  registerMonitoringHandlers()
+
+  // Start the auto-scheduler for monitoring tracked sites
+  startMonitoringScheduler((title, body) => {
+    if (Notification.isSupported()) {
+      new Notification({ title, body }).show()
+    }
+  })
 
   app.on('activate', () => {
     // On macOS, re-create the window when the dock icon is clicked

@@ -18,10 +18,13 @@ export interface AppSettings {
   agencyName: string
   agencyLogoBase64: string  // data URI (e.g. "data:image/png;base64,...") or empty string
   currency: Currency
+  /** Google Places API key — empty string means GBP API checks are skipped. */
+  googlePlacesApiKey: string
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   agencyName: '',
   agencyLogoBase64: '',
   currency: 'USD',
+  googlePlacesApiKey: '',
 }

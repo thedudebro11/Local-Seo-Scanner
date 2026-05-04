@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { ScoreTrendChart } from '../../components/charts/ScoreTrendChart'
 import type { TrendPoint } from '../../components/charts/ScoreTrendChart'
 import type { SavedScanMeta } from '@engine/types/ipc'
+import type { AuditResult } from '@engine/types/audit'
 import { format } from 'date-fns'
 
 // ─── Domain group ─────────────────────────────────────────────────────────────
@@ -126,6 +127,29 @@ function DomainCard({ group, expanded, onToggle }: DomainCardProps): JSX.Element
   const trendPoints = toTrendPoints(scans)
   const scoreColor = latestScore >= 80 ? 'var(--color-low)' : latestScore >= 60 ? 'var(--color-medium)' : 'var(--color-high)'
 
+  const [compareScanId, setCompareScanId] = useState<string | null>(null)
+  const [compareData, setCompareData] = useState<{ before: AuditResult; after: AuditResult } | null>(null)
+  const [compareLoading, setCompareLoading] = useState(false)
+
+  const handleCompare = useCallback(async (olderScanId: string) => {
+    if (compareScanId === olderScanId) {
+      setCompareScanId(null)
+      setCompareData(null)
+      return
+    }
+    setCompareScanId(olderScanId)
+    setCompareLoading(true)
+    try {
+      const [before, after] = await Promise.all([
+        window.api.loadScan(olderScanId),
+        window.api.loadScan(latestScan.id),
+      ])
+      if (before && after) setCompareData({ before, after })
+    } finally {
+      setCompareLoading(false)
+    }
+  }, [compareScanId, latestScan.id])
+
   return (
     <Card style={styles.domainCard}>
       {/* ── Summary row ───────────────────────────────────────────────── */}
@@ -178,9 +202,30 @@ function DomainCard({ group, expanded, onToggle }: DomainCardProps): JSX.Element
           <div style={styles.scanList}>
             <div style={styles.sectionLabel}>Scan history</div>
             {scans.map((s, i) => (
-              <ScanRow key={s.id} scan={s} isLatest={i === 0} />
+              <ScanRow
+                key={s.id}
+                scan={s}
+                isLatest={i === 0}
+                canCompare={i > 0}
+                isComparing={compareScanId === s.id}
+                onCompare={() => handleCompare(s.id)}
+              />
             ))}
           </div>
+
+          {/* Before/After comparison panel */}
+          {compareLoading && (
+            <div style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '12px 0' }}>
+              Loading comparison…
+            </div>
+          )}
+          {compareData && !compareLoading && (
+            <ComparePanel
+              before={compareData.before}
+              after={compareData.after}
+              onClose={() => { setCompareScanId(null); setCompareData(null) }}
+            />
+          )}
         </div>
       )}
     </Card>
@@ -189,7 +234,15 @@ function DomainCard({ group, expanded, onToggle }: DomainCardProps): JSX.Element
 
 // ─── Scan row (inside expanded domain card) ───────────────────────────────────
 
-function ScanRow({ scan, isLatest }: { scan: SavedScanMeta; isLatest: boolean }): JSX.Element {
+interface ScanRowProps {
+  scan: SavedScanMeta
+  isLatest: boolean
+  canCompare?: boolean
+  isComparing?: boolean
+  onCompare?: () => void
+}
+
+function ScanRow({ scan, isLatest, canCompare, isComparing, onCompare }: ScanRowProps): JSX.Element {
   const scoreColor = scan.overallScore >= 80 ? 'var(--color-low)' : scan.overallScore >= 60 ? 'var(--color-medium)' : 'var(--color-high)'
 
   return (
@@ -201,12 +254,160 @@ function ScanRow({ scan, isLatest }: { scan: SavedScanMeta; isLatest: boolean })
         {isLatest && <span style={scanRowStyles.latestBadge}>latest</span>}
       </div>
       <div style={scanRowStyles.rowActions}>
+        {canCompare && (
+          <Button
+            size="sm"
+            variant={isComparing ? 'primary' : 'ghost'}
+            onClick={onCompare}
+          >
+            {isComparing ? 'Hide diff' : 'vs latest'}
+          </Button>
+        )}
         <Button size="sm" variant="ghost" onClick={() => window.api.openReport(scan.htmlPath)}>
           Report
         </Button>
       </div>
     </div>
   )
+}
+
+// ─── Before/After comparison panel ───────────────────────────────────────────
+
+interface ComparePanelProps {
+  before: AuditResult
+  after: AuditResult
+  onClose: () => void
+}
+
+function ComparePanel({ before, after, onClose }: ComparePanelProps): JSX.Element {
+  const cats = ['localSeo', 'technical', 'conversion', 'content', 'trust'] as const
+  const catLabels: Record<string, string> = {
+    localSeo: 'Local SEO', technical: 'Technical', conversion: 'Conversion',
+    content: 'Content', trust: 'Trust',
+  }
+
+  const overallDelta = after.scores.overall.value - before.scores.overall.value
+  const deltaColor = (d: number) => d > 0 ? '#16a34a' : d < 0 ? '#dc2626' : '#6b7280'
+  const deltaStr = (d: number) => d > 0 ? `+${d}` : `${d}`
+
+  // Finding diff by ID
+  const beforeIds = new Set(before.findings.map((f) => f.id))
+  const afterIds  = new Set(after.findings.map((f) => f.id))
+  const fixed   = before.findings.filter((f) => !afterIds.has(f.id))
+  const newIssues = after.findings.filter((f) => !beforeIds.has(f.id))
+
+  return (
+    <div style={compareStyles.panel}>
+      <div style={compareStyles.header}>
+        <span style={compareStyles.title}>
+          Before vs After — {format(new Date(before.scannedAt), 'MMM d, yyyy')} → {format(new Date(after.scannedAt), 'MMM d, yyyy')}
+        </span>
+        <Button size="sm" variant="ghost" onClick={onClose}>✕ Close</Button>
+      </div>
+
+      {/* Overall score delta */}
+      <div style={compareStyles.overallRow}>
+        <span style={compareStyles.overallLabel}>Overall score</span>
+        <span style={compareStyles.overallBefore}>{before.scores.overall.value}</span>
+        <span style={compareStyles.arrow}>→</span>
+        <span style={compareStyles.overallAfter}>{after.scores.overall.value}</span>
+        <span style={{ ...compareStyles.delta, color: deltaColor(overallDelta) }}>
+          {deltaStr(overallDelta)} pts
+        </span>
+      </div>
+
+      {/* Category scores */}
+      <table style={compareStyles.table}>
+        <thead>
+          <tr>
+            <th style={compareStyles.th}>Category</th>
+            <th style={compareStyles.th}>Before</th>
+            <th style={compareStyles.th}>After</th>
+            <th style={compareStyles.th}>Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          {cats.map((cat) => {
+            const d = after.scores[cat].value - before.scores[cat].value
+            return (
+              <tr key={cat}>
+                <td style={compareStyles.td}>{catLabels[cat]}</td>
+                <td style={compareStyles.td}>{before.scores[cat].value}</td>
+                <td style={compareStyles.td}>{after.scores[cat].value}</td>
+                <td style={{ ...compareStyles.td, fontWeight: 600, color: deltaColor(d) }}>{d !== 0 ? deltaStr(d) : '—'}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+
+      {/* Fixed issues */}
+      {fixed.length > 0 && (
+        <div style={compareStyles.issueGroup}>
+          <div style={{ ...compareStyles.issueGroupLabel, color: '#16a34a' }}>
+            ✓ {fixed.length} issue{fixed.length !== 1 ? 's' : ''} fixed
+          </div>
+          {fixed.map((f) => (
+            <div key={f.id} style={compareStyles.issueRow}>
+              <span style={compareStyles.issueFixed}>FIXED</span>
+              <span style={compareStyles.issueTitle}>{f.title}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* New issues */}
+      {newIssues.length > 0 && (
+        <div style={compareStyles.issueGroup}>
+          <div style={{ ...compareStyles.issueGroupLabel, color: '#dc2626' }}>
+            ✗ {newIssues.length} new issue{newIssues.length !== 1 ? 's' : ''}
+          </div>
+          {newIssues.map((f) => (
+            <div key={f.id} style={compareStyles.issueRow}>
+              <span style={compareStyles.issueNew}>NEW</span>
+              <span style={compareStyles.issueTitle}>{f.title}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {fixed.length === 0 && newIssues.length === 0 && (
+        <div style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '8px 0' }}>
+          No finding changes between these two scans.
+        </div>
+      )}
+    </div>
+  )
+}
+
+const compareStyles: Record<string, React.CSSProperties> = {
+  panel: {
+    backgroundColor: 'var(--color-bg-raised)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-md)',
+    padding: 'var(--space-4)',
+    display: 'flex', flexDirection: 'column', gap: 'var(--space-4)',
+  },
+  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  title: { fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' },
+  overallRow: {
+    display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+    padding: '10px 0', borderBottom: '1px solid var(--color-border)',
+  },
+  overallLabel: { fontSize: 13, color: 'var(--color-text-muted)', flex: 1 },
+  overallBefore: { fontSize: 22, fontWeight: 700, color: 'var(--color-text-muted)' },
+  arrow: { fontSize: 14, color: 'var(--color-text-muted)' },
+  overallAfter: { fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)' },
+  delta: { fontSize: 14, fontWeight: 700, minWidth: 50, textAlign: 'right' as const },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
+  th: { textAlign: 'left' as const, padding: '6px 8px', color: 'var(--color-text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase' as const, borderBottom: '1px solid var(--color-border)' },
+  td: { padding: '6px 8px', borderBottom: '1px solid var(--color-bg-elevated)' },
+  issueGroup: { display: 'flex', flexDirection: 'column', gap: 4 },
+  issueGroupLabel: { fontSize: 12, fontWeight: 700, marginBottom: 4 },
+  issueRow: { display: 'flex', alignItems: 'flex-start', gap: 8 },
+  issueFixed: { fontSize: 10, fontWeight: 700, color: '#16a34a', backgroundColor: 'rgba(22,163,74,0.1)', padding: '1px 5px', borderRadius: 4, flexShrink: 0, marginTop: 2 },
+  issueNew: { fontSize: 10, fontWeight: 700, color: '#dc2626', backgroundColor: 'rgba(220,38,38,0.1)', padding: '1px 5px', borderRadius: 4, flexShrink: 0, marginTop: 2 },
+  issueTitle: { fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.4 },
 }
 
 // ─── Trend badge ──────────────────────────────────────────────────────────────

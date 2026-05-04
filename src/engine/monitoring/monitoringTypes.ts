@@ -17,6 +17,10 @@ export interface TrackedSite {
   businessType?: string
   dateAdded: string   // ISO timestamp
   lastScanId?: string
+  /** How often to re-scan, in days. Defaults to app-level setting when not set. */
+  scanIntervalDays?: number
+  /** ISO timestamp when this site is next due for a scheduled re-scan. */
+  nextScanAt?: string
 }
 
 // ─── Scan summary ─────────────────────────────────────────────────────────────

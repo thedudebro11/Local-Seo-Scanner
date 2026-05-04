@@ -216,6 +216,7 @@ export interface AuditResult {
   revenueImpact?: RevenueImpactEstimate
   roadmap?: FixRoadmapItem[]
   seoOpportunities?: OpportunityItem[]
+  gbpCheck?: GbpCheckResult
   artifacts: {
     jsonPath?: string
     htmlPath?: string
@@ -300,6 +301,25 @@ export interface CompetitorAnalysisResult {
   analyzedAt: string
   competitors: CompetitorSite[]
   gaps: CompetitorGap[]
+}
+
+// ─── Google Business Profile ──────────────────────────────────────────────────
+
+export interface GbpCheckResult {
+  found: boolean
+  placeId?: string
+  businessName?: string
+  address?: string
+  phone?: string
+  rating?: number
+  reviewCount?: number
+  businessStatus?: string
+  websiteUrl?: string
+  onSiteMapEmbed: boolean
+  onSiteReviewLink: boolean
+  napConsistency: {
+    phoneMatch: boolean | null
+  }
 }
 
 // ─── Analyzer output ─────────────────────────────────────────────────────────
