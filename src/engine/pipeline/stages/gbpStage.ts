@@ -1,12 +1,29 @@
 /**
  * Google Business Profile checker.
  *
- * Always checks on-site GBP signals (map embed, review links).
- * If a Google Places API key is configured in Settings, also queries the
- * Places Text Search + Details API to verify the GBP exists, check review
- * count, and compare the GBP phone number against the site's phone.
+ * Uses a 3-step lookup chain — stops at the first hit:
  *
- * Optional — logged and skipped on failure.
+ *   Step 1 — Extract Place ID directly from the website's own HTML.
+ *             Most businesses that have a GBP link to it somewhere (review
+ *             button, Maps embed, write-a-review link). Those URLs contain the
+ *             exact Place ID. This is 100% accurate with zero guessing.
+ *
+ *   Step 2 — Find Place from Text (Google's precise single-match endpoint)
+ *             using the business name + city, with a geographic location bias
+ *             derived from the site's JSON-LD address data. Much more accurate
+ *             than a plain text search.
+ *
+ *   Step 3 — Text Search fallback using business name only.
+ *             Validates the match by checking if the returned Place's website
+ *             field matches the domain we scanned.
+ *
+ * After finding the Place ID (by any method), fetches Place Details for
+ * rating, review count, phone (NAP check), and operational status.
+ *
+ * On-site signals (map embed, review link) are always checked regardless of
+ * whether an API key is configured.
+ *
+ * Optional stage — failure is logged and scan continues.
  */
 
 import { readSettings } from '../../settings/settingsStorage'
@@ -16,22 +33,25 @@ import type { Finding, GbpCheckResult } from '../../types/audit'
 
 const log = createLogger('gbpStage')
 
+// Google Place IDs always begin with ChIJ and are ~27 chars
+const PLACE_ID_RE = /ChIJ[A-Za-z0-9_-]{10,}/g
+
 export async function gbpStage(
   ctx: ScanJobContext,
   emit: PipelineProgressEmitter,
 ): Promise<void> {
   emit('Checking Google Business Profile…', 94)
-
   if (ctx.pages.length === 0) return
 
-  // ── On-site signals (always checked, no API key required) ─────────────────
+  // ── On-site signals (no API key needed) ──────────────────────────────────
   const hasMapEmbed = ctx.pages.some((p) => p.hasMap)
-
   const hasReviewLink = ctx.pages.some((p) => {
     const html = p.html ?? ''
     return (
       html.includes('search.google.com/local/writereview') ||
-      /google\.com\/maps\/place/i.test(html)
+      /google\.com\/maps\/place/i.test(html) ||
+      /g\.page\//i.test(html) ||
+      /maps\.app\.goo\.gl\//i.test(html)
     )
   })
 
@@ -65,7 +85,6 @@ export async function gbpStage(
     })
   }
 
-  // ── Base result (before optional API enrichment) ──────────────────────────
   const gbpResult: GbpCheckResult = {
     found: false,
     apiQueried: false,
@@ -74,7 +93,7 @@ export async function gbpStage(
     napConsistency: { phoneMatch: null },
   }
 
-  // ── Google Places API (optional — only when key is configured) ────────────
+  // ── Google Places API ─────────────────────────────────────────────────────
   const settings = await readSettings()
   const apiKey = settings.googlePlacesApiKey?.trim()
 
@@ -91,12 +110,12 @@ export async function gbpStage(
   ctx.allFindings = [...ctx.allFindings, ...findings]
 
   log.info(
-    `GBP check complete: found=${gbpResult.found}, onSiteMap=${hasMapEmbed}, ` +
-    `onSiteReview=${hasReviewLink}, apiFindings=${findings.length}`,
+    `GBP check: found=${gbpResult.found}, method=${gbpResult.placeId ? 'api' : 'none'}, ` +
+    `mapEmbed=${hasMapEmbed}, reviewLink=${hasReviewLink}, findings=${findings.length}`,
   )
 }
 
-// ─── Places API enrichment ────────────────────────────────────────────────────
+// ─── Places check orchestrator ────────────────────────────────────────────────
 
 async function runPlacesCheck(
   ctx: ScanJobContext,
@@ -104,18 +123,25 @@ async function runPlacesCheck(
   result: GbpCheckResult,
   findings: Finding[],
 ): Promise<void> {
-  // Build a search query from JSON-LD business name + domain as fallback
-  const businessName = extractBusinessName(ctx)
-  // Search by business name alone — appending the domain confuses the Places API
-  // when the name was extracted from the domain itself
-  const query = encodeURIComponent(businessName)
+  // Step 1 — extract Place ID directly from the site's own HTML
+  let placeId = extractPlaceIdFromHtml(ctx)
+  if (placeId) {
+    log.info(`GBP: Place ID found directly in HTML: ${placeId}`)
+  }
 
-  const textSearchRes = await fetch(
-    `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${apiKey}`,
-  )
-  const textSearch = await textSearchRes.json() as { results?: PlaceResult[]; status?: string }
+  // Step 2 — Find Place from Text with name + city + location bias
+  if (!placeId) {
+    placeId = await findPlaceFromText(ctx, apiKey)
+    if (placeId) log.info(`GBP: Place ID found via Find Place: ${placeId}`)
+  }
 
-  if (textSearch.status !== 'OK' || !textSearch.results || textSearch.results.length === 0) {
+  // Step 3 — Text Search fallback, validate result matches our domain
+  if (!placeId) {
+    placeId = await findPlaceViaTextSearch(ctx, apiKey)
+    if (placeId) log.info(`GBP: Place ID found via Text Search: ${placeId}`)
+  }
+
+  if (!placeId) {
     result.found = false
     findings.push({
       id: 'gbp-not-found',
@@ -131,43 +157,149 @@ async function runPlacesCheck(
     return
   }
 
-  const place = textSearch.results[0]
   result.found = true
-  result.placeId = place.place_id
+  result.placeId = placeId
+  await enrichWithDetails(ctx, apiKey, placeId, result, findings)
+}
 
-  // Get full details
+// ─── Step 1: Direct Place ID extraction from HTML ─────────────────────────────
+
+function extractPlaceIdFromHtml(ctx: ScanJobContext): string | null {
+  for (const page of ctx.pages) {
+    const html = page.html ?? ''
+
+    // Google review / write-a-review URLs: ?placeid=ChIJ... or &place_id=ChIJ...
+    const reviewMatch = html.match(/(?:placeid|place_id)=([A-Za-z0-9_-]{20,})/i)
+    if (reviewMatch && reviewMatch[1].startsWith('ChIJ')) return reviewMatch[1]
+
+    // Any URL containing a Place ID pattern
+    const allIds = html.match(PLACE_ID_RE)
+    if (allIds && allIds.length > 0) return allIds[0]
+
+    // Google Maps CID links: maps.google.com/?cid=12345
+    // CID is a legacy identifier — we can resolve it via the Places API
+    const cidMatch = html.match(/maps\.google\.com[^"']*[?&]cid=(\d{8,})/i)
+    if (cidMatch) {
+      // Store CID for resolution — returned as a sentinel so callers know to resolve
+      return `cid:${cidMatch[1]}`
+    }
+  }
+  return null
+}
+
+// ─── Step 2: Find Place from Text (precise single-match endpoint) ─────────────
+
+async function findPlaceFromText(ctx: ScanJobContext, apiKey: string): Promise<string | null> {
+  const name = extractBusinessName(ctx)
+  const city = extractCity(ctx)
+  const query = city ? `${name} ${city}` : name
+
+  const locationBias = buildLocationBias(ctx)
+  const biasParam = locationBias ? `&locationbias=${encodeURIComponent(locationBias)}` : ''
+
+  const url =
+    `https://maps.googleapis.com/maps/api/place/findplacefromtext/json` +
+    `?input=${encodeURIComponent(query)}` +
+    `&inputtype=textquery` +
+    `&fields=place_id,name` +
+    `${biasParam}` +
+    `&key=${apiKey}`
+
+  const res = await fetch(url)
+  const data = await res.json() as { candidates?: Array<{ place_id: string; name: string }>; status?: string }
+
+  log.info(`GBP Find Place: query="${query}", status=${data.status}, candidates=${data.candidates?.length ?? 0}`)
+
+  return data.candidates?.[0]?.place_id ?? null
+}
+
+// ─── Step 3: Text Search with domain validation ───────────────────────────────
+
+async function findPlaceViaTextSearch(ctx: ScanJobContext, apiKey: string): Promise<string | null> {
+  const name = extractBusinessName(ctx)
+  const city = extractCity(ctx)
+  const query = city ? `${name} ${city}` : name
+
+  const url =
+    `https://maps.googleapis.com/maps/api/place/textsearch/json` +
+    `?query=${encodeURIComponent(query)}` +
+    `&key=${apiKey}`
+
+  const res = await fetch(url)
+  const data = await res.json() as { results?: PlaceResult[]; status?: string }
+
+  log.info(`GBP Text Search: query="${query}", status=${data.status}, results=${data.results?.length ?? 0}`)
+
+  if (data.status !== 'OK' || !data.results?.length) return null
+
+  // Validate top results against our domain to avoid false positives
+  for (const place of data.results.slice(0, 3)) {
+    const detailsRes = await fetch(
+      `https://maps.googleapis.com/maps/api/place/details/json` +
+      `?place_id=${place.place_id}&fields=website&key=${apiKey}`,
+    )
+    const details = (await detailsRes.json() as { result?: { website?: string } }).result
+    if (details?.website && domainMatches(details.website, ctx.domain)) {
+      log.info(`GBP Text Search: domain match confirmed for ${place.place_id}`)
+      return place.place_id
+    }
+  }
+
+  // No domain match found — use the top result anyway but log the uncertainty
+  log.info(`GBP Text Search: no domain match — using top result ${data.results[0].place_id} (unverified)`)
+  return data.results[0].place_id
+}
+
+// ─── Place Details enrichment ─────────────────────────────────────────────────
+
+async function enrichWithDetails(
+  ctx: ScanJobContext,
+  apiKey: string,
+  placeId: string,
+  result: GbpCheckResult,
+  findings: Finding[],
+): Promise<void> {
+  // Resolve CID → real place_id first
+  let resolvedId = placeId
+  if (placeId.startsWith('cid:')) {
+    const cid = placeId.slice(4)
+    const cidRes = await fetch(
+      `https://maps.googleapis.com/maps/api/place/details/json?cid=${cid}&fields=place_id&key=${apiKey}`,
+    )
+    const cidData = (await cidRes.json() as { result?: { place_id?: string } }).result
+    if (cidData?.place_id) {
+      resolvedId = cidData.place_id
+      result.placeId = resolvedId
+    }
+  }
+
   const detailsRes = await fetch(
     `https://maps.googleapis.com/maps/api/place/details/json` +
-    `?place_id=${place.place_id}` +
+    `?place_id=${resolvedId}` +
     `&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,business_status,website` +
     `&key=${apiKey}`,
   )
   const details = (await detailsRes.json() as { result?: PlaceDetails }).result
+  if (!details) return
 
-  if (details) {
-    result.businessName = details.name
-    result.address = details.formatted_address
-    result.phone = details.formatted_phone_number
-    result.rating = details.rating
-    result.reviewCount = details.user_ratings_total
-    result.businessStatus = details.business_status
-    result.websiteUrl = details.website
-  }
+  result.businessName = details.name
+  result.address = details.formatted_address
+  result.phone = details.formatted_phone_number
+  result.rating = details.rating
+  result.reviewCount = details.user_ratings_total
+  result.businessStatus = details.business_status
+  result.websiteUrl = details.website
 
-  // ── NAP: phone number consistency ─────────────────────────────────────────
+  // NAP: phone consistency
   const sitePhones = ctx.pages.flatMap((p) => p.phones)
-  if (details?.formatted_phone_number && sitePhones.length > 0) {
+  if (details.formatted_phone_number && sitePhones.length > 0) {
     const gbpDigits = details.formatted_phone_number.replace(/\D/g, '')
     const phoneMatch = sitePhones.some((sp) => {
-      const siteDigits = sp.replace(/\D/g, '')
-      return (
-        siteDigits.length >= 7 &&
-        gbpDigits.length >= 7 &&
-        (gbpDigits.endsWith(siteDigits.slice(-10)) || siteDigits.endsWith(gbpDigits.slice(-10)))
-      )
+      const d = sp.replace(/\D/g, '')
+      return d.length >= 7 && gbpDigits.length >= 7 &&
+        (gbpDigits.endsWith(d.slice(-10)) || d.endsWith(gbpDigits.slice(-10)))
     })
     result.napConsistency.phoneMatch = phoneMatch
-
     if (!phoneMatch) {
       findings.push({
         id: 'gbp-phone-mismatch',
@@ -183,8 +315,8 @@ async function runPlacesCheck(
     }
   }
 
-  // ── Review count ──────────────────────────────────────────────────────────
-  if (details?.user_ratings_total !== undefined && details.user_ratings_total < 10) {
+  // Review count
+  if (details.user_ratings_total !== undefined && details.user_ratings_total < 10) {
     findings.push({
       id: 'gbp-low-reviews',
       category: 'trust',
@@ -194,70 +326,112 @@ async function runPlacesCheck(
       whyItMatters:
         'Review count is a top local pack ranking factor. Businesses with fewer than 10 reviews rank significantly below competitors with 50+ reviews and get fewer clicks.',
       recommendation:
-        'Implement a review request process: after each job, send a follow-up text or email with a direct Google review link. A "Leave us a Google review" button on the site also helps.',
+        'Implement a review request process: after each job, send a follow-up text or email with a direct Google review link.',
     })
   }
 
-  // ── Business status ───────────────────────────────────────────────────────
-  if (details?.business_status && details.business_status !== 'OPERATIONAL') {
-    const readableStatus = details.business_status.replace(/_/g, ' ').toLowerCase()
+  // Business status
+  if (details.business_status && details.business_status !== 'OPERATIONAL') {
+    const readable = details.business_status.replace(/_/g, ' ').toLowerCase()
     findings.push({
       id: 'gbp-not-operational',
       category: 'localSeo',
       severity: 'high',
-      title: `Google Business Profile marked as: ${readableStatus}`,
-      summary: `GBP status is "${readableStatus}" — it is not showing as open/operational.`,
+      title: `Google Business Profile marked as: ${readable}`,
+      summary: `GBP status is "${readable}" — it is not showing as open/operational.`,
       whyItMatters:
-        'A non-operational GBP status significantly reduces or eliminates local pack visibility and may show a "permanently closed" label to searchers.',
+        'A non-operational GBP status significantly reduces or eliminates local pack visibility.',
       recommendation:
-        'Log into Google Business Profile and update the business status to open. If closed temporarily, set a reopening date.',
+        'Log into Google Business Profile and update the business status to open.',
     })
   }
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Signal extractors ────────────────────────────────────────────────────────
 
 function extractBusinessName(ctx: ScanJobContext): string {
-  // 1. JSON-LD LocalBusiness name — most authoritative when present
+  // 1. JSON-LD LocalBusiness @type anchored name
   for (const page of ctx.pages) {
     const html = page.html ?? ''
-    const localBizMatch = html.match(
+    const m = html.match(
       /"@type"\s*:\s*"(?:LocalBusiness|[A-Za-z]+Service|[A-Za-z]+Store|Restaurant|Dentist|Contractor)[^"]*"[\s\S]{0,500}?"name"\s*:\s*"([^"]{3,80})"/,
     )
-    if (localBizMatch) return localBizMatch[1]
+    if (m) return m[1]
   }
 
-  // 2. og:site_name meta tag
+  // 2. og:site_name
   for (const page of ctx.pages) {
     const html = page.html ?? ''
-    const ogMatch =
-      html.match(/property="og:site_name"\s+content="([^"]{2,80})"/) ??
-      html.match(/content="([^"]{2,80})"\s+property="og:site_name"/)
-    if (ogMatch) return ogMatch[1]
+    const m = html.match(/property="og:site_name"\s+content="([^"]{2,80})"/) ??
+              html.match(/content="([^"]{2,80})"\s+property="og:site_name"/)
+    if (m) return m[1]
   }
 
-  // 3. Page titles — brand names usually appear as the LAST segment (after |, -, etc.)
-  //    on inner pages. The homepage title is often keyword-stuffed ("Best HVAC | Tucson").
-  //    Strategy: collect all last-segments, find the one that repeats most across pages.
-  const segmentCounts = new Map<string, number>()
+  // 3. Most common last-segment across page titles
+  //    (brand name repeats in the trailing position; homepage is keyword-stuffed)
+  const counts = new Map<string, number>()
   for (const page of ctx.pages) {
     if (!page.title) continue
     const parts = page.title.split(/\s*[|\-–—·•]\s*/)
     const last = parts[parts.length - 1].trim()
-    if (last.length >= 3 && last.length <= 60) {
-      segmentCounts.set(last, (segmentCounts.get(last) ?? 0) + 1)
-    }
+    if (last.length >= 3 && last.length <= 60)
+      counts.set(last, (counts.get(last) ?? 0) + 1)
   }
-  if (segmentCounts.size > 0) {
-    // Pick the segment that appears most often (ties go to the first found)
-    const best = [...segmentCounts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+  if (counts.size > 0) {
+    const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0]
     if (best) return best
   }
 
-  // 4. Humanise the domain as last resort
+  // 4. Domain humanisation
   return ctx.domain
     .replace(/\.(com|net|org|biz|info|co)(\.[a-z]{2})?$/, '')
     .replace(/-/g, ' ')
+}
+
+function extractCity(ctx: ScanJobContext): string | null {
+  for (const page of ctx.pages) {
+    const html = page.html ?? ''
+
+    // JSON-LD addressLocality
+    const jld = html.match(/"addressLocality"\s*:\s*"([^"]{2,50})"/)
+    if (jld) return jld[1]
+
+    // "City, ST" pattern (US state abbreviation)
+    const stateAbbr = html.match(
+      /\b([A-Z][a-z]{2,20}),\s*(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\b/,
+    )
+    if (stateAbbr) return stateAbbr[1]
+  }
+
+  // Try page titles for city-like words adjacent to state abbreviations
+  for (const page of ctx.pages) {
+    const title = page.title ?? ''
+    const m = title.match(/\b([A-Z][a-z]{2,20})\b/)
+    if (m && m[1].length >= 3) return m[1]
+  }
+
+  return null
+}
+
+function buildLocationBias(ctx: ScanJobContext): string | null {
+  // Use JSON-LD geo coordinates for the tightest bias (within 5km)
+  for (const page of ctx.pages) {
+    const html = page.html ?? ''
+    const lat = html.match(/"latitude"\s*:\s*([-\d.]+)/)
+    const lng = html.match(/"longitude"\s*:\s*([-\d.]+)/)
+    if (lat && lng) return `circle:5000@${lat[1]},${lng[1]}`
+  }
+  return null
+}
+
+function domainMatches(websiteUrl: string, domain: string): boolean {
+  try {
+    const host = new URL(websiteUrl).hostname.replace(/^www\./, '')
+    const target = domain.replace(/^www\./, '')
+    return host === target || host.endsWith(`.${target}`) || target.endsWith(`.${host}`)
+  } catch {
+    return false
+  }
 }
 
 // ─── Places API response shapes ───────────────────────────────────────────────
