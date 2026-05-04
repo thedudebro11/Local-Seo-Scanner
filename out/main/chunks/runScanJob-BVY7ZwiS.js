@@ -22,13 +22,11 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const logger = require("./logger-DOTeCaxX.js");
+const index = require("../index.js");
 const fs = require("fs-extra");
 const path = require("path");
-const settingsStorage = require("./settingsStorage-B4oQ_sNu.js");
-const scanRepository = require("./scanRepository-83Qad7z5.js");
-const index = require("../index.js");
-const siteManager = require("./siteManager-CeF83cGX.js");
+const settingsStorage = require("./settingsStorage-DcgDEctW.js");
+const scanRepository = require("./scanRepository-B5pnqpoU.js");
 const cheerio = require("cheerio/slim");
 require("electron");
 require("child_process");
@@ -101,7 +99,7 @@ function buildPlaceholderScores() {
     overall: make()
   };
 }
-const log$p = logger.createLogger("buildJsonReport");
+const log$q = index.createLogger("buildJsonReport");
 async function buildJsonReport(result, jsonPath) {
   await fs.ensureDir(path.dirname(jsonPath));
   const slim = {
@@ -109,7 +107,7 @@ async function buildJsonReport(result, jsonPath) {
     pages: result.pages.map(({ html: _html, textContent: _tc, ...rest }) => rest)
   };
   await fs.writeJson(jsonPath, slim, { spaces: 2 });
-  log$p.info(`JSON report written: ${jsonPath}`);
+  log$q.info(`JSON report written: ${jsonPath}`);
   return jsonPath;
 }
 function scoreColor(value) {
@@ -348,12 +346,12 @@ function buildClientSummary(result) {
   const fastestWins = result.quickWins.slice(0, 5);
   return { whatIsHurtingVisibility, whatMayBeHurtingLeads, fastestWins };
 }
-const log$o = logger.createLogger("buildHtmlReport");
+const log$p = index.createLogger("buildHtmlReport");
 async function buildHtmlReport(result, htmlPath, branding = {}) {
   await fs.ensureDir(path.dirname(htmlPath));
   const html = generateHtml(result, branding);
   await fs.writeFile(htmlPath, html, "utf8");
-  log$o.info(`HTML report written: ${htmlPath}`);
+  log$p.info(`HTML report written: ${htmlPath}`);
   return htmlPath;
 }
 function renderRevenueImpact(ri) {
@@ -418,6 +416,32 @@ function renderRoadmapItem(item) {
       ${escHtml(item.plainEnglishFix)}
     </div>
     ${urlsHtml}
+  </div>`;
+}
+function renderGbpSection(gbp) {
+  const tick = (v) => v === true ? '<span style="color:#16a34a">✓</span>' : v === false ? '<span style="color:#dc2626">✗</span>' : "—";
+  const statusColor = gbp.found ? "#16a34a" : "#dc2626";
+  const statusText = gbp.found ? "Found" : "Not Found";
+  const apiRows = gbp.placeId ? `
+    <tr><td style="padding:6px 10px;color:#6b7280">Business name (GBP)</td><td style="padding:6px 10px">${escHtml(gbp.businessName ?? "—")}</td></tr>
+    <tr><td style="padding:6px 10px;color:#6b7280">Address</td><td style="padding:6px 10px">${escHtml(gbp.address ?? "—")}</td></tr>
+    <tr><td style="padding:6px 10px;color:#6b7280">Phone (GBP)</td><td style="padding:6px 10px">${escHtml(gbp.phone ?? "—")}</td></tr>
+    <tr><td style="padding:6px 10px;color:#6b7280">Phone matches website</td><td style="padding:6px 10px">${tick(gbp.napConsistency.phoneMatch)}</td></tr>
+    <tr><td style="padding:6px 10px;color:#6b7280">Rating</td><td style="padding:6px 10px">${gbp.rating !== void 0 ? `${gbp.rating} ★` : "—"}</td></tr>
+    <tr><td style="padding:6px 10px;color:#6b7280">Review count</td><td style="padding:6px 10px">${gbp.reviewCount !== void 0 ? gbp.reviewCount : "—"}</td></tr>
+    <tr><td style="padding:6px 10px;color:#6b7280">Status</td><td style="padding:6px 10px">${escHtml(gbp.businessStatus ?? "—")}</td></tr>` : "";
+  return `
+  <div class="section">
+    <h2>Google Business Profile</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:12px">
+      <tbody>
+        <tr><td style="padding:6px 10px;color:#6b7280">GBP found on Google</td><td style="padding:6px 10px;font-weight:700;color:${statusColor}">${statusText}</td></tr>
+        <tr><td style="padding:6px 10px;color:#6b7280">Google Maps embed on site</td><td style="padding:6px 10px">${tick(gbp.onSiteMapEmbed)}</td></tr>
+        <tr><td style="padding:6px 10px;color:#6b7280">Google review link on site</td><td style="padding:6px 10px">${tick(gbp.onSiteReviewLink)}</td></tr>
+        ${apiRows}
+      </tbody>
+    </table>
+    ${!gbp.placeId ? '<p style="font-size:12px;color:#9ca3af;font-style:italic">Configure a Google Places API key in Settings to enable full GBP verification and NAP consistency checks.</p>' : ""}
   </div>`;
 }
 function renderOpportunityItem(item) {
@@ -761,6 +785,9 @@ function generateHtml(r, branding = {}) {
     ${r.seoOpportunities.map(renderOpportunityItem).join("")}
   </div>` : ""}
 
+  <!-- Google Business Profile -->
+  ${r.gbpCheck ? renderGbpSection(r.gbpCheck) : ""}
+
   <!-- All findings -->
   <div class="section">
     <h2>All Issues Found (${r.findings.length} total)</h2>
@@ -797,13 +824,13 @@ function generateHtml(r, branding = {}) {
 </body>
 </html>`;
 }
-const log$n = logger.createLogger("scanHistory");
+const log$o = index.createLogger("scanHistory");
 async function saveScanSummary(siteId, result) {
   const summary = buildSummary(siteId, result);
   const summaryPath = index.getScanSummaryPath(siteId, result.id);
   await fs.ensureDir(index.getSiteHistoryDir(siteId));
   await fs.writeJson(summaryPath, summary, { spaces: 2 });
-  log$n.info(`saveScanSummary: ${siteId}/${result.id} (score=${summary.overallScore})`);
+  log$o.info(`saveScanSummary: ${siteId}/${result.id} (score=${summary.overallScore})`);
 }
 function buildSummary(siteId, r) {
   const highPriorityCount = r.findings.filter(
@@ -828,7 +855,7 @@ function buildSummary(siteId, r) {
     revenueImpactSummary
   };
 }
-const log$m = logger.createLogger("reportStage");
+const log$n = index.createLogger("reportStage");
 async function reportStage(ctx, emit) {
   emit("Building reports…", 97);
   const jsonPath = index.buildJsonPath(ctx.scanId);
@@ -852,7 +879,7 @@ async function reportStage(ctx, emit) {
   if (siteId) {
     await saveMonitoringData(siteId, result);
   }
-  log$m.info(`Reports saved: ${jsonPath}`);
+  log$n.info(`Reports saved: ${jsonPath}`);
 }
 function buildAuditResult(ctx, jsonPath, htmlPath) {
   return {
@@ -873,6 +900,7 @@ function buildAuditResult(ctx, jsonPath, htmlPath) {
     revenueImpact: ctx.revenueImpact,
     roadmap: ctx.roadmap,
     seoOpportunities: ctx.seoOpportunities,
+    gbpCheck: ctx.gbpResult,
     artifacts: {
       jsonPath,
       htmlPath,
@@ -883,9 +911,9 @@ function buildAuditResult(ctx, jsonPath, htmlPath) {
 async function saveMonitoringData(siteId, result) {
   try {
     await saveScanSummary(siteId, result);
-    await siteManager.updateTrackedSiteLastScan(siteId, result.id);
+    await index.updateTrackedSiteLastScan(siteId, result.id);
   } catch (err) {
-    log$m.warn(`Monitoring save failed for siteId=${siteId}: ${err.message}`);
+    log$n.warn(`Monitoring save failed for siteId=${siteId}: ${err.message}`);
   }
 }
 function normalizeInputUrl(raw) {
@@ -959,15 +987,15 @@ function stripTrackingParams(url) {
     return url;
   }
 }
-const log$l = logger.createLogger("validateStage");
+const log$m = index.createLogger("validateStage");
 async function validateStage(ctx, emit) {
   emit("Validating URL…", 2);
   ctx.normalizedUrl = normalizeInputUrl(ctx.request.url);
   ctx.domain = getDomain(ctx.normalizedUrl);
   ctx.scanId = index.generateScanId(ctx.domain);
-  log$l.info(`Normalized: ${ctx.normalizedUrl} | domain: ${ctx.domain} | id: ${ctx.scanId}`);
+  log$m.info(`Normalized: ${ctx.normalizedUrl} | domain: ${ctx.domain} | id: ${ctx.scanId}`);
 }
-const log$k = logger.createLogger("robots");
+const log$l = index.createLogger("robots");
 const FETCH_TIMEOUT_MS$1 = 1e4;
 async function fetchRobots(siteUrl) {
   let robotsUrl;
@@ -983,17 +1011,17 @@ async function fetchRobots(siteUrl) {
       headers: { "User-Agent": "LocalSEOScanner/1.0" }
     });
     if (!response.ok) {
-      log$k.info(`robots.txt not found at ${robotsUrl} (${response.status})`);
+      log$l.info(`robots.txt not found at ${robotsUrl} (${response.status})`);
       return emptyResult();
     }
     const text = await response.text();
     const result = parseRobots(text);
-    log$k.info(
+    log$l.info(
       `robots.txt found: disallowed=${result.disallowedPaths.length}, sitemaps=${result.sitemapUrls.length}`
     );
     return result;
   } catch (err) {
-    log$k.warn(`Failed to fetch robots.txt: ${err.message}`);
+    log$l.warn(`Failed to fetch robots.txt: ${err.message}`);
     return emptyResult();
   }
 }
@@ -1038,7 +1066,7 @@ function parseRobots(text) {
 function emptyResult() {
   return { found: false, disallowedPaths: [], sitemapUrls: [], allowsGooglebot: true };
 }
-const log$j = logger.createLogger("sitemap");
+const log$k = index.createLogger("sitemap");
 const FETCH_TIMEOUT_MS = 1e4;
 const CANDIDATE_PATHS = [
   "/sitemap.xml",
@@ -1066,7 +1094,7 @@ async function fetchSitemap(siteUrl, robotsSitemapUrls = []) {
     } catch {
     }
   }
-  log$j.info("No sitemap found");
+  log$k.info("No sitemap found");
   return { found: false, urls: [] };
 }
 async function trySitemap(sitemapUrl) {
@@ -1078,7 +1106,7 @@ async function trySitemap(sitemapUrl) {
   const text = await response.text();
   if (!text.trim().startsWith("<")) return { found: false, urls: [] };
   const urls = parseSitemapXml(text);
-  log$j.info(`Sitemap found at ${sitemapUrl}: ${urls.length} URLs`);
+  log$k.info(`Sitemap found at ${sitemapUrl}: ${urls.length} URLs`);
   return { found: true, urls, sitemapUrl };
 }
 function parseSitemapXml(xml) {
@@ -1096,7 +1124,7 @@ function parseSitemapXml(xml) {
   }
   return [...new Set(urls)];
 }
-const log$i = logger.createLogger("fetchHtml");
+const log$j = index.createLogger("fetchHtml");
 const PAGE_TIMEOUT_MS = 3e4;
 const POST_LOAD_DWELL_MS = 1500;
 const CHALLENGE_EXTRA_WAIT_MS = 4e3;
@@ -1125,15 +1153,15 @@ async function fetchHtml(url, context) {
     const lower = html.toLowerCase();
     const isChallenge = CHALLENGE_PATTERNS.some((p) => lower.includes(p));
     if (isChallenge) {
-      log$i.warn(`Challenge page detected at ${url} — waiting for redirect…`);
+      log$j.warn(`Challenge page detected at ${url} — waiting for redirect…`);
       await page.waitForTimeout(CHALLENGE_EXTRA_WAIT_MS);
       html = await page.content();
     }
     const finalUrl = page.url();
-    log$i.info(`Fetched ${url} → ${finalUrl} [${statusCode}]${isChallenge ? " (challenge bypassed)" : ""}`);
+    log$j.info(`Fetched ${url} → ${finalUrl} [${statusCode}]${isChallenge ? " (challenge bypassed)" : ""}`);
     return { requestedUrl: url, finalUrl, statusCode, html };
   } catch (err) {
-    log$i.warn(`Failed to fetch ${url}: ${err.message}`);
+    log$j.warn(`Failed to fetch ${url}: ${err.message}`);
     return { requestedUrl: url, finalUrl: url, statusCode: 0, html: "" };
   } finally {
     await page.close();
@@ -1174,7 +1202,7 @@ function shouldSkipUrl(url) {
   }
   return false;
 }
-const log$h = logger.createLogger("discoverUrls");
+const log$i = index.createLogger("discoverUrls");
 const CRAWLER_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
   const context = await browser.newContext({
@@ -1193,7 +1221,7 @@ async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
   const queue = [startUrl];
   const fetchedPages = [];
   const internalLinkGraph = {};
-  log$h.info(`Starting BFS crawl from ${startUrl} (maxPages=${maxPages}, domain=${domain})`);
+  log$i.info(`Starting BFS crawl from ${startUrl} (maxPages=${maxPages}, domain=${domain})`);
   try {
     while (queue.length > 0 && fetchedPages.length < maxPages) {
       const url = queue.shift();
@@ -1201,15 +1229,15 @@ async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
       visited.add(url);
       const result = await fetchHtml(url, context);
       if (result.statusCode === 0 && result.html === "") {
-        log$h.warn(`Skipping failed fetch: ${url}`);
+        log$i.warn(`Skipping failed fetch: ${url}`);
         continue;
       }
       if (result.html.trim() && !result.html.trim().startsWith("<")) {
-        log$h.warn(`Skipping non-HTML response: ${url}`);
+        log$i.warn(`Skipping non-HTML response: ${url}`);
         continue;
       }
       if (!isSameDomain(result.finalUrl, `https://${domain}`)) {
-        log$h.warn(`Domain guard: ${url} → ${result.finalUrl} (off-domain, skipping)`);
+        log$i.warn(`Domain guard: ${url} → ${result.finalUrl} (off-domain, skipping)`);
         continue;
       }
       fetchedPages.push(result);
@@ -1227,7 +1255,7 @@ async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
   } finally {
     await context.close();
   }
-  log$h.info(
+  log$i.info(
     `Crawl complete: ${fetchedPages.length} pages fetched, ${Object.keys(internalLinkGraph).length} nodes in link graph`
   );
   return { fetchedPages, internalLinkGraph };
@@ -1248,7 +1276,7 @@ function extractInternalLinks(html, baseUrl, domain) {
   });
   return links;
 }
-const log$g = logger.createLogger("crawlStage");
+const log$h = index.createLogger("crawlStage");
 async function crawlStage(ctx, emit) {
   const { chromium } = await import("playwright");
   if (!ctx.browser) {
@@ -1271,11 +1299,11 @@ async function crawlStage(ctx, emit) {
   emit("Loading robots.txt…", 8);
   const robotsResult = await fetchRobots(ctx.normalizedUrl);
   ctx.robotsFound = robotsResult.found;
-  log$g.info(`robots.txt: found=${ctx.robotsFound}, sitemaps=${robotsResult.sitemapUrls.length}`);
+  log$h.info(`robots.txt: found=${ctx.robotsFound}, sitemaps=${robotsResult.sitemapUrls.length}`);
   emit("Loading sitemap…", 12);
   const sitemapResult = await fetchSitemap(ctx.normalizedUrl, robotsResult.sitemapUrls);
   ctx.sitemapFound = sitemapResult.found;
-  log$g.info(`sitemap: found=${ctx.sitemapFound}, urls=${sitemapResult.urls.length}`);
+  log$h.info(`sitemap: found=${ctx.sitemapFound}, urls=${sitemapResult.urls.length}`);
   emit("Fetching homepage…", 16);
   const { fetchedPages } = await discoverUrls(
     ctx.normalizedUrl,
@@ -1289,7 +1317,7 @@ async function crawlStage(ctx, emit) {
     }
   );
   ctx.rawPages = fetchedPages;
-  log$g.info(`Crawl complete: ${fetchedPages.length} pages fetched`);
+  log$h.info(`Crawl complete: ${fetchedPages.length} pages fetched`);
 }
 function extractMeta($) {
   const title = $("title").first().text().trim();
@@ -1826,7 +1854,7 @@ function buildSignalCorpus(pages) {
   }
   return parts.join(" ");
 }
-const log$f = logger.createLogger("extractStage");
+const log$g = index.createLogger("extractStage");
 async function extractStage(ctx, emit) {
   emit("Extracting signals…", 66);
   ctx.pages = ctx.rawPages.map((raw) => {
@@ -1865,7 +1893,7 @@ async function extractStage(ctx, emit) {
     ctx.pages,
     ctx.request.businessType
   );
-  log$f.info(
+  log$g.info(
     `Extraction complete: ${ctx.pages.length} pages | business type: ${ctx.detectedBusinessType}`
   );
 }
@@ -2454,7 +2482,7 @@ function analyzeTrust(input) {
   );
   return { findings, notes };
 }
-const log$e = logger.createLogger("analysisStage");
+const log$f = index.createLogger("analysisStage");
 async function analysisStage(ctx, emit) {
   emit("Analyzing technical SEO…", 76);
   const input = {
@@ -2486,21 +2514,21 @@ async function analysisStage(ctx, emit) {
     ...content.findings,
     ...trust.findings
   ];
-  log$e.info(
+  log$f.info(
     `Analysis complete: ${ctx.allFindings.length} findings (tech=${technical.findings.length}, local=${localSeo.findings.length}, conv=${conversion.findings.length}, content=${content.findings.length}, trust=${trust.findings.length})`
   );
 }
-const log$d = logger.createLogger("captureScreenshots");
+const log$e = index.createLogger("captureScreenshots");
 async function takeScreenshot(page, screenshotDir, label) {
   try {
     await fs.ensureDir(screenshotDir);
     const filename = `${label}.png`;
     const filepath = path.join(screenshotDir, filename);
     await page.screenshot({ path: filepath, fullPage: false });
-    log$d.info(`Screenshot saved: ${filepath}`);
+    log$e.info(`Screenshot saved: ${filepath}`);
     return filepath;
   } catch (err) {
-    log$d.warn(`Screenshot failed (${label}): ${err.message}`);
+    log$e.warn(`Screenshot failed (${label}): ${err.message}`);
     return void 0;
   }
 }
@@ -2625,7 +2653,7 @@ async function checkHeroClarity(page) {
     return { passed: false, detail: "Check could not run" };
   }
 }
-const log$c = logger.createLogger("visualAnalyzer");
+const log$d = index.createLogger("visualAnalyzer");
 const NAVIGATE_TIMEOUT = 15e3;
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 LocalSEOScanner/1.0";
 async function runVisualAnalysis(browser, crawledPages, screenshotDir) {
@@ -2641,7 +2669,7 @@ async function runVisualAnalysis(browser, crawledPages, screenshotDir) {
   if (contactPage) targets.push({ crawledPage: contactPage, label: "contact", runChecks: false });
   if (servicePage) targets.push({ crawledPage: servicePage, label: "service", runChecks: false });
   if (targets.length === 0) {
-    log$c.warn("No pages available for visual analysis");
+    log$d.warn("No pages available for visual analysis");
     return { result: { pagesAnalyzed: [] }, findings: [] };
   }
   const context = await browser.newContext({
@@ -2673,7 +2701,7 @@ async function runVisualAnalysis(browser, crawledPages, screenshotDir) {
               hasTrustSignalsVisible: trust,
               hasHeroClarity: hero
             };
-            log$c.info(
+            log$d.info(
               `Visual checks [${label}]: cta=${cta.passed} phone=${phone.passed} trust=${trust.passed} hero=${hero.passed}`
             );
           } else {
@@ -2699,13 +2727,13 @@ async function runVisualAnalysis(browser, crawledPages, screenshotDir) {
           await page.close();
         }
       } catch (err) {
-        log$c.warn(`Visual analysis failed for ${label} (${url}): ${err.message}`);
+        log$d.warn(`Visual analysis failed for ${label} (${url}): ${err.message}`);
       }
     }
   } finally {
     await context.close();
   }
-  log$c.info(
+  log$d.info(
     `Visual analysis complete: ${pagesAnalyzed.length} page(s) analyzed, ${findings.length} finding(s)`
   );
   return { result: { pagesAnalyzed }, findings };
@@ -2763,10 +2791,10 @@ function buildFindings(analysis) {
   }
   return out;
 }
-const log$b = logger.createLogger("visualStage");
+const log$c = index.createLogger("visualStage");
 async function visualStage(ctx, emit) {
   if (!ctx.browser) {
-    log$b.warn("Visual stage skipped — no browser in context");
+    log$c.warn("Visual stage skipped — no browser in context");
     return;
   }
   emit("Capturing visual screenshots…", 89);
@@ -2783,11 +2811,11 @@ async function visualStage(ctx, emit) {
       ctx.screenshotPaths[p.pageType] = p.screenshotPath;
     }
   }
-  log$b.info(
+  log$c.info(
     `Visual analysis: ${vResult.pagesAnalyzed.length} page(s), ${vFindings.length} finding(s)`
   );
 }
-const log$a = logger.createLogger("lighthouse");
+const log$b = index.createLogger("lighthouse");
 const CHROME_FLAGS = [
   "--headless=new",
   "--no-sandbox",
@@ -2803,10 +2831,10 @@ async function runLighthouse(url, fallbackChromiumPath) {
       chrome = await launch({ chromeFlags: CHROME_FLAGS, logLevel: "silent" });
     } catch {
       if (!fallbackChromiumPath) {
-        log$a.warn("System Chrome not found and no fallback path provided — skipping Lighthouse");
+        log$b.warn("System Chrome not found and no fallback path provided — skipping Lighthouse");
         return null;
       }
-      log$a.info(`System Chrome not found, using Playwright Chromium: ${fallbackChromiumPath}`);
+      log$b.info(`System Chrome not found, using Playwright Chromium: ${fallbackChromiumPath}`);
       chrome = await launch({
         chromePath: fallbackChromiumPath,
         chromeFlags: CHROME_FLAGS,
@@ -2814,7 +2842,7 @@ async function runLighthouse(url, fallbackChromiumPath) {
       });
     }
     if (!chrome) return null;
-    log$a.info(`Chrome launched on port ${chrome.port}, running Lighthouse on ${url}`);
+    log$b.info(`Chrome launched on port ${chrome.port}, running Lighthouse on ${url}`);
     const runnerResult = await lighthouse(url, {
       port: chrome.port,
       output: "json",
@@ -2830,7 +2858,7 @@ async function runLighthouse(url, fallbackChromiumPath) {
       }
     });
     if (!runnerResult?.lhr) {
-      log$a.warn("Lighthouse returned no result");
+      log$b.warn("Lighthouse returned no result");
       return null;
     }
     const { lhr } = runnerResult;
@@ -2850,12 +2878,12 @@ async function runLighthouse(url, fallbackChromiumPath) {
       cumulativeLayoutShift: lhr.audits?.["cumulative-layout-shift"]?.numericValue,
       speedIndex: audit("speed-index")
     };
-    log$a.info(
+    log$b.info(
       `Lighthouse complete: perf=${metrics.performanceScore} seo=${metrics.seoScore} a11y=${metrics.accessibilityScore}`
     );
     return metrics;
   } catch (err) {
-    log$a.warn(`Lighthouse run failed: ${err.message}`);
+    log$b.warn(`Lighthouse run failed: ${err.message}`);
     return null;
   } finally {
     if (chrome) {
@@ -3300,7 +3328,7 @@ function buildQuickWins(findings) {
 function buildMoneyLeaks(findings) {
   return prioritizeFindings(findings).filter((f) => f.severity === "high").slice(0, 5).map((f) => f.summary);
 }
-const log$9 = logger.createLogger("impactStage");
+const log$a = index.createLogger("impactStage");
 async function impactStage(ctx, emit) {
   emit("Running performance audit…", 90);
   if (ctx.chromiumPath) {
@@ -3310,18 +3338,18 @@ async function impactStage(ctx, emit) {
         ctx.lighthouseMetrics = [lhMetric];
         const lhFindings = analyzeLighthouse(lhMetric);
         ctx.allFindings = [...ctx.allFindings, ...lhFindings];
-        log$9.info(
+        log$a.info(
           `Lighthouse: perf=${lhMetric.performanceScore} seo=${lhMetric.seoScore} findings=${lhFindings.length}`
         );
       }
     } catch (lhErr) {
-      log$9.warn(`Lighthouse skipped: ${lhErr.message}`);
+      log$a.warn(`Lighthouse skipped: ${lhErr.message}`);
     }
   }
   ctx.allFindings = prioritizeFindings(
     enrichFindingsWithImpact(ctx.allFindings, ctx.detectedBusinessType)
   );
-  log$9.info(`Impact enrichment complete: ${ctx.allFindings.length} findings`);
+  log$a.info(`Impact enrichment complete: ${ctx.allFindings.length} findings`);
 }
 const PENALTY = {
   high: 20,
@@ -3542,7 +3570,7 @@ function computeWeightedScore(scores) {
   ];
   return { value, label: scoreBand(value), rationale };
 }
-const log$8 = logger.createLogger("scoreStage");
+const log$9 = index.createLogger("scoreStage");
 async function scoreStage(ctx, emit) {
   emit("Scoring results…", 92);
   const techScore = scoreTechnical({
@@ -3578,11 +3606,11 @@ async function scoreStage(ctx, emit) {
   ctx.scores = { ...categoryScores, overall: computeWeightedScore(categoryScores) };
   ctx.quickWins = buildQuickWins(ctx.allFindings);
   ctx.moneyLeaks = buildMoneyLeaks(ctx.allFindings);
-  log$8.info(
+  log$9.info(
     `Scoring complete: tech=${techScore.value} local=${localScore.value} conv=${convScore.value} content=${contentScore.value} trust=${trustScore.value} overall=${ctx.scores.overall.value}`
   );
 }
-const log$7 = logger.createLogger("competitorCrawler");
+const log$8 = index.createLogger("competitorCrawler");
 const MAX_COMPETITOR_PAGES = 5;
 async function crawlCompetitor(url, browser) {
   let normalizedUrl;
@@ -3631,10 +3659,10 @@ async function crawlCompetitor(url, browser) {
         missingAltCount: signals.missingAltCount
       };
     });
-    log$7.info(`Competitor ${domain}: crawled ${pages.length} page(s)`);
+    log$8.info(`Competitor ${domain}: crawled ${pages.length} page(s)`);
     return { pages };
   } catch (err) {
-    log$7.warn(`Competitor crawl failed for ${domain}: ${err.message}`);
+    log$8.warn(`Competitor crawl failed for ${domain}: ${err.message}`);
     return { pages: [], crawlError: err.message };
   }
 }
@@ -3852,11 +3880,11 @@ function analyzeGaps(clientUrl, clientPages, competitors) {
   }
   return gaps;
 }
-const log$6 = logger.createLogger("competitorAnalysis");
+const log$7 = index.createLogger("competitorAnalysis");
 const MAX_COMPETITORS = 3;
 async function runCompetitorAnalysis(browser, clientUrl, clientPages, competitorUrls) {
   const urls = [...new Set(competitorUrls)].slice(0, MAX_COMPETITORS);
-  log$6.info(`Starting competitor analysis: ${urls.length} competitor(s)`);
+  log$7.info(`Starting competitor analysis: ${urls.length} competitor(s)`);
   const results = await Promise.allSettled(
     urls.map(async (url) => {
       const { pages, crawlError } = await crawlCompetitor(url, browser);
@@ -3871,11 +3899,11 @@ async function runCompetitorAnalysis(browser, clientUrl, clientPages, competitor
   const competitors = results.map((result, i) => {
     if (result.status === "fulfilled") return result.value;
     const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
-    log$6.warn(`Competitor ${urls[i]} failed: ${reason}`);
+    log$7.warn(`Competitor ${urls[i]} failed: ${reason}`);
     return analyzeCompetitor(urls[i], [], reason);
   });
   const gaps = analyzeGaps(clientUrl, clientPages, competitors);
-  log$6.info(
+  log$7.info(
     `Competitor analysis complete: ${competitors.length} site(s) analyzed, ${competitors.filter((c) => c.pageCount > 0).length} successful, ${gaps.length} gap(s) found`
   );
   return {
@@ -3884,14 +3912,14 @@ async function runCompetitorAnalysis(browser, clientUrl, clientPages, competitor
     gaps
   };
 }
-const log$5 = logger.createLogger("competitorStage");
+const log$6 = index.createLogger("competitorStage");
 async function competitorStage(ctx, emit) {
   if (!ctx.request.competitorUrls || ctx.request.competitorUrls.length === 0) {
-    log$5.info("Competitor stage skipped — no competitor URLs provided");
+    log$6.info("Competitor stage skipped — no competitor URLs provided");
     return;
   }
   if (!ctx.browser) {
-    log$5.warn("Competitor stage skipped — browser not available");
+    log$6.warn("Competitor stage skipped — browser not available");
     return;
   }
   emit("Analyzing competitors…", 94);
@@ -3901,7 +3929,7 @@ async function competitorStage(ctx, emit) {
     ctx.pages,
     ctx.request.competitorUrls.slice(0, 3)
   );
-  log$5.info(
+  log$6.info(
     `Competitor analysis: ${ctx.competitorResult.competitors.length} sites, ${ctx.competitorResult.gaps.length} gaps`
   );
 }
@@ -4001,7 +4029,7 @@ function joinList$1(items) {
 function cap(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
-const log$4 = logger.createLogger("confidenceStage");
+const log$5 = index.createLogger("confidenceStage");
 async function confidenceStage(ctx, emit) {
   emit("Computing score confidence…", 95);
   ctx.scoreConfidence = computeScoreConfidence({
@@ -4010,7 +4038,7 @@ async function confidenceStage(ctx, emit) {
     visual: ctx.visualResult,
     competitor: ctx.competitorResult
   });
-  log$4.info(`Score confidence: ${ctx.scoreConfidence.level} — ${ctx.scoreConfidence.reason}`);
+  log$5.info(`Score confidence: ${ctx.scoreConfidence.level} — ${ctx.scoreConfidence.reason}`);
 }
 const CLUSTERS = [
   // ── Crawlability / Indexing ────────────────────────────────────────────────
@@ -4313,14 +4341,14 @@ function buildFixRoadmap(result) {
   const top10 = items.slice(0, 10);
   return top10.map((entry, idx) => ({ priority: idx + 1, ...entry.item }));
 }
-const log$3 = logger.createLogger("roadmapStage");
+const log$4 = index.createLogger("roadmapStage");
 async function roadmapStage(ctx, emit) {
   emit("Building fix roadmap…", 96);
   ctx.roadmap = buildFixRoadmap({
     findings: ctx.allFindings,
     moneyLeaks: ctx.moneyLeaks
   });
-  log$3.info(`Roadmap built: ${ctx.roadmap.length} items`);
+  log$4.info(`Roadmap built: ${ctx.roadmap.length} items`);
 }
 const LEAD_VALUE = {
   roofer: { low: 800, high: 3e3, label: "roofing" },
@@ -4464,7 +4492,7 @@ function joinList(items) {
   if (items.length === 2) return `${items[0]} and ${items[1]}`;
   return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
 }
-const log$2 = logger.createLogger("revenueStage");
+const log$3 = index.createLogger("revenueStage");
 async function revenueStage(ctx, emit) {
   emit("Estimating revenue impact…", 96);
   const settings = await settingsStorage.readSettings();
@@ -4476,7 +4504,7 @@ async function revenueStage(ctx, emit) {
     currencySymbol: currencyConfig.symbol,
     currencyMultiplier: currencyConfig.multiplier
   });
-  log$2.info(`Revenue estimate: ${ctx.revenueImpact.confidence} confidence`);
+  log$3.info(`Revenue estimate: ${ctx.revenueImpact.confidence} confidence`);
 }
 const VALUE = {
   High: { low: 2e3, high: 8e3 },
@@ -4624,7 +4652,7 @@ function gapSlug(gapId) {
   };
   return map[gapId] ?? gapId.replace(/^comp-no-/, "");
 }
-const log$1 = logger.createLogger("opportunityStage");
+const log$2 = index.createLogger("opportunityStage");
 async function opportunityStage(ctx, emit) {
   emit("Detecting SEO opportunities…", 97);
   ctx.seoOpportunities = detectOpportunities({
@@ -4633,9 +4661,152 @@ async function opportunityStage(ctx, emit) {
     competitorResult: ctx.competitorResult,
     detectedBusinessType: ctx.detectedBusinessType
   });
-  log$1.info(`SEO opportunities detected: ${ctx.seoOpportunities.length}`);
+  log$2.info(`SEO opportunities detected: ${ctx.seoOpportunities.length}`);
 }
-const log = logger.createLogger("runScanJob");
+const log$1 = index.createLogger("gbpStage");
+async function gbpStage(ctx, emit) {
+  emit("Checking Google Business Profile…", 94);
+  if (ctx.pages.length === 0) return;
+  const hasMapEmbed = ctx.pages.some((p) => p.hasMap);
+  const hasReviewLink = ctx.pages.some((p) => {
+    const html = p.html ?? "";
+    return html.includes("search.google.com/local/writereview") || /google\.com\/maps\/place/i.test(html);
+  });
+  const findings = [];
+  if (!hasMapEmbed) {
+    findings.push({
+      id: "gbp-no-map-embed",
+      category: "localSeo",
+      severity: "medium",
+      title: "No Google Maps embed found",
+      summary: "No embedded Google Map was detected on any page of the site.",
+      whyItMatters: "An embedded map reinforces the physical location to Google and helps visitors find the business — both improve local pack rankings.",
+      recommendation: 'Add a Google Maps embed to the contact page or homepage using the "Embed a map" option inside Google Maps.'
+    });
+  }
+  if (!hasReviewLink) {
+    findings.push({
+      id: "gbp-no-review-link",
+      category: "trust",
+      severity: "medium",
+      title: "No Google review link on site",
+      summary: "No link to the business's Google review page was found.",
+      whyItMatters: "A direct review link reduces friction for happy customers. More Google reviews improve local pack rankings and build social proof.",
+      recommendation: 'Add a "Leave us a Google review" button to the site. Get the direct review URL from the Google Business Profile dashboard → "Get more reviews".'
+    });
+  }
+  const gbpResult = {
+    found: false,
+    onSiteMapEmbed: hasMapEmbed,
+    onSiteReviewLink: hasReviewLink,
+    napConsistency: { phoneMatch: null }
+  };
+  const settings = await settingsStorage.readSettings();
+  const apiKey = settings.googlePlacesApiKey?.trim();
+  if (apiKey) {
+    try {
+      await runPlacesCheck(ctx, apiKey, gbpResult, findings);
+    } catch (err) {
+      log$1.warn(`Places API error: ${err.message}`);
+    }
+  }
+  ctx.gbpResult = gbpResult;
+  ctx.allFindings = [...ctx.allFindings, ...findings];
+  log$1.info(
+    `GBP check complete: found=${gbpResult.found}, onSiteMap=${hasMapEmbed}, onSiteReview=${hasReviewLink}, apiFindings=${findings.length}`
+  );
+}
+async function runPlacesCheck(ctx, apiKey, result, findings) {
+  const businessName = extractBusinessName(ctx);
+  const query = encodeURIComponent(`${businessName} ${ctx.domain}`);
+  const textSearchRes = await fetch(
+    `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${apiKey}`
+  );
+  const textSearch = await textSearchRes.json();
+  if (textSearch.status !== "OK" || !textSearch.results || textSearch.results.length === 0) {
+    result.found = false;
+    findings.push({
+      id: "gbp-not-found",
+      category: "localSeo",
+      severity: "high",
+      title: "Google Business Profile not found",
+      summary: "This business does not appear to have a claimed Google Business Profile.",
+      whyItMatters: "A Google Business Profile is the #1 local SEO factor. Without one, the business cannot appear in the Local Pack (the map results at the top of Google for local searches).",
+      recommendation: "Claim or create a Google Business Profile at business.google.com. Verify the listing, add photos, and complete all profile fields."
+    });
+    return;
+  }
+  const place = textSearch.results[0];
+  result.found = true;
+  result.placeId = place.place_id;
+  const detailsRes = await fetch(
+    `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,formatted_address,formatted_phone_number,rating,user_ratings_total,business_status,website&key=${apiKey}`
+  );
+  const details = (await detailsRes.json()).result;
+  if (details) {
+    result.businessName = details.name;
+    result.address = details.formatted_address;
+    result.phone = details.formatted_phone_number;
+    result.rating = details.rating;
+    result.reviewCount = details.user_ratings_total;
+    result.businessStatus = details.business_status;
+    result.websiteUrl = details.website;
+  }
+  const sitePhones = ctx.pages.flatMap((p) => p.phones);
+  if (details?.formatted_phone_number && sitePhones.length > 0) {
+    const gbpDigits = details.formatted_phone_number.replace(/\D/g, "");
+    const phoneMatch = sitePhones.some((sp) => {
+      const siteDigits = sp.replace(/\D/g, "");
+      return siteDigits.length >= 7 && gbpDigits.length >= 7 && (gbpDigits.endsWith(siteDigits.slice(-10)) || siteDigits.endsWith(gbpDigits.slice(-10)));
+    });
+    result.napConsistency.phoneMatch = phoneMatch;
+    if (!phoneMatch) {
+      findings.push({
+        id: "gbp-phone-mismatch",
+        category: "localSeo",
+        severity: "high",
+        title: "Phone number mismatch: website vs Google Business Profile",
+        summary: `Website shows "${sitePhones[0]}" but GBP lists "${details.formatted_phone_number}".`,
+        whyItMatters: "NAP (Name, Address, Phone) consistency is a critical local ranking signal. Inconsistent phone numbers tell Google the information is unreliable, which hurts local pack rankings.",
+        recommendation: "Update either the website or the Google Business Profile so both show the exact same phone number."
+      });
+    }
+  }
+  if (details?.user_ratings_total !== void 0 && details.user_ratings_total < 10) {
+    findings.push({
+      id: "gbp-low-reviews",
+      category: "trust",
+      severity: "high",
+      title: `Low Google review count (${details.user_ratings_total} review${details.user_ratings_total !== 1 ? "s" : ""})`,
+      summary: `This business has only ${details.user_ratings_total} Google review${details.user_ratings_total !== 1 ? "s" : ""}.`,
+      whyItMatters: "Review count is a top local pack ranking factor. Businesses with fewer than 10 reviews rank significantly below competitors with 50+ reviews and get fewer clicks.",
+      recommendation: 'Implement a review request process: after each job, send a follow-up text or email with a direct Google review link. A "Leave us a Google review" button on the site also helps.'
+    });
+  }
+  if (details?.business_status && details.business_status !== "OPERATIONAL") {
+    const readableStatus = details.business_status.replace(/_/g, " ").toLowerCase();
+    findings.push({
+      id: "gbp-not-operational",
+      category: "localSeo",
+      severity: "high",
+      title: `Google Business Profile marked as: ${readableStatus}`,
+      summary: `GBP status is "${readableStatus}" — it is not showing as open/operational.`,
+      whyItMatters: 'A non-operational GBP status significantly reduces or eliminates local pack visibility and may show a "permanently closed" label to searchers.',
+      recommendation: "Log into Google Business Profile and update the business status to open. If closed temporarily, set a reopening date."
+    });
+  }
+}
+function extractBusinessName(ctx) {
+  for (const page of ctx.pages) {
+    const html = page.html ?? "";
+    const match = html.match(/"name"\s*:\s*"([^"]{3,80})"/);
+    if (match) return match[1];
+    const ogMatch = html.match(/property="og:site_name"\s+content="([^"]{2,80})"/);
+    if (ogMatch) return ogMatch[1];
+  }
+  return ctx.domain.replace(/\.(com|net|org|biz|info|co)(\.[a-z]{2})?$/, "").replace(/-/g, " ");
+}
+const log = index.createLogger("runScanJob");
 async function runScanJob(request, emit, sharedBrowser) {
   log.info(`Scan job starting: ${request.url} (mode=${request.scanMode})`);
   const ctx = createScanJobContext(request);
@@ -4661,6 +4832,7 @@ async function runScanJob(request, emit, sharedBrowser) {
     await runOptional("roadmap", ctx, emit, roadmapStage);
     await runOptional("revenue", ctx, emit, revenueStage);
     await runOptional("opportunity", ctx, emit, opportunityStage);
+    await runOptional("gbp", ctx, emit, gbpStage);
     await reportStage(ctx, emit);
   } finally {
     if (ctx.browser && ctx.browserOwned) {
@@ -4685,7 +4857,4 @@ async function runOptional(name, ctx, emit, stage) {
     log.warn(`Optional stage '${name}' failed: ${err.message}`);
   }
 }
-async function runAudit(request, emitProgress, sharedBrowser) {
-  return runScanJob(request, emitProgress, sharedBrowser);
-}
-exports.runAudit = runAudit;
+exports.runScanJob = runScanJob;

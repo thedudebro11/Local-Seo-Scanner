@@ -23,13 +23,12 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const fs = require("fs-extra");
-const runAudit = require("./runAudit-C-YShnrl.js");
+const runAudit = require("./runAudit-CK0BDZZC.js");
 const index = require("../index.js");
-const logger = require("./logger-DOTeCaxX.js");
+require("./runScanJob-BVY7ZwiS.js");
 require("path");
-require("./settingsStorage-B4oQ_sNu.js");
-require("./scanRepository-83Qad7z5.js");
-require("./siteManager-CeF83cGX.js");
+require("./settingsStorage-DcgDEctW.js");
+require("./scanRepository-B5pnqpoU.js");
 require("cheerio/slim");
 require("electron");
 require("child_process");
@@ -43,7 +42,7 @@ require("stream");
 require("url");
 require("zlib");
 require("http");
-const log = logger.createLogger("runBulkScan");
+const log = index.createLogger("runBulkScan");
 const MAX_PAGES_BY_MODE = { preview: 1, quick: 10, full: 50 };
 async function runBulkScan(request, emitProgress) {
   const domains = normalizeDomains(request.domains);

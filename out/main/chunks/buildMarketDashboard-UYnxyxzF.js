@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const fs = require("fs-extra");
-const logger = require("./logger-DOTeCaxX.js");
 const index = require("../index.js");
 require("electron");
 require("path");
@@ -47,7 +46,7 @@ function rankBusinesses(items, by) {
 function topN(items, by, n) {
   return rankBusinesses(items, by).slice(0, n);
 }
-const log = logger.createLogger("market");
+const log = index.createLogger("market");
 function generateDashboardId() {
   return `market_${Date.now()}`;
 }

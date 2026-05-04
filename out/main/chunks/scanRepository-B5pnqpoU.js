@@ -3,7 +3,6 @@ Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const path = require("path");
 const fs = require("fs-extra");
 const index = require("../index.js");
-const logger = require("./logger-DOTeCaxX.js");
 require("electron");
 require("child_process");
 require("events");
@@ -16,7 +15,7 @@ require("stream");
 require("url");
 require("zlib");
 require("http");
-const log = logger.createLogger("scanRepository");
+const log = index.createLogger("scanRepository");
 function readIndex() {
   const indexPath = index.getIndexPath();
   try {

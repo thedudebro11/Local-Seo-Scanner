@@ -1,4 +1,26 @@
 "use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const require$$1$2 = require("electron");
 const path$9 = require("path");
@@ -721,7 +743,7 @@ function requireNode() {
     const tty = require$$1;
     const util2 = require$$1$1;
     exports$1.init = init;
-    exports$1.log = log;
+    exports$1.log = log2;
     exports$1.formatArgs = formatArgs;
     exports$1.save = save;
     exports$1.load = load2;
@@ -856,7 +878,7 @@ function requireNode() {
       }
       return (/* @__PURE__ */ new Date()).toISOString() + " ";
     }
-    function log(...args) {
+    function log2(...args) {
       return process.stderr.write(util2.formatWithOptions(exports$1.inspectOpts, ...args) + "\n");
     }
     function save(namespaces) {
@@ -4054,7 +4076,7 @@ function constructYamlTimestamp(data) {
 function representYamlTimestamp(object) {
   return object.toISOString();
 }
-var timestamp = new Type$5("tag:yaml.org,2002:timestamp", {
+var timestamp$1 = new Type$5("tag:yaml.org,2002:timestamp", {
   kind: "scalar",
   resolve: resolveYamlTimestamp,
   construct: constructYamlTimestamp,
@@ -4228,7 +4250,7 @@ var set = new Type("tag:yaml.org,2002:set", {
 });
 var _default = core.extend({
   implicit: [
-    timestamp,
+    timestamp$1,
     merge
   ],
   explicit: [
@@ -6036,7 +6058,7 @@ jsYaml.types = {
   null: _null,
   pairs,
   set,
-  timestamp,
+  timestamp: timestamp$1,
   bool,
   int,
   merge,
@@ -8490,7 +8512,7 @@ function hashFile(file, algorithm = "sha512", encoding = "base64", options) {
     }).pipe(hash, { end: false });
   });
 }
-async function createTempUpdateFile(name, cacheDir, log) {
+async function createTempUpdateFile(name, cacheDir, log2) {
   let nameCounter = 0;
   let result = path$8.join(cacheDir, name);
   for (let i = 0; i < 3; i++) {
@@ -8501,7 +8523,7 @@ async function createTempUpdateFile(name, cacheDir, log) {
       if (e.code === "ENOENT") {
         return result;
       }
-      log.warn(`Error on remove temp update file: ${e}`);
+      log2.warn(`Error on remove temp update file: ${e}`);
       result = path$8.join(cacheDir, `${nameCounter++}-${name}`);
     }
   }
@@ -10833,8 +10855,8 @@ class AppUpdater extends events_1.EventEmitter {
       }
       return packageFile == null ? [updateFile] : [updateFile, packageFile];
     };
-    const log = this._logger;
-    const cachedUpdateFile = await downloadedUpdateHelper.validateDownloadedPath(updateFile, updateInfo, fileInfo, log);
+    const log2 = this._logger;
+    const cachedUpdateFile = await downloadedUpdateHelper.validateDownloadedPath(updateFile, updateInfo, fileInfo, log2);
     if (cachedUpdateFile != null) {
       updateFile = cachedUpdateFile;
       return await done(false);
@@ -10845,7 +10867,7 @@ class AppUpdater extends events_1.EventEmitter {
       return await (0, fs_extra_1$4.unlink)(updateFile).catch(() => {
       });
     };
-    const tempUpdateFile = await (0, DownloadedUpdateHelper_1.createTempUpdateFile)(`temp-${updateFileName}`, cacheDir, log);
+    const tempUpdateFile = await (0, DownloadedUpdateHelper_1.createTempUpdateFile)(`temp-${updateFileName}`, cacheDir, log2);
     try {
       await taskOptions.task(tempUpdateFile, downloadOptions, packageFile, removeFileIfAny);
       await (0, builder_util_runtime_1$4.retry)(() => (0, fs_extra_1$4.rename)(tempUpdateFile, updateFile), {
@@ -10855,19 +10877,19 @@ class AppUpdater extends events_1.EventEmitter {
           if (error2 instanceof Error && /^EBUSY:/.test(error2.message)) {
             return true;
           }
-          log.warn(`Cannot rename temp file to final file: ${error2.message || error2.stack}`);
+          log2.warn(`Cannot rename temp file to final file: ${error2.message || error2.stack}`);
           return false;
         }
       });
     } catch (e) {
       await removeFileIfAny();
       if (e instanceof builder_util_runtime_1$4.CancellationError) {
-        log.info("cancelled");
+        log2.info("cancelled");
         this.emit("update-cancelled", updateInfo);
       }
       throw e;
     }
-    log.info(`New version ${version} has been downloaded to ${updateFile}`);
+    log2.info(`New version ${version} has been downloaded to ${updateFile}`);
     return await done(true);
   }
   async differentialDownloadInstaller(fileInfo, downloadUpdateOptions, installerPath, provider, oldInstallerFileName) {
@@ -11555,26 +11577,26 @@ class MacUpdater extends AppUpdater_1.AppUpdater {
   }
   async doDownloadUpdate(downloadUpdateOptions) {
     let files = downloadUpdateOptions.updateInfoAndProvider.provider.resolveFiles(downloadUpdateOptions.updateInfoAndProvider.info);
-    const log = this._logger;
+    const log2 = this._logger;
     const sysctlRosettaInfoKey = "sysctl.proc_translated";
     let isRosetta = false;
     try {
       this.debug("Checking for macOS Rosetta environment");
       const result = (0, child_process_1$1.execFileSync)("sysctl", [sysctlRosettaInfoKey], { encoding: "utf8" });
       isRosetta = result.includes(`${sysctlRosettaInfoKey}: 1`);
-      log.info(`Checked for macOS Rosetta environment (isRosetta=${isRosetta})`);
+      log2.info(`Checked for macOS Rosetta environment (isRosetta=${isRosetta})`);
     } catch (e) {
-      log.warn(`sysctl shell command to check for macOS Rosetta environment failed: ${e}`);
+      log2.warn(`sysctl shell command to check for macOS Rosetta environment failed: ${e}`);
     }
     let isArm64Mac = false;
     try {
       this.debug("Checking for arm64 in uname");
       const result = (0, child_process_1$1.execFileSync)("uname", ["-a"], { encoding: "utf8" });
       const isArm = result.includes("ARM");
-      log.info(`Checked 'uname -a': arm64=${isArm}`);
+      log2.info(`Checked 'uname -a': arm64=${isArm}`);
       isArm64Mac = isArm64Mac || isArm;
     } catch (e) {
-      log.warn(`uname shell command to check for arm64 failed: ${e}`);
+      log2.warn(`uname shell command to check for arm64 failed: ${e}`);
     }
     isArm64Mac = isArm64Mac || process.arch === "arm64" || isRosetta;
     const isArm64 = (file) => {
@@ -11600,7 +11622,7 @@ class MacUpdater extends AppUpdater_1.AppUpdater {
         const cachedUpdateFilePath = path$2.join(this.downloadedUpdateHelper.cacheDir, CURRENT_MAC_APP_ZIP_FILE_NAME);
         const canDifferentialDownload = () => {
           if (!(0, fs_extra_1$1.pathExistsSync)(cachedUpdateFilePath)) {
-            log.info("Unable to locate previous update.zip for differential download (is this first install?), falling back to full download");
+            log2.info("Unable to locate previous update.zip for differential download (is this first install?), falling back to full download");
             return false;
           }
           return !downloadUpdateOptions.disableDifferentialDownload;
@@ -11630,14 +11652,14 @@ class MacUpdater extends AppUpdater_1.AppUpdater {
     var _a;
     const downloadedFile = event.downloadedFile;
     const updateFileSize = (_a = zipFileInfo.info.size) !== null && _a !== void 0 ? _a : (await (0, fs_extra_1$1.stat)(downloadedFile)).size;
-    const log = this._logger;
+    const log2 = this._logger;
     const logContext = `fileToProxy=${zipFileInfo.url.href}`;
     this.closeServerIfExists();
     this.debug(`Creating proxy server for native Squirrel.Mac (${logContext})`);
     this.server = (0, http_1.createServer)();
     this.debug(`Proxy server for native Squirrel.Mac is created (${logContext})`);
     this.server.on("close", () => {
-      log.info(`Proxy server for native Squirrel.Mac is closed (${logContext})`);
+      log2.info(`Proxy server for native Squirrel.Mac is closed (${logContext})`);
     });
     const getServerUrl = (s) => {
       const address = s.address();
@@ -11652,13 +11674,13 @@ class MacUpdater extends AppUpdater_1.AppUpdater {
       const fileUrl = `/${(0, crypto_1.randomBytes)(64).toString("hex")}.zip`;
       this.server.on("request", (request, response) => {
         const requestUrl = request.url;
-        log.info(`${requestUrl} requested`);
+        log2.info(`${requestUrl} requested`);
         if (requestUrl === "/") {
           if (!request.headers.authorization || request.headers.authorization.indexOf("Basic ") === -1) {
             response.statusCode = 401;
             response.statusMessage = "Invalid Authentication Credentials";
             response.end();
-            log.warn("No authenthication info");
+            log2.warn("No authenthication info");
             return;
           }
           const base64Credentials = request.headers.authorization.split(" ")[1];
@@ -11668,7 +11690,7 @@ class MacUpdater extends AppUpdater_1.AppUpdater {
             response.statusCode = 401;
             response.statusMessage = "Invalid Authentication Credentials";
             response.end();
-            log.warn("Invalid authenthication credentials");
+            log2.warn("Invalid authenthication credentials");
             return;
           }
           const data = Buffer.from(`{ "url": "${getServerUrl(this.server)}${fileUrl}" }`);
@@ -11677,12 +11699,12 @@ class MacUpdater extends AppUpdater_1.AppUpdater {
           return;
         }
         if (!requestUrl.startsWith(fileUrl)) {
-          log.warn(`${requestUrl} requested, but not supported`);
+          log2.warn(`${requestUrl} requested, but not supported`);
           response.writeHead(404);
           response.end();
           return;
         }
-        log.info(`${fileUrl} requested by Squirrel.Mac, pipe ${downloadedFile}`);
+        log2.info(`${fileUrl} requested by Squirrel.Mac, pipe ${downloadedFile}`);
         let errorOccurred = false;
         response.on("finish", () => {
           if (!errorOccurred) {
@@ -11695,7 +11717,7 @@ class MacUpdater extends AppUpdater_1.AppUpdater {
           try {
             response.end();
           } catch (e) {
-            log.warn(`cannot end response: ${e}`);
+            log2.warn(`cannot end response: ${e}`);
           }
           errorOccurred = true;
           this.nativeUpdater.removeListener("error", reject);
@@ -12125,7 +12147,7 @@ function registerScanHandlers(mainWindow2) {
       }
     };
     try {
-      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-C-YShnrl.js"));
+      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-CK0BDZZC.js"));
       const result = await runAudit(request, emitProgress);
       return result;
     } catch (err) {
@@ -12142,7 +12164,7 @@ function registerBulkScanHandlers(mainWindow2) {
       }
     };
     try {
-      const { runBulkScan } = await Promise.resolve().then(() => require("./chunks/runBulkScan-F4juT1bl.js"));
+      const { runBulkScan } = await Promise.resolve().then(() => require("./chunks/runBulkScan-d1nTm-9m.js"));
       return await runBulkScan(request, emitProgress);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -12153,7 +12175,7 @@ function registerBulkScanHandlers(mainWindow2) {
 function registerDiscoveryHandlers() {
   require$$1$2.ipcMain.handle("discovery:run", async (_, request) => {
     try {
-      const { runMarketDiscovery } = await Promise.resolve().then(() => require("./chunks/marketDiscovery-5WXuAW-Z.js"));
+      const { runMarketDiscovery } = await Promise.resolve().then(() => require("./chunks/marketDiscovery-ko7hIlri.js"));
       return await runMarketDiscovery(request);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -12165,22 +12187,14 @@ function registerMarketHandlers() {
   require$$1$2.ipcMain.handle(
     "market:build",
     async (_, payload) => {
-      const { buildMarketDashboard } = await Promise.resolve().then(() => require("./chunks/buildMarketDashboard-CXvC9kcN.js"));
+      const { buildMarketDashboard } = await Promise.resolve().then(() => require("./chunks/buildMarketDashboard-UYnxyxzF.js"));
       return buildMarketDashboard({ bulkResult: payload.bulkResult, label: payload.label });
-    }
-  );
-  require$$1$2.ipcMain.handle(
-    "monitoring:add-site",
-    async (_, domain) => {
-      const { addTrackedSite } = await Promise.resolve().then(() => require("./chunks/siteManager-CeF83cGX.js"));
-      const site = await addTrackedSite(domain);
-      return site.siteId;
     }
   );
 }
 function registerFileHandlers() {
   require$$1$2.ipcMain.handle("file:list-scans", async () => {
-    const { listSavedScans } = await Promise.resolve().then(() => require("./chunks/scanRepository-83Qad7z5.js"));
+    const { listSavedScans } = await Promise.resolve().then(() => require("./chunks/scanRepository-B5pnqpoU.js"));
     return listSavedScans();
   });
   require$$1$2.ipcMain.handle("file:open-report", async (_, reportPath) => {
@@ -12190,8 +12204,50 @@ function registerFileHandlers() {
     require$$1$2.shell.showItemInFolder(folderPath);
   });
   require$$1$2.ipcMain.handle("file:load-scan", async (_, scanId) => {
-    const { loadScanById } = await Promise.resolve().then(() => require("./chunks/scanRepository-83Qad7z5.js"));
+    const { loadScanById } = await Promise.resolve().then(() => require("./chunks/scanRepository-B5pnqpoU.js"));
     return loadScanById(scanId);
+  });
+  require$$1$2.ipcMain.handle("file:export-pdf", async (_, htmlPath) => {
+    const { chromium } = await import("playwright");
+    const pdfPath = path$9.join(path$9.dirname(htmlPath), "report.pdf");
+    const browser2 = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+    try {
+      const page = await browser2.newPage();
+      await page.goto(`file://${htmlPath}`, { waitUntil: "load" });
+      await page.waitForTimeout(500);
+      await page.pdf({ path: pdfPath, format: "A4", printBackground: true, margin: { top: "12mm", bottom: "12mm", left: "10mm", right: "10mm" } });
+    } finally {
+      await browser2.close();
+    }
+    return pdfPath;
+  });
+  require$$1$2.ipcMain.handle("file:share-report", async (_, htmlPath) => {
+    const { readSettings } = await Promise.resolve().then(() => require("./chunks/settingsStorage-DcgDEctW.js")).then((n) => n.settingsStorage);
+    const settings = await readSettings();
+    const token = settings.githubToken?.trim();
+    if (!token) throw new Error("No GitHub token configured. Add one in Settings → Share Reports.");
+    const html = await fs.readFile(htmlPath, "utf8");
+    const filename = path$9.basename(path$9.dirname(htmlPath)) + "-seo-report.html";
+    const res = await fetch("https://api.github.com/gists", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "X-GitHub-Api-Version": "2022-11-28"
+      },
+      body: JSON.stringify({
+        description: "Local SEO Audit Report",
+        public: false,
+        files: { [filename]: { content: html } }
+      })
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`GitHub API error ${res.status}: ${err}`);
+    }
+    const gist = await res.json();
+    const rawUrl = Object.values(gist.files)[0].raw_url;
+    return `https://htmlpreview.github.io/?${rawUrl}`;
   });
   require$$1$2.ipcMain.handle("file:email-report", async (_, { htmlPath, domain }) => {
     require$$1$2.shell.showItemInFolder(htmlPath);
@@ -12239,12 +12295,31 @@ function registerLicenseHandlers() {
 }
 function registerSettingsHandlers() {
   require$$1$2.ipcMain.handle("settings:get", async () => {
-    const { readSettings } = await Promise.resolve().then(() => require("./chunks/settingsStorage-B4oQ_sNu.js")).then((n) => n.settingsStorage);
+    const { readSettings } = await Promise.resolve().then(() => require("./chunks/settingsStorage-DcgDEctW.js")).then((n) => n.settingsStorage);
     return readSettings();
   });
   require$$1$2.ipcMain.handle("settings:save", async (_, partial) => {
-    const { mergeSettings } = await Promise.resolve().then(() => require("./chunks/settingsStorage-B4oQ_sNu.js")).then((n) => n.settingsStorage);
+    const { mergeSettings } = await Promise.resolve().then(() => require("./chunks/settingsStorage-DcgDEctW.js")).then((n) => n.settingsStorage);
     return mergeSettings(partial);
+  });
+}
+function registerMonitoringHandlers() {
+  require$$1$2.ipcMain.handle("monitoring:add-site", async (_, domain) => {
+    const { addTrackedSite: addTrackedSite2 } = await Promise.resolve().then(() => siteManager);
+    const site = await addTrackedSite2(domain);
+    return site.siteId;
+  });
+  require$$1$2.ipcMain.handle("monitoring:list-sites", async () => {
+    const { listTrackedSites: listTrackedSites2 } = await Promise.resolve().then(() => siteManager);
+    return listTrackedSites2();
+  });
+  require$$1$2.ipcMain.handle("monitoring:remove-site", async (_, siteId) => {
+    const { removeTrackedSite: removeTrackedSite2 } = await Promise.resolve().then(() => siteManager);
+    await removeTrackedSite2(siteId);
+  });
+  require$$1$2.ipcMain.handle("monitoring:set-schedule", async (_, siteId, intervalDays) => {
+    const { setSiteSchedule: setSiteSchedule2 } = await Promise.resolve().then(() => siteManager);
+    await setSiteSchedule2(siteId, intervalDays);
   });
 }
 let _reportsDir = null;
@@ -12355,6 +12430,167 @@ function getSettingsPath() {
   }
   return path$9.join(_userDataPath, "settings.json");
 }
+const LEVELS = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3
+};
+const CURRENT_LEVEL = process.env.NODE_ENV === "development" ? "debug" : "info";
+function timestamp() {
+  return (/* @__PURE__ */ new Date()).toISOString().substring(11, 23);
+}
+function log$2(level, prefix, message, ...args) {
+  if (LEVELS[level] < LEVELS[CURRENT_LEVEL]) return;
+  const label = `[${timestamp()}] [${level.toUpperCase().padEnd(5)}] [${prefix}]`;
+  switch (level) {
+    case "debug":
+      console.debug(label, message, ...args);
+      break;
+    case "info":
+      console.info(label, message, ...args);
+      break;
+    case "warn":
+      console.warn(label, message, ...args);
+      break;
+    case "error":
+      console.error(label, message, ...args);
+      break;
+  }
+}
+function createLogger(prefix) {
+  return {
+    debug: (msg, ...args) => log$2("debug", prefix, msg, ...args),
+    info: (msg, ...args) => log$2("info", prefix, msg, ...args),
+    warn: (msg, ...args) => log$2("warn", prefix, msg, ...args),
+    error: (msg, ...args) => log$2("error", prefix, msg, ...args)
+  };
+}
+const log$1 = createLogger("siteManager");
+function readSites() {
+  try {
+    const p = getSitesPath();
+    if (!fs.existsSync(p)) return [];
+    return fs.readJsonSync(p);
+  } catch (err) {
+    log$1.warn(`readSites failed: ${err.message}`);
+    return [];
+  }
+}
+async function writeSites(sites) {
+  const p = getSitesPath();
+  await fs.ensureDir(path$9.dirname(p));
+  await fs.writeJson(p, sites, { spaces: 2 });
+}
+function generateSiteId(domain) {
+  const safe = domain.replace(/[^a-z0-9.-]/gi, "_").slice(0, 30);
+  return `site_${safe}_${Date.now()}`;
+}
+async function addTrackedSite(domain, businessType) {
+  const sites = readSites();
+  const existing = sites.find((s) => s.domain === domain);
+  if (existing) return existing;
+  const site = {
+    siteId: generateSiteId(domain),
+    domain,
+    businessType,
+    dateAdded: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  await writeSites([...sites, site]);
+  log$1.info(`addTrackedSite: ${domain} → ${site.siteId}`);
+  return site;
+}
+function listTrackedSites() {
+  return readSites();
+}
+async function updateTrackedSiteLastScan(siteId, scanId) {
+  const sites = readSites();
+  const idx = sites.findIndex((s) => s.siteId === siteId);
+  if (idx === -1) {
+    log$1.warn(`updateTrackedSiteLastScan: unknown siteId — ${siteId}`);
+    return;
+  }
+  const site = sites[idx];
+  const intervalDays = site.scanIntervalDays ?? 7;
+  const nextScanAt = new Date(Date.now() + intervalDays * 24 * 60 * 60 * 1e3).toISOString();
+  sites[idx] = { ...site, lastScanId: scanId, nextScanAt };
+  await writeSites(sites);
+  log$1.info(`updateTrackedSiteLastScan: ${siteId} → lastScanId=${scanId}, nextScanAt=${nextScanAt}`);
+}
+function getSitesDue() {
+  const now = /* @__PURE__ */ new Date();
+  return readSites().filter((s) => s.nextScanAt && new Date(s.nextScanAt) <= now);
+}
+async function setSiteSchedule(siteId, intervalDays) {
+  const sites = readSites();
+  const idx = sites.findIndex((s) => s.siteId === siteId);
+  if (idx === -1) return;
+  const nextScanAt = new Date(Date.now() + intervalDays * 24 * 60 * 60 * 1e3).toISOString();
+  sites[idx] = { ...sites[idx], scanIntervalDays: intervalDays, nextScanAt };
+  await writeSites(sites);
+  log$1.info(`setSiteSchedule: ${siteId} → every ${intervalDays}d, next=${nextScanAt}`);
+}
+async function removeTrackedSite(siteId) {
+  const sites = readSites().filter((s) => s.siteId !== siteId);
+  await writeSites(sites);
+  log$1.info(`removeTrackedSite: ${siteId}`);
+}
+const siteManager = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  addTrackedSite,
+  getSitesDue,
+  listTrackedSites,
+  removeTrackedSite,
+  setSiteSchedule,
+  updateTrackedSiteLastScan
+}, Symbol.toStringTag, { value: "Module" }));
+const log = createLogger("monitoringScheduler");
+const CHECK_INTERVAL_MS = 60 * 60 * 1e3;
+let _notifyFn = null;
+function startMonitoringScheduler(notify) {
+  _notifyFn = notify;
+  log.info("Monitoring scheduler started");
+  runCheck().catch((err) => log.warn(`Startup check failed: ${err.message}`));
+  setInterval(() => {
+    runCheck().catch((err) => log.warn(`Hourly check failed: ${err.message}`));
+  }, CHECK_INTERVAL_MS);
+}
+async function runCheck() {
+  const due = getSitesDue();
+  if (due.length === 0) {
+    log.info("Monitoring check: no sites due");
+    return;
+  }
+  log.info(`Monitoring check: ${due.length} site(s) due`);
+  for (const site of due) {
+    await scanSite(site);
+  }
+}
+async function scanSite(site) {
+  log.info(`Scheduled scan starting: ${site.domain}`);
+  try {
+    const { runScanJob } = await Promise.resolve().then(() => require("./chunks/runScanJob-BVY7ZwiS.js"));
+    const result = await runScanJob(
+      {
+        url: `https://${site.domain}`,
+        scanMode: "quick",
+        businessType: "auto",
+        maxPages: 10,
+        siteId: site.siteId
+      },
+      () => {
+      }
+    );
+    log.info(`Scheduled scan complete: ${site.domain} — score=${result.scores.overall.value}`);
+    _notifyFn?.(
+      `Monitoring scan complete`,
+      `${site.domain} scored ${result.scores.overall.value}/100`
+    );
+  } catch (err) {
+    log.warn(`Scheduled scan failed: ${site.domain} — ${err.message}`);
+    _notifyFn?.("Monitoring scan failed", `Could not re-scan ${site.domain}`);
+  }
+}
 const isDev = process.env.NODE_ENV === "development";
 process.on("uncaughtException", (err) => {
   console.error("[main] uncaughtException:", err);
@@ -12410,6 +12646,12 @@ require$$1$2.app.whenReady().then(() => {
   registerAppHandlers();
   registerLicenseHandlers();
   registerSettingsHandlers();
+  registerMonitoringHandlers();
+  startMonitoringScheduler((title, body) => {
+    if (require$$1$2.Notification.isSupported()) {
+      new require$$1$2.Notification({ title, body }).show();
+    }
+  });
   require$$1$2.app.on("activate", () => {
     if (require$$1$2.BrowserWindow.getAllWindows().length === 0) {
       mainWindow = createWindow();
@@ -12453,6 +12695,7 @@ require$$1$2.app.on("web-contents-created", (_, contents) => {
 });
 exports.buildHtmlPath = buildHtmlPath;
 exports.buildJsonPath = buildJsonPath;
+exports.createLogger = createLogger;
 exports.generateScanId = generateScanId;
 exports.getBulkScanPath = getBulkScanPath;
 exports.getBulkScansDir = getBulkScansDir;
@@ -12466,4 +12709,4 @@ exports.getScanSummaryPath = getScanSummaryPath;
 exports.getScreenshotsDir = getScreenshotsDir;
 exports.getSettingsPath = getSettingsPath;
 exports.getSiteHistoryDir = getSiteHistoryDir;
-exports.getSitesPath = getSitesPath;
+exports.updateTrackedSiteLastScan = updateTrackedSiteLastScan;

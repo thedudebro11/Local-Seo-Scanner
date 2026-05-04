@@ -142,7 +142,7 @@ function renderGbpSection(gbp: GbpCheckResult): string {
         ${apiRows}
       </tbody>
     </table>
-    ${!gbp.placeId ? '<p style="font-size:12px;color:#9ca3af;font-style:italic">Configure a Google Places API key in Settings to enable full GBP verification and NAP consistency checks.</p>' : ''}
+    ${!gbp.apiQueried ? '<p style="font-size:12px;color:#9ca3af;font-style:italic">Configure a Google Places API key in Settings to enable full GBP verification and NAP consistency checks.</p>' : ''}
   </div>`
 }
 

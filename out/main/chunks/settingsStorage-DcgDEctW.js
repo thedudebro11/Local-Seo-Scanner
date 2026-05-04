@@ -11,7 +11,9 @@ const CURRENCY_CONFIG = {
 const DEFAULT_SETTINGS = {
   agencyName: "",
   agencyLogoBase64: "",
-  currency: "USD"
+  currency: "USD",
+  googlePlacesApiKey: "",
+  githubToken: ""
 };
 async function readSettings() {
   try {

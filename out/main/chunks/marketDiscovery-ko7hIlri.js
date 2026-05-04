@@ -3,7 +3,6 @@ Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const https = require("https");
 const cheerio = require("cheerio/slim");
 const fs = require("fs-extra");
-const logger = require("./logger-DOTeCaxX.js");
 const index = require("../index.js");
 require("electron");
 require("path");
@@ -243,7 +242,7 @@ function classifyCandidate(name, hostname, sourceUrl) {
   }
   return { classification: "business", reason: "" };
 }
-const log$1 = logger.createLogger("filterCandidates");
+const log$1 = index.createLogger("filterCandidates");
 function filterCandidates(discovered) {
   const scannable = [];
   const excluded = [];
@@ -325,7 +324,7 @@ function deriveBlocklistReason(hostname) {
   }
   return "rejected: directory";
 }
-const log = logger.createLogger("marketDiscovery");
+const log = index.createLogger("marketDiscovery");
 const DDG_LITE_URL = "https://lite.duckduckgo.com/lite/";
 const BING_SEARCH_URL = "https://www.bing.com/search";
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 LocalSEOScanner/1.0";

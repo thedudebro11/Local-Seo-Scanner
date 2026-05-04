@@ -81,6 +81,19 @@ const api = {
    * with subject + body pre-filled. User drags the highlighted file into email.
    */
   emailReport: (payload) => electron.ipcRenderer.invoke("file:email-report", payload),
+  /** Export the HTML report to PDF and return the PDF file path. */
+  exportPdf: (htmlPath) => electron.ipcRenderer.invoke("file:export-pdf", htmlPath),
+  /** Return all monitored sites with their schedule info. */
+  listMonitoredSites: () => electron.ipcRenderer.invoke("monitoring:list-sites"),
+  /** Remove a site from the monitoring schedule. */
+  removeMonitoredSite: (siteId) => electron.ipcRenderer.invoke("monitoring:remove-site", siteId),
+  /** Set the re-scan interval for a monitored site. */
+  setMonitorSchedule: (siteId, intervalDays) => electron.ipcRenderer.invoke("monitoring:set-schedule", siteId, intervalDays),
+  /**
+   * Upload the HTML report to a private GitHub Gist and return a shareable
+   * htmlpreview.github.io URL. Requires a GitHub token in Settings.
+   */
+  shareReport: (htmlPath) => electron.ipcRenderer.invoke("file:share-report", htmlPath),
   // ── Auto-update ────────────────────────────────────────────────────────────
   installUpdate: () => electron.ipcRenderer.invoke("update:install"),
   onUpdateAvailable: (cb) => {

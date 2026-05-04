@@ -68,6 +68,7 @@ export async function gbpStage(
   // ── Base result (before optional API enrichment) ──────────────────────────
   const gbpResult: GbpCheckResult = {
     found: false,
+    apiQueried: false,
     onSiteMapEmbed: hasMapEmbed,
     onSiteReviewLink: hasReviewLink,
     napConsistency: { phoneMatch: null },
@@ -78,6 +79,7 @@ export async function gbpStage(
   const apiKey = settings.googlePlacesApiKey?.trim()
 
   if (apiKey) {
+    gbpResult.apiQueried = true
     try {
       await runPlacesCheck(ctx, apiKey, gbpResult, findings)
     } catch (err) {
@@ -104,7 +106,9 @@ async function runPlacesCheck(
 ): Promise<void> {
   // Build a search query from JSON-LD business name + domain as fallback
   const businessName = extractBusinessName(ctx)
-  const query = encodeURIComponent(`${businessName} ${ctx.domain}`)
+  // Search by business name alone — appending the domain confuses the Places API
+  // when the name was extracted from the domain itself
+  const query = encodeURIComponent(businessName)
 
   const textSearchRes = await fetch(
     `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${apiKey}`,
@@ -214,16 +218,43 @@ async function runPlacesCheck(
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function extractBusinessName(ctx: ScanJobContext): string {
+  // 1. JSON-LD LocalBusiness name — most authoritative when present
   for (const page of ctx.pages) {
     const html = page.html ?? ''
-    // Try JSON-LD "name" field
-    const match = html.match(/"name"\s*:\s*"([^"]{3,80})"/)
-    if (match) return match[1]
-    // Try og:site_name
-    const ogMatch = html.match(/property="og:site_name"\s+content="([^"]{2,80})"/)
+    const localBizMatch = html.match(
+      /"@type"\s*:\s*"(?:LocalBusiness|[A-Za-z]+Service|[A-Za-z]+Store|Restaurant|Dentist|Contractor)[^"]*"[\s\S]{0,500}?"name"\s*:\s*"([^"]{3,80})"/,
+    )
+    if (localBizMatch) return localBizMatch[1]
+  }
+
+  // 2. og:site_name meta tag
+  for (const page of ctx.pages) {
+    const html = page.html ?? ''
+    const ogMatch =
+      html.match(/property="og:site_name"\s+content="([^"]{2,80})"/) ??
+      html.match(/content="([^"]{2,80})"\s+property="og:site_name"/)
     if (ogMatch) return ogMatch[1]
   }
-  // Fallback: humanise the domain
+
+  // 3. Page titles — brand names usually appear as the LAST segment (after |, -, etc.)
+  //    on inner pages. The homepage title is often keyword-stuffed ("Best HVAC | Tucson").
+  //    Strategy: collect all last-segments, find the one that repeats most across pages.
+  const segmentCounts = new Map<string, number>()
+  for (const page of ctx.pages) {
+    if (!page.title) continue
+    const parts = page.title.split(/\s*[|\-–—·•]\s*/)
+    const last = parts[parts.length - 1].trim()
+    if (last.length >= 3 && last.length <= 60) {
+      segmentCounts.set(last, (segmentCounts.get(last) ?? 0) + 1)
+    }
+  }
+  if (segmentCounts.size > 0) {
+    // Pick the segment that appears most often (ties go to the first found)
+    const best = [...segmentCounts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+    if (best) return best
+  }
+
+  // 4. Humanise the domain as last resort
   return ctx.domain
     .replace(/\.(com|net|org|biz|info|co)(\.[a-z]{2})?$/, '')
     .replace(/-/g, ' ')

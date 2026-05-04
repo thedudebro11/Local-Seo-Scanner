@@ -307,6 +307,8 @@ export interface CompetitorAnalysisResult {
 
 export interface GbpCheckResult {
   found: boolean
+  /** True when the Places API was actually queried (API key was configured). */
+  apiQueried: boolean
   placeId?: string
   businessName?: string
   address?: string
