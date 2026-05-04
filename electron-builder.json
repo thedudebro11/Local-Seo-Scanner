@@ -1,7 +1,7 @@
 {
   "appId": "com.localseoscanner.app",
   "productName": "Local SEO Scanner",
-  "copyright": "Copyright © 2024",
+  "copyright": "Copyright © 2026",
   "directories": {
     "output": "dist",
     "buildResources": "build"
@@ -10,11 +10,11 @@
     "out/**",
     "!out/**/*.map"
   ],
-  "extraResources": [
+  "publish": [
     {
-      "from": "reports",
-      "to": "reports",
-      "filter": ["**/*"]
+      "provider": "github",
+      "owner": "thedudebro11",
+      "repo": "Local-Seo-Scanner"
     }
   ],
   "win": {

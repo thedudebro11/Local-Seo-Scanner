@@ -7,6 +7,17 @@ const logger = require("./logger-DOTeCaxX.js");
 const index = require("../index.js");
 require("electron");
 require("path");
+require("child_process");
+require("events");
+require("crypto");
+require("tty");
+require("util");
+require("os");
+require("fs");
+require("stream");
+require("url");
+require("zlib");
+require("http");
 function _interopNamespaceDefault(e) {
   const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
   if (e) {

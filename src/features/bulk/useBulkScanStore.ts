@@ -5,7 +5,7 @@ import type { BulkScanRequest, BulkScanResult, BulkScanProgressEvent } from '@en
 
 type BulkPhase = 'idle' | 'running' | 'done' | 'error'
 
-interface BulkScanState {
+export interface BulkScanState {
   phase: BulkPhase
   /** Live progress event from the current batch. */
   progress: BulkScanProgressEvent | null

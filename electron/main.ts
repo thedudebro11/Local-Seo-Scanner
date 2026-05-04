@@ -1,5 +1,6 @@
 import { app, BrowserWindow, shell, ipcMain } from 'electron'
 import { join } from 'path'
+import { autoUpdater } from 'electron-updater'
 import { registerScanHandlers } from './ipc/scanHandlers'
 import { registerBulkScanHandlers } from './ipc/bulkScanHandlers'
 import { registerDiscoveryHandlers } from './ipc/discoveryHandlers'
@@ -14,6 +15,15 @@ import { initLicenseDir } from '../src/engine/license/licensePaths'
 import { initSettingsDir } from '../src/engine/settings/settingsPaths'
 
 const isDev = process.env.NODE_ENV === 'development'
+
+// ── Global error guards ────────────────────────────────────────────────────────
+// Unhandled errors in the main process would otherwise silently crash the app.
+process.on('uncaughtException', (err) => {
+  console.error('[main] uncaughtException:', err)
+})
+process.on('unhandledRejection', (reason) => {
+  console.error('[main] unhandledRejection:', reason)
+})
 
 let mainWindow: BrowserWindow | null = null
 
@@ -82,6 +92,32 @@ app.whenReady().then(() => {
       registerScanHandlers(mainWindow)
       registerBulkScanHandlers(mainWindow)
     }
+  })
+
+  // ── Auto-update ──────────────────────────────────────────────────────────────
+  if (!isDev) {
+    autoUpdater.autoDownload = true
+    autoUpdater.autoInstallOnAppQuit = true
+
+    autoUpdater.on('update-available', (info) => {
+      mainWindow?.webContents.send('update:available', { version: info.version })
+    })
+
+    autoUpdater.on('update-downloaded', (info) => {
+      mainWindow?.webContents.send('update:downloaded', { version: info.version })
+    })
+
+    autoUpdater.on('error', (err) => {
+      console.error('[autoUpdater] error:', err.message)
+    })
+
+    // Delay first check so it doesn't compete with app startup
+    setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 10_000)
+  }
+
+  // Allow renderer to trigger install-and-relaunch
+  ipcMain.handle('update:install', () => {
+    autoUpdater.quitAndInstall()
   })
 })
 

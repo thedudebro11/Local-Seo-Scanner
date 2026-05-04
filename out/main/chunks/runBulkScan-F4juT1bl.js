@@ -1,17 +1,50 @@
 "use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const fs = require("fs-extra");
-const runAudit = require("./runAudit-CBkRarpM.js");
+const runAudit = require("./runAudit-C-YShnrl.js");
 const index = require("../index.js");
 const logger = require("./logger-DOTeCaxX.js");
 require("path");
 require("./settingsStorage-B4oQ_sNu.js");
-require("./scanRepository-D1_fs6er.js");
-require("./siteManager-D5Sop0bC.js");
+require("./scanRepository-83Qad7z5.js");
+require("./siteManager-CeF83cGX.js");
 require("cheerio/slim");
 require("electron");
+require("child_process");
+require("events");
+require("crypto");
+require("tty");
+require("util");
+require("os");
+require("fs");
+require("stream");
+require("url");
+require("zlib");
+require("http");
 const log = logger.createLogger("runBulkScan");
-const MAX_PAGES_BY_MODE = { quick: 10, full: 50 };
+const MAX_PAGES_BY_MODE = { preview: 1, quick: 10, full: 50 };
 async function runBulkScan(request, emitProgress) {
   const domains = normalizeDomains(request.domains);
   const batchId = `bulk_${Date.now()}`;
@@ -19,30 +52,43 @@ async function runBulkScan(request, emitProgress) {
   const totalDomains = domains.length;
   log.info(`Bulk scan starting: batchId=${batchId} domains=${totalDomains}`);
   const items = [];
-  for (let i = 0; i < domains.length; i++) {
-    const url = domains[i];
-    const domain = extractDomain(url);
-    log.info(`Bulk [${i + 1}/${totalDomains}] scanning ${domain}`);
-    const batchBase = i / totalDomains * 100;
-    const auditRequest = {
-      url,
-      scanMode: request.scanMode,
-      businessType: request.businessType ?? "auto",
-      maxPages: request.maxPages ?? MAX_PAGES_BY_MODE[request.scanMode]
-    };
-    const item = await scanOneDomain(domain, auditRequest, (step, percent) => {
-      const domainSlice = 100 / totalDomains;
-      emitProgress({
-        batchId,
-        domain,
-        domainIndex: i,
-        totalDomains,
-        domainStep: step,
-        domainPercent: percent,
-        batchPercent: Math.round(batchBase + percent / 100 * domainSlice)
-      });
-    });
-    items.push(item);
+  const { chromium } = await import("playwright");
+  const sharedBrowser = await chromium.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  });
+  log.info("Bulk scan: shared browser launched");
+  try {
+    for (let i = 0; i < domains.length; i++) {
+      const url = domains[i];
+      const domain = extractDomain(url);
+      log.info(`Bulk [${i + 1}/${totalDomains}] scanning ${domain}`);
+      const batchBase = i / totalDomains * 100;
+      const auditRequest = {
+        url,
+        scanMode: request.scanMode,
+        businessType: request.businessType ?? "auto",
+        maxPages: request.maxPages ?? MAX_PAGES_BY_MODE[request.scanMode]
+      };
+      const item = await scanOneDomain(domain, auditRequest, (step, percent) => {
+        const domainSlice = 100 / totalDomains;
+        emitProgress({
+          batchId,
+          domain,
+          domainIndex: i,
+          totalDomains,
+          domainStep: step,
+          domainPercent: percent,
+          batchPercent: Math.round(batchBase + percent / 100 * domainSlice)
+        });
+      }, sharedBrowser);
+      items.push(item);
+    }
+  } finally {
+    await sharedBrowser.close().catch(
+      (err) => log.warn(`Shared browser close error: ${err.message}`)
+    );
+    log.info("Bulk scan: shared browser closed");
   }
   const completedAt = (/* @__PURE__ */ new Date()).toISOString();
   const successfulScans = items.filter((i) => i.ok).length;
@@ -59,9 +105,9 @@ async function runBulkScan(request, emitProgress) {
   log.info(`Bulk scan complete: ${successfulScans}/${totalDomains} succeeded`);
   return result;
 }
-async function scanOneDomain(domain, request, emitProgress) {
+async function scanOneDomain(domain, request, emitProgress, sharedBrowser) {
   try {
-    const result = await runAudit.runAudit(request, emitProgress);
+    const result = await runAudit.runAudit(request, emitProgress, sharedBrowser);
     const rev = result.revenueImpact;
     return {
       domain,

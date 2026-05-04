@@ -23,7 +23,7 @@ import type {
 
 const log = createLogger('runBulkScan')
 
-const MAX_PAGES_BY_MODE = { quick: 10, full: 50 } as const
+const MAX_PAGES_BY_MODE = { preview: 1, quick: 10, full: 50 } as const
 
 export type BulkProgressEmitter = (event: BulkScanProgressEvent) => void
 
@@ -42,35 +42,51 @@ export async function runBulkScan(
 
   const items: BulkScanItemResult[] = []
 
-  for (let i = 0; i < domains.length; i++) {
-    const url = domains[i]
-    const domain = extractDomain(url)
+  // Launch one browser for the entire batch — each scan reuses it rather than
+  // paying the cold-start cost (~1–2s) for every domain.
+  const { chromium } = await import('playwright')
+  const sharedBrowser = await chromium.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  })
+  log.info('Bulk scan: shared browser launched')
 
-    log.info(`Bulk [${i + 1}/${totalDomains}] scanning ${domain}`)
+  try {
+    for (let i = 0; i < domains.length; i++) {
+      const url = domains[i]
+      const domain = extractDomain(url)
 
-    const batchBase = (i / totalDomains) * 100
+      log.info(`Bulk [${i + 1}/${totalDomains}] scanning ${domain}`)
 
-    const auditRequest: AuditRequest = {
-      url,
-      scanMode: request.scanMode,
-      businessType: (request.businessType ?? 'auto') as BusinessType,
-      maxPages: request.maxPages ?? MAX_PAGES_BY_MODE[request.scanMode],
+      const batchBase = (i / totalDomains) * 100
+
+      const auditRequest: AuditRequest = {
+        url,
+        scanMode: request.scanMode,
+        businessType: (request.businessType ?? 'auto') as BusinessType,
+        maxPages: request.maxPages ?? MAX_PAGES_BY_MODE[request.scanMode],
+      }
+
+      const item = await scanOneDomain(domain, auditRequest, (step, percent) => {
+        const domainSlice = 100 / totalDomains
+        emitProgress({
+          batchId,
+          domain,
+          domainIndex: i,
+          totalDomains,
+          domainStep: step,
+          domainPercent: percent,
+          batchPercent: Math.round(batchBase + (percent / 100) * domainSlice),
+        })
+      }, sharedBrowser)
+
+      items.push(item)
     }
-
-    const item = await scanOneDomain(domain, auditRequest, (step, percent) => {
-      const domainSlice = 100 / totalDomains
-      emitProgress({
-        batchId,
-        domain,
-        domainIndex: i,
-        totalDomains,
-        domainStep: step,
-        domainPercent: percent,
-        batchPercent: Math.round(batchBase + (percent / 100) * domainSlice),
-      })
-    })
-
-    items.push(item)
+  } finally {
+    await sharedBrowser.close().catch((err: Error) =>
+      log.warn(`Shared browser close error: ${err.message}`),
+    )
+    log.info('Bulk scan: shared browser closed')
   }
 
   const completedAt = new Date().toISOString()
@@ -97,9 +113,10 @@ async function scanOneDomain(
   domain: string,
   request: AuditRequest,
   emitProgress: (step: string, percent: number) => void,
+  sharedBrowser?: import('playwright').Browser,
 ): Promise<BulkScanItemResult> {
   try {
-    const result = await runAudit(request, emitProgress)
+    const result = await runAudit(request, emitProgress, sharedBrowser)
 
     const rev = result.revenueImpact
     return {

@@ -111,7 +111,7 @@ function BulkForm({ onSubmit }: { onSubmit: (req: BulkScanRequest) => void }): J
           <div style={formStyles.fieldGroup}>
             <span style={formStyles.label}>Scan Mode</span>
             <div style={formStyles.radioGroup}>
-              {(['quick', 'full'] as ScanMode[]).map((mode) => (
+              {(['preview', 'quick', 'full'] as ScanMode[]).map((mode) => (
                 <label key={mode} style={formStyles.radioLabel}>
                   <input
                     type="radio"
@@ -122,9 +122,9 @@ function BulkForm({ onSubmit }: { onSubmit: (req: BulkScanRequest) => void }): J
                     style={{ accentColor: 'var(--color-brand)', marginTop: 2 }}
                   />
                   <div>
-                    <div style={formStyles.radioTitle}>{mode === 'quick' ? 'Quick' : 'Full'}</div>
+                    <div style={formStyles.radioTitle}>{mode === 'preview' ? 'Preview' : mode === 'quick' ? 'Quick' : 'Full'}</div>
                     <div style={formStyles.radioHint}>
-                      {mode === 'quick' ? '~1–2 min per site' : '~5–10 min per site'}
+                      {mode === 'preview' ? '~30 sec per site' : mode === 'quick' ? '~1–2 min per site' : '~5–10 min per site'}
                     </div>
                   </div>
                 </label>

@@ -37,30 +37,42 @@ const log = createLogger('runScanJob')
 export async function runScanJob(
   request: AuditRequest,
   emit: PipelineProgressEmitter,
+  sharedBrowser?: import('playwright').Browser,
 ): Promise<AuditResult> {
-  log.info(`Scan job starting: ${request.url}`)
+  log.info(`Scan job starting: ${request.url} (mode=${request.scanMode})`)
 
   const ctx = createScanJobContext(request)
 
+  // If a shared browser is provided (bulk scan pool), wire it in and mark
+  // this scan as NOT the owner — we must not close it when we're done.
+  if (sharedBrowser) {
+    ctx.browser = sharedBrowser
+    ctx.browserOwned = false
+  }
+
+  const isPreview = request.scanMode === 'preview'
+
   try {
     // ── Required stages ─────────────────────────────────────────────────────
-    // Any unhandled error here propagates to the caller and aborts the job.
     await validateStage(ctx, emit)
-    await crawlStage(ctx, emit)      // opens ctx.browser
+    await crawlStage(ctx, emit)      // opens ctx.browser (if not already open)
     await extractStage(ctx, emit)
     await analysisStage(ctx, emit)
 
-    // ── Optional stages (browser still open) ────────────────────────────────
-    // These stages have access to ctx.browser because the browser must remain
-    // open until after competitorStage.
-    await runOptional('visual',     ctx, emit, visualStage)
-    await runOptional('impact',     ctx, emit, impactStage)
+    // ── Optional stages that need the browser ───────────────────────────────
+    // Skip the slow visual/impact/competitor stages in preview mode so the
+    // scan completes in ~30s for live prospect demos.
+    if (!isPreview) {
+      await runOptional('visual',     ctx, emit, visualStage)
+      await runOptional('impact',     ctx, emit, impactStage)
+    }
 
     // ── Required (score must succeed) ───────────────────────────────────────
     await scoreStage(ctx, emit)
 
-    // ── Optional (browser still open for competitor) ─────────────────────────
-    await runOptional('competitor', ctx, emit, competitorStage)
+    if (!isPreview) {
+      await runOptional('competitor', ctx, emit, competitorStage)
+    }
 
     // ── Optional (browser no longer needed) ──────────────────────────────────
     await runOptional('confidence', ctx, emit, confidenceStage)
@@ -72,8 +84,8 @@ export async function runScanJob(
     await reportStage(ctx, emit)
 
   } finally {
-    // Browser is always closed here — regardless of which stage succeeded.
-    if (ctx.browser) {
+    // Only close the browser if this scan was the one that launched it.
+    if (ctx.browser && ctx.browserOwned) {
       await ctx.browser.close().catch((err: Error) =>
         log.warn(`Browser close error: ${err.message}`),
       )

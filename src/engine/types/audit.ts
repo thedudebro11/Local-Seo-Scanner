@@ -4,7 +4,7 @@
  * Keep this file free of runtime imports — pure TypeScript interfaces only.
  */
 
-export type ScanMode = 'quick' | 'full'
+export type ScanMode = 'preview' | 'quick' | 'full'
 
 export type BusinessType =
   | 'auto'

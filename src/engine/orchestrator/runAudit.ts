@@ -21,6 +21,7 @@ export type ProgressEmitter = (step: string, percent: number, message?: string) 
 export async function runAudit(
   request: AuditRequest,
   emitProgress: ProgressEmitter,
+  sharedBrowser?: import('playwright').Browser,
 ): Promise<AuditResult> {
-  return runScanJob(request, emitProgress)
+  return runScanJob(request, emitProgress, sharedBrowser)
 }

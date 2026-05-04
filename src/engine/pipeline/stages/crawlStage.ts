@@ -21,16 +21,26 @@ export async function crawlStage(
   ctx: ScanJobContext,
   emit: PipelineProgressEmitter,
 ): Promise<void> {
-  emit('Launching browser…', 5)
-
-  // Dynamic import keeps Playwright out of the renderer bundle
   const { chromium } = await import('playwright')
-  ctx.browser = await chromium.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  })
-  // Capture executable path now so impactStage can pass it to Lighthouse
-  // without needing to re-import playwright after the browser is closed.
+
+  // If the bulk scan pool pre-opened a browser, reuse it; otherwise launch one.
+  if (!ctx.browser) {
+    emit('Launching browser…', 5)
+    ctx.browser = await chromium.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        // Removes the "Chrome is being controlled by automated software" flag
+        // that bot-detection services read via navigator.webdriver
+        '--disable-blink-features=AutomationControlled',
+      ],
+    })
+  } else {
+    emit('Reusing browser…', 5)
+  }
+  // Always capture the path — needed by impactStage for Lighthouse.
   ctx.chromiumPath = chromium.executablePath()
 
   // robots.txt

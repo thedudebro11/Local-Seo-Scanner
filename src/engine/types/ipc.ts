@@ -78,6 +78,9 @@ export interface ElectronAPI {
   getSettings: () => Promise<AppSettings>
   saveSettings: (partial: Partial<AppSettings>) => Promise<AppSettings>
   emailReport: (payload: { htmlPath: string; domain: string }) => Promise<void>
+  installUpdate: () => Promise<void>
+  onUpdateAvailable: (cb: (info: { version: string }) => void) => () => void
+  onUpdateDownloaded: (cb: (info: { version: string }) => void) => () => void
 }
 
 // Augment the global Window type so renderer code gets proper types on window.api

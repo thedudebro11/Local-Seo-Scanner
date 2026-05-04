@@ -80,6 +80,18 @@ const api = {
    * Open the report file in Finder/Explorer and launch the system mail client
    * with subject + body pre-filled. User drags the highlighted file into email.
    */
-  emailReport: (payload) => electron.ipcRenderer.invoke("file:email-report", payload)
+  emailReport: (payload) => electron.ipcRenderer.invoke("file:email-report", payload),
+  // ── Auto-update ────────────────────────────────────────────────────────────
+  installUpdate: () => electron.ipcRenderer.invoke("update:install"),
+  onUpdateAvailable: (cb) => {
+    const handler = (_, info) => cb(info);
+    electron.ipcRenderer.on("update:available", handler);
+    return () => electron.ipcRenderer.removeListener("update:available", handler);
+  },
+  onUpdateDownloaded: (cb) => {
+    const handler = (_, info) => cb(info);
+    electron.ipcRenderer.on("update:downloaded", handler);
+    return () => electron.ipcRenderer.removeListener("update:downloaded", handler);
+  }
 };
 electron.contextBridge.exposeInMainWorld("api", api);

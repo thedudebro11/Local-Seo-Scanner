@@ -75,6 +75,8 @@ export interface ScanJobContext {
 
   // ── Browser lifecycle (managed by orchestrator, opened in crawlStage) ─────
   browser?: Browser
+  /** True when this scan launched the browser and is responsible for closing it. */
+  browserOwned: boolean
   /** Chromium executable path — stored for Lighthouse's separate process. */
   chromiumPath?: string
 
@@ -131,6 +133,8 @@ export function createScanJobContext(request: AuditRequest): ScanJobContext {
     scanId: '',
     normalizedUrl: '',
     domain: '',
+    // Managed by orchestrator; true = this scan owns the browser
+    browserOwned: true,
     // Populated by crawlStage
     rawPages: [],
     robotsFound: false,

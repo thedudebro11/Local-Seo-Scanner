@@ -23,8 +23,9 @@ function validateUrl(raw: string): string | null {
 }
 
 const MAX_PAGES_BY_MODE: Record<ScanMode, number> = {
-  quick: 10,
-  full:  50,
+  preview: 1,
+  quick:   10,
+  full:    50,
 }
 
 export function ScanForm({ onSubmit, isLoading = false }: Props): JSX.Element {
@@ -91,7 +92,7 @@ export function ScanForm({ onSubmit, isLoading = false }: Props): JSX.Element {
           <div style={styles.fieldGroup}>
             <span style={styles.fieldLabel}>Scan Mode</span>
             <div style={styles.radioGroup}>
-              {(['quick', 'full'] as ScanMode[]).map((mode) => (
+              {(['preview', 'quick', 'full'] as ScanMode[]).map((mode) => (
                 <label key={mode} style={styles.radioLabel}>
                   <input
                     type="radio"
@@ -104,10 +105,14 @@ export function ScanForm({ onSubmit, isLoading = false }: Props): JSX.Element {
                   />
                   <div style={styles.radioCard}>
                     <span style={styles.radioTitle}>
-                      {mode === 'quick' ? 'Quick' : 'Full'}
+                      {mode === 'preview' ? 'Preview' : mode === 'quick' ? 'Quick' : 'Full'}
                     </span>
                     <span style={styles.radioHint}>
-                      {mode === 'quick' ? '~1–2 min · up to 10 pages' : '~5–10 min · up to 50 pages'}
+                      {mode === 'preview'
+                        ? '~30 sec · homepage only'
+                        : mode === 'quick'
+                          ? '~1–2 min · up to 10 pages'
+                          : '~5–10 min · up to 50 pages'}
                     </span>
                   </div>
                 </label>
@@ -173,9 +178,11 @@ export function ScanForm({ onSubmit, isLoading = false }: Props): JSX.Element {
             {isLoading ? 'Scanning…' : 'Start Scan'}
           </Button>
           <span style={styles.submitHint}>
-            {scanMode === 'quick'
-              ? 'Quick scan: homepage + key pages, ~1–2 minutes'
-              : 'Full scan: deep crawl + Lighthouse audit, ~5–10 minutes'}
+            {scanMode === 'preview'
+              ? 'Preview: homepage only — ideal for live prospect demos, ~30 seconds'
+              : scanMode === 'quick'
+                ? 'Quick scan: homepage + key pages, ~1–2 minutes'
+                : 'Full scan: deep crawl + Lighthouse audit, ~5–10 minutes'}
           </span>
         </div>
       </form>

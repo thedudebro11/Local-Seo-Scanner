@@ -5,6 +5,17 @@ const fs = require("fs-extra");
 const index = require("../index.js");
 const logger = require("./logger-DOTeCaxX.js");
 require("electron");
+require("child_process");
+require("events");
+require("crypto");
+require("tty");
+require("util");
+require("os");
+require("fs");
+require("stream");
+require("url");
+require("zlib");
+require("http");
 const log = logger.createLogger("scanRepository");
 function readIndex() {
   const indexPath = index.getIndexPath();

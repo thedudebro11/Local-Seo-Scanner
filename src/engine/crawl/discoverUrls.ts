@@ -13,8 +13,9 @@ import { createLogger } from '../utils/logger'
 
 const log = createLogger('discoverUrls')
 
+// Clean Chrome UA — no custom suffix that bot-detection services flag immediately
 const CRAWLER_USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 LocalSEOScanner/1.0'
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 
 export type CrawlProgressCallback = (fetched: number, queued: number) => void
 
@@ -41,8 +42,14 @@ export async function discoverUrls(
   const context = await browser.newContext({
     userAgent: CRAWLER_USER_AGENT,
     ignoreHTTPSErrors: true,
-    // Disable media/font loading for speed
-    extraHTTPHeaders: { Accept: 'text/html,application/xhtml+xml,*/*;q=0.8' },
+    // Realistic viewport — headless browsers with no viewport are a bot signal
+    viewport: { width: 1366, height: 768 },
+    // Suppress the navigator.webdriver flag that bot-detection reads
+    javaScriptEnabled: true,
+    extraHTTPHeaders: {
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
   })
 
   const visited = new Set<string>()

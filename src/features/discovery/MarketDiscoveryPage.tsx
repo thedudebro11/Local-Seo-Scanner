@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { useBulkScanStore } from '../bulk/useBulkScanStore'
+import type { BulkScanState } from '../bulk/useBulkScanStore'
 import { rankItems } from '@engine/bulk/buildBulkSummary'
 import type { DiscoveredBusiness, MarketDiscoveryResult } from '@engine/discovery/discoveryTypes'
-import type { BulkScanItemResult } from '@engine/bulk/bulkTypes'
+import type { BulkScanResult, BulkScanItemResult } from '@engine/bulk/bulkTypes'
 import type { ScanMode } from '@engine/types/audit'
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -199,7 +200,7 @@ function DiscoveryForm({ scanMode, onScanModeChange, onSubmit }: DiscoveryFormPr
         <div style={formStyles.modeRow}>
           <span style={formStyles.label}>Scan Mode <span style={formStyles.modeHint}>(applied when scanning selected businesses)</span></span>
           <div style={formStyles.radioGroup}>
-            {(['quick', 'full'] as ScanMode[]).map((mode) => (
+            {(['preview', 'quick', 'full'] as ScanMode[]).map((mode) => (
               <label key={mode} style={formStyles.radioLabel}>
                 <input
                   type="radio"
@@ -210,8 +211,8 @@ function DiscoveryForm({ scanMode, onScanModeChange, onSubmit }: DiscoveryFormPr
                   style={{ accentColor: 'var(--color-brand)', marginTop: 2 }}
                 />
                 <div>
-                  <div style={formStyles.radioTitle}>{mode === 'quick' ? 'Quick' : 'Full'}</div>
-                  <div style={formStyles.radioHint}>{mode === 'quick' ? '~1–2 min per site' : '~5–10 min per site'}</div>
+                  <div style={formStyles.radioTitle}>{mode === 'preview' ? 'Preview' : mode === 'quick' ? 'Quick' : 'Full'}</div>
+                  <div style={formStyles.radioHint}>{mode === 'preview' ? '~30 sec per site' : mode === 'quick' ? '~1–2 min per site' : '~5–10 min per site'}</div>
                 </div>
               </label>
             ))}
@@ -376,7 +377,7 @@ function CandidateTable({ result, scanMode, onScanModeChange, onScanSelected, on
           <div style={candStyles.actionRow}>
             <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
               <span style={formStyles.label}>Scan Mode:</span>
-              {(['quick', 'full'] as ScanMode[]).map((mode) => (
+              {(['preview', 'quick', 'full'] as ScanMode[]).map((mode) => (
                 <label key={mode} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                   <input
                     type="radio"
@@ -387,7 +388,7 @@ function CandidateTable({ result, scanMode, onScanModeChange, onScanSelected, on
                     style={{ accentColor: 'var(--color-brand)' }}
                   />
                   <span style={{ fontSize: 13, color: 'var(--color-text-primary)' }}>
-                    {mode === 'quick' ? 'Quick' : 'Full'}
+                    {mode === 'preview' ? 'Preview' : mode === 'quick' ? 'Quick' : 'Full'}
                   </span>
                 </label>
               ))}
@@ -419,7 +420,7 @@ function CandidateTable({ result, scanMode, onScanModeChange, onScanSelected, on
 
 // ─── Bulk progress (reused from BulkScanPage) ─────────────────────────────────
 
-function BulkProgress({ bulk }: { bulk: ReturnType<typeof useBulkScanStore> }): JSX.Element {
+function BulkProgress({ bulk }: { bulk: Pick<BulkScanState, 'progress'> }): JSX.Element {
   const p = bulk.progress
   if (!p) return <Card><p style={{ color: 'var(--color-text-secondary)', fontStyle: 'italic', fontSize: 14 }}>Starting bulk scan…</p></Card>
   return (
@@ -446,9 +447,9 @@ function BulkProgress({ bulk }: { bulk: ReturnType<typeof useBulkScanStore> }): 
 
 // ─── Bulk results ─────────────────────────────────────────────────────────────
 
-function BulkResults({ result, onReset }: { result: NonNullable<ReturnType<typeof useBulkScanStore>['result']>; onReset: () => void }): JSX.Element {
+function BulkResults({ result, onReset }: { result: BulkScanResult; onReset: () => void }): JSX.Element {
   const ranked = rankItems(result, 'score-asc')
-  const failed = result.items.filter((i) => !i.ok)
+  const failed = result.items.filter((i: BulkScanItemResult) => !i.ok)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -490,7 +491,7 @@ function BulkResults({ result, onReset }: { result: NonNullable<ReturnType<typeo
       {failed.length > 0 && (
         <Card>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 8 }}>Failed Sites</div>
-          {failed.map((item) => (
+          {failed.map((item: BulkScanItemResult) => (
             <div key={item.domain} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'baseline', padding: '4px 0', borderBottom: '1px solid var(--color-border)' }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)', minWidth: 160 }}>{item.domain}</span>
               <span style={{ fontSize: 12, color: '#f87171' }}>{item.error ?? 'Unknown error'}</span>

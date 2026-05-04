@@ -223,11 +223,15 @@ function deriveConfidence(
     (f) => f.impactLevel === 'CRITICAL' || f.impactLevel === 'HIGH',
   ).length
 
-  // If the scan itself was high-confidence and we have clear high-impact signals, be more confident
-  if (scoreConfidence?.level === 'High' && criticalOrHigh >= 2) return 'Medium'
-  if (scoreConfidence?.level === 'Low') return 'Low'
-  if (criticalOrHigh === 0) return 'Low'
-  if (criticalOrHigh >= 3) return 'Medium'
+  // High: thorough scan + multiple clear high-impact issues
+  if (scoreConfidence?.level === 'High' && criticalOrHigh >= 3) return 'High'
+
+  // Medium: good scan quality with at least one finding, or many findings regardless
+  if (scoreConfidence?.level === 'High' && criticalOrHigh >= 1) return 'Medium'
+  if (scoreConfidence?.level === 'Medium' && criticalOrHigh >= 2) return 'Medium'
+  if (criticalOrHigh >= 4) return 'Medium'
+
+  // Low: limited scan, no high-impact findings, or explicitly low scan confidence
   return 'Low'
 }
 
@@ -237,15 +241,20 @@ function buildAssumptions(
   confidence: RevenueImpactEstimate['confidence'],
   sym = '$',
 ): string[] {
+  const confidenceNote =
+    confidence === 'High'
+      ? 'Confidence is high — thorough crawl with multiple critical issues detected, making the estimate reliable'
+      : confidence === 'Medium'
+        ? 'Confidence is medium — estimate is directional; consult an SEO professional for a detailed projection'
+        : 'Confidence is low — fewer pages were crawled or fewer high-impact issues were identified, making the estimate less certain'
+
   return [
     `Business type: ${leadValueConfig.label}`,
     `Estimated lead value assumed at ${sym}${leadValueConfig.low.toLocaleString()}–${sym}${leadValueConfig.high.toLocaleString()} per converted customer (conservative range)`,
     'Lead-to-customer conversion rate assumed at 20–40% of enquiries',
     'Lead loss estimates are based on detected website issues only — actual traffic and market conditions are not known',
     'Revenue estimates assume current organic and direct traffic levels; paid traffic is not considered',
-    confidence === 'Low'
-      ? 'Confidence is low — fewer pages were crawled or fewer high-impact issues were identified, making the estimate less certain'
-      : 'Estimate is directional; consult an SEO professional for a detailed revenue projection',
+    confidenceNote,
     'All figures are estimates and should not be treated as guaranteed outcomes',
   ]
 }

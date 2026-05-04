@@ -1,11 +1,21 @@
 "use strict";
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const https = require("https");
-const os = require("os");
+const require$$2 = require("os");
 const fs = require("fs-extra");
 const index = require("../index.js");
 require("electron");
 require("path");
+require("child_process");
+require("events");
+require("crypto");
+require("tty");
+require("util");
+require("fs");
+require("stream");
+require("url");
+require("zlib");
+require("http");
 async function readLicense() {
   try {
     const p = index.getLicensePath();
@@ -27,7 +37,7 @@ async function deleteLicense() {
 const LS_HOST = "api.lemonsqueezy.com";
 const OFFLINE_GRACE_MS = 7 * 24 * 60 * 60 * 1e3;
 async function activateLicense(key) {
-  const instanceName = `${os.hostname()}-${os.platform()}`;
+  const instanceName = `${require$$2.hostname()}-${require$$2.platform()}`;
   const trimmedKey = key.trim().toUpperCase();
   let body;
   try {

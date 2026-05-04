@@ -137,6 +137,23 @@ const api = {
    */
   emailReport: (payload: { htmlPath: string; domain: string }): Promise<void> =>
     ipcRenderer.invoke('file:email-report', payload),
+
+  // ── Auto-update ────────────────────────────────────────────────────────────
+
+  installUpdate: (): Promise<void> =>
+    ipcRenderer.invoke('update:install'),
+
+  onUpdateAvailable: (cb: (info: { version: string }) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, info: { version: string }): void => cb(info)
+    ipcRenderer.on('update:available', handler)
+    return () => ipcRenderer.removeListener('update:available', handler)
+  },
+
+  onUpdateDownloaded: (cb: (info: { version: string }) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, info: { version: string }): void => cb(info)
+    ipcRenderer.on('update:downloaded', handler)
+    return () => ipcRenderer.removeListener('update:downloaded', handler)
+  },
 }
 
 contextBridge.exposeInMainWorld('api', api)

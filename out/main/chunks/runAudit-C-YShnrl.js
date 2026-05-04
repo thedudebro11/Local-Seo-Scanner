@@ -26,11 +26,22 @@ const logger = require("./logger-DOTeCaxX.js");
 const fs = require("fs-extra");
 const path = require("path");
 const settingsStorage = require("./settingsStorage-B4oQ_sNu.js");
-const scanRepository = require("./scanRepository-D1_fs6er.js");
+const scanRepository = require("./scanRepository-83Qad7z5.js");
 const index = require("../index.js");
-const siteManager = require("./siteManager-D5Sop0bC.js");
+const siteManager = require("./siteManager-CeF83cGX.js");
 const cheerio = require("cheerio/slim");
 require("electron");
+require("child_process");
+require("events");
+require("crypto");
+require("tty");
+require("util");
+require("os");
+require("fs");
+require("stream");
+require("url");
+require("zlib");
+require("http");
 function _interopNamespaceDefault(e) {
   const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
   if (e) {
@@ -56,6 +67,8 @@ function createScanJobContext(request) {
     scanId: "",
     normalizedUrl: "",
     domain: "",
+    // Managed by orchestrator; true = this scan owns the browser
+    browserOwned: true,
     // Populated by crawlStage
     rawPages: [],
     robotsFound: false,
@@ -1085,17 +1098,39 @@ function parseSitemapXml(xml) {
 }
 const log$i = logger.createLogger("fetchHtml");
 const PAGE_TIMEOUT_MS = 3e4;
+const POST_LOAD_DWELL_MS = 1500;
+const CHALLENGE_EXTRA_WAIT_MS = 4e3;
+const CHALLENGE_PATTERNS = [
+  "checking your browser",
+  "just a moment",
+  "attention required",
+  "enable javascript and cookies",
+  "cf-browser-verification",
+  "ddos-guard",
+  "please wait while we verify",
+  "bot protection",
+  "human verification"
+];
 async function fetchHtml(url, context) {
   const page = await context.newPage();
   try {
     const response = await page.goto(url, {
       timeout: PAGE_TIMEOUT_MS,
-      waitUntil: "domcontentloaded"
+      // 'load' waits for the load event — gives JS time to run, unlike 'domcontentloaded'
+      waitUntil: "load"
     });
     const statusCode = response?.status() ?? 0;
+    await page.waitForTimeout(POST_LOAD_DWELL_MS);
+    let html = await page.content();
+    const lower = html.toLowerCase();
+    const isChallenge = CHALLENGE_PATTERNS.some((p) => lower.includes(p));
+    if (isChallenge) {
+      log$i.warn(`Challenge page detected at ${url} — waiting for redirect…`);
+      await page.waitForTimeout(CHALLENGE_EXTRA_WAIT_MS);
+      html = await page.content();
+    }
     const finalUrl = page.url();
-    const html = await page.content();
-    log$i.info(`Fetched ${url} → ${finalUrl} [${statusCode}]`);
+    log$i.info(`Fetched ${url} → ${finalUrl} [${statusCode}]${isChallenge ? " (challenge bypassed)" : ""}`);
     return { requestedUrl: url, finalUrl, statusCode, html };
   } catch (err) {
     log$i.warn(`Failed to fetch ${url}: ${err.message}`);
@@ -1140,13 +1175,19 @@ function shouldSkipUrl(url) {
   return false;
 }
 const log$h = logger.createLogger("discoverUrls");
-const CRAWLER_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 LocalSEOScanner/1.0";
+const CRAWLER_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 async function discoverUrls(startUrl, browser, maxPages, domain, onProgress) {
   const context = await browser.newContext({
     userAgent: CRAWLER_USER_AGENT,
     ignoreHTTPSErrors: true,
-    // Disable media/font loading for speed
-    extraHTTPHeaders: { Accept: "text/html,application/xhtml+xml,*/*;q=0.8" }
+    // Realistic viewport — headless browsers with no viewport are a bot signal
+    viewport: { width: 1366, height: 768 },
+    // Suppress the navigator.webdriver flag that bot-detection reads
+    javaScriptEnabled: true,
+    extraHTTPHeaders: {
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9"
+    }
   });
   const visited = /* @__PURE__ */ new Set();
   const queue = [startUrl];
@@ -1209,12 +1250,23 @@ function extractInternalLinks(html, baseUrl, domain) {
 }
 const log$g = logger.createLogger("crawlStage");
 async function crawlStage(ctx, emit) {
-  emit("Launching browser…", 5);
   const { chromium } = await import("playwright");
-  ctx.browser = await chromium.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
-  });
+  if (!ctx.browser) {
+    emit("Launching browser…", 5);
+    ctx.browser = await chromium.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        // Removes the "Chrome is being controlled by automated software" flag
+        // that bot-detection services read via navigator.webdriver
+        "--disable-blink-features=AutomationControlled"
+      ]
+    });
+  } else {
+    emit("Reusing browser…", 5);
+  }
   ctx.chromiumPath = chromium.executablePath();
   emit("Loading robots.txt…", 8);
   const robotsResult = await fetchRobots(ctx.normalizedUrl);
@@ -1306,13 +1358,12 @@ function collectTypes(node, types) {
 function normalizeType(t) {
   return t.includes("/") ? t.split("/").pop() ?? t : t;
 }
-const PHONE_REGEX = /(?:\+1[\s.-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]\d{4}/g;
+const PHONE_REGEX = /(?:\+1[\s.\-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]\d{4}/g;
 const EMAIL_REGEX = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
 const STREET_ADDRESS_REGEX = /\d{1,5}\s+[A-Z][a-zA-Z\s]{2,40}\s+(St|Street|Ave|Avenue|Blvd|Boulevard|Dr|Drive|Rd|Road|Way|Ct|Court|Ln|Lane|Pl|Place|Pkwy|Parkway|Hwy|Highway)\b/i;
 function extractContactSignals($) {
   const phones = /* @__PURE__ */ new Set();
   const emails = /* @__PURE__ */ new Set();
-  let hasAddress = false;
   $('a[href^="tel:"]').each((_, el) => {
     const raw = $(el).attr("href") ?? "";
     const digits = raw.replace("tel:", "").replace(/\s/g, "");
@@ -1323,27 +1374,66 @@ function extractContactSignals($) {
     const addr = raw.split("?")[0].trim().toLowerCase();
     if (addr && EMAIL_REGEX.test(addr)) emails.add(addr);
   });
-  const schemaAddress = $('[itemprop="address"]').length > 0 || $('[itemprop="streetAddress"]').length > 0 || $('[typeof="PostalAddress"]').length > 0;
-  const searchSelectors = ["main", "article", "section", ".contact", "#contact", "footer", "body"];
-  let bodyText = "";
-  for (const sel of searchSelectors) {
-    const el = $(sel).first();
-    if (el.length) {
-      bodyText = el.text();
-      break;
+  $('[itemprop="telephone"]').each((_, el) => {
+    const val = ($(el).attr("content") ?? $(el).text()).trim();
+    if (val) phones.add(val);
+  });
+  $('script[type="application/ld+json"]').each((_, el) => {
+    try {
+      const parsed = JSON.parse($(el).html() ?? "");
+      extractJsonLdPhones(parsed, phones);
+      extractJsonLdEmails(parsed, emails);
+    } catch {
     }
+  });
+  const textChunks = [];
+  const zones = ["header", "main", "article", ".contact", "#contact", "footer"];
+  for (const sel of zones) {
+    const text = $(sel).text();
+    if (text.trim()) textChunks.push(text);
   }
-  const phoneMatches = bodyText.match(PHONE_REGEX) ?? [];
+  if (textChunks.length === 0) {
+    textChunks.push($("body").text());
+  }
+  const fullText = textChunks.join(" ");
+  const phoneMatches = fullText.match(PHONE_REGEX) ?? [];
   phoneMatches.forEach((p) => phones.add(p.trim()));
-  const emailMatches = bodyText.match(EMAIL_REGEX) ?? [];
-  emailMatches.filter((e) => !e.endsWith(".png") && !e.endsWith(".jpg")).forEach((e) => emails.add(e.toLowerCase()));
-  hasAddress = schemaAddress || STREET_ADDRESS_REGEX.test(bodyText) || $("address").length > 0;
+  const emailMatches = fullText.match(EMAIL_REGEX) ?? [];
+  emailMatches.filter((e) => !e.endsWith(".png") && !e.endsWith(".jpg") && !e.endsWith(".svg")).forEach((e) => emails.add(e.toLowerCase()));
+  const hasAddress = $('[itemprop="address"], [itemprop="streetAddress"], [typeof="PostalAddress"]').length > 0 || $("address").length > 0 || STREET_ADDRESS_REGEX.test(fullText);
   return {
     phones: [...phones].slice(0, 10),
-    // cap at 10 to avoid runaway matches
     emails: [...emails].slice(0, 10),
     hasAddress
   };
+}
+function extractJsonLdPhones(node, out) {
+  if (!node || typeof node !== "object") return;
+  if (Array.isArray(node)) {
+    node.forEach((n) => extractJsonLdPhones(n, out));
+    return;
+  }
+  const obj = node;
+  if (typeof obj["telephone"] === "string" && obj["telephone"]) {
+    out.add(obj["telephone"]);
+  }
+  for (const val of Object.values(obj)) {
+    if (val && typeof val === "object") extractJsonLdPhones(val, out);
+  }
+}
+function extractJsonLdEmails(node, out) {
+  if (!node || typeof node !== "object") return;
+  if (Array.isArray(node)) {
+    node.forEach((n) => extractJsonLdEmails(n, out));
+    return;
+  }
+  const obj = node;
+  if (typeof obj["email"] === "string" && obj["email"]) {
+    out.add(obj["email"].toLowerCase());
+  }
+  for (const val of Object.values(obj)) {
+    if (val && typeof val === "object") extractJsonLdEmails(val, out);
+  }
 }
 const DAYS_PATTERN = /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)[\s:.-]/i;
 const TIME_PATTERN = /\b\d{1,2}(:\d{2})?\s*([ap]\.?m\.?|[AP]M)\b/i;
@@ -4351,20 +4441,21 @@ function deriveConfidence(findings, scoreConfidence) {
   const criticalOrHigh = findings.filter(
     (f) => f.impactLevel === "CRITICAL" || f.impactLevel === "HIGH"
   ).length;
-  if (scoreConfidence?.level === "High" && criticalOrHigh >= 2) return "Medium";
-  if (scoreConfidence?.level === "Low") return "Low";
-  if (criticalOrHigh === 0) return "Low";
-  if (criticalOrHigh >= 3) return "Medium";
+  if (scoreConfidence?.level === "High" && criticalOrHigh >= 3) return "High";
+  if (scoreConfidence?.level === "High" && criticalOrHigh >= 1) return "Medium";
+  if (scoreConfidence?.level === "Medium" && criticalOrHigh >= 2) return "Medium";
+  if (criticalOrHigh >= 4) return "Medium";
   return "Low";
 }
 function buildAssumptions(businessType, leadValueConfig, confidence, sym = "$") {
+  const confidenceNote = confidence === "High" ? "Confidence is high — thorough crawl with multiple critical issues detected, making the estimate reliable" : confidence === "Medium" ? "Confidence is medium — estimate is directional; consult an SEO professional for a detailed projection" : "Confidence is low — fewer pages were crawled or fewer high-impact issues were identified, making the estimate less certain";
   return [
     `Business type: ${leadValueConfig.label}`,
     `Estimated lead value assumed at ${sym}${leadValueConfig.low.toLocaleString()}–${sym}${leadValueConfig.high.toLocaleString()} per converted customer (conservative range)`,
     "Lead-to-customer conversion rate assumed at 20–40% of enquiries",
     "Lead loss estimates are based on detected website issues only — actual traffic and market conditions are not known",
     "Revenue estimates assume current organic and direct traffic levels; paid traffic is not considered",
-    confidence === "Low" ? "Confidence is low — fewer pages were crawled or fewer high-impact issues were identified, making the estimate less certain" : "Estimate is directional; consult an SEO professional for a detailed revenue projection",
+    confidenceNote,
     "All figures are estimates and should not be treated as guaranteed outcomes"
   ];
 }
@@ -4545,25 +4636,34 @@ async function opportunityStage(ctx, emit) {
   log$1.info(`SEO opportunities detected: ${ctx.seoOpportunities.length}`);
 }
 const log = logger.createLogger("runScanJob");
-async function runScanJob(request, emit) {
-  log.info(`Scan job starting: ${request.url}`);
+async function runScanJob(request, emit, sharedBrowser) {
+  log.info(`Scan job starting: ${request.url} (mode=${request.scanMode})`);
   const ctx = createScanJobContext(request);
+  if (sharedBrowser) {
+    ctx.browser = sharedBrowser;
+    ctx.browserOwned = false;
+  }
+  const isPreview = request.scanMode === "preview";
   try {
     await validateStage(ctx, emit);
     await crawlStage(ctx, emit);
     await extractStage(ctx, emit);
     await analysisStage(ctx, emit);
-    await runOptional("visual", ctx, emit, visualStage);
-    await runOptional("impact", ctx, emit, impactStage);
+    if (!isPreview) {
+      await runOptional("visual", ctx, emit, visualStage);
+      await runOptional("impact", ctx, emit, impactStage);
+    }
     await scoreStage(ctx, emit);
-    await runOptional("competitor", ctx, emit, competitorStage);
+    if (!isPreview) {
+      await runOptional("competitor", ctx, emit, competitorStage);
+    }
     await runOptional("confidence", ctx, emit, confidenceStage);
     await runOptional("roadmap", ctx, emit, roadmapStage);
     await runOptional("revenue", ctx, emit, revenueStage);
     await runOptional("opportunity", ctx, emit, opportunityStage);
     await reportStage(ctx, emit);
   } finally {
-    if (ctx.browser) {
+    if (ctx.browser && ctx.browserOwned) {
       await ctx.browser.close().catch(
         (err) => log.warn(`Browser close error: ${err.message}`)
       );
@@ -4585,7 +4685,7 @@ async function runOptional(name, ctx, emit, stage) {
     log.warn(`Optional stage '${name}' failed: ${err.message}`);
   }
 }
-async function runAudit(request, emitProgress) {
-  return runScanJob(request, emitProgress);
+async function runAudit(request, emitProgress, sharedBrowser) {
+  return runScanJob(request, emitProgress, sharedBrowser);
 }
 exports.runAudit = runAudit;
