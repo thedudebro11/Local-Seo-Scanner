@@ -42,6 +42,7 @@ export async function reportStage(
   ctx.artifacts = {
     jsonPath,
     htmlPath,
+    blueprintPath: ctx.artifacts.blueprintPath,
     screenshotPaths: Object.keys(ctx.screenshotPaths).length > 0
       ? ctx.screenshotPaths
       : undefined,
@@ -89,9 +90,11 @@ export function buildAuditResult(
     roadmap: ctx.roadmap,
     seoOpportunities: ctx.seoOpportunities,
     gbpCheck: ctx.gbpResult,
+    design: ctx.designResult,
     artifacts: {
       jsonPath,
       htmlPath,
+      blueprintPath: ctx.artifacts.blueprintPath,
       screenshotPaths: Object.keys(ctx.screenshotPaths).length > 0
         ? ctx.screenshotPaths
         : undefined,

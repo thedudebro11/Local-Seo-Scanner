@@ -60,6 +60,13 @@ export function buildHtmlPath(scanId: string): string {
 }
 
 /**
+ * Full path for the site blueprint markdown file.
+ */
+export function buildBlueprintPath(scanId: string): string {
+  return path.join(getScanArtifactsDir(scanId), 'blueprint.md')
+}
+
+/**
  * Path for the scan index file (list of all saved scans).
  */
 export function getIndexPath(): string {

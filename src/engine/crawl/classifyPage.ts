@@ -15,15 +15,31 @@ const PATH_RULES: Array<[RegExp, PageType]> = [
   [/\/(about|about-us|our-story|our-team|who-we-are|company)/i, 'about'],
   [/\/(locations?|areas?|cities|city|serve|coverage|service-area)/i, 'location'],
   [/\/(services?|what-we-do|our-services|solutions?|offerings?)/i, 'service'],
+  // Service sub-pages: paths ending in common trade action words, e.g. /heating-repair/, /ac-installation/
+  [/\/([\w-]+-)?(?:repair|installation|maintenance|replacement|restoration|cleaning|inspection|tune-up)\/?$/i, 'service'],
   [/\/(blog|news|articles?|posts?|updates?|resources?)/i, 'blog'],
 ]
 
-const HEADING_RULES: Array<[RegExp, PageType]> = [
+// Rules applied to H1 + title text (page identity — primary signal).
+const H1_RULES: Array<[RegExp, PageType]> = [
   [/book\s*(now|an?\s*appointment|online)|schedule\s*(an?\s*appointment|now)/i, 'booking'],
   [/contact\s*us|get\s*in\s*touch|reach\s*us|call\s*us\s*today/i, 'contact'],
   [/our\s*menu|view\s*(the\s*)?menu|food\s*&\s*drinks/i, 'menu'],
   [/photo\s*gallery|our\s*(gallery|portfolio|work|projects?)/i, 'gallery'],
   [/about\s*us|our\s*(story|team|company|mission|history)/i, 'about'],
+  [/service\s*area|areas?\s*we\s*serve|serving\s*(the\s*)?\w+/i, 'location'],
+  [/our\s*services?|what\s*we\s*(do|offer)|services?\s*(we\s*)?provide/i, 'service'],
+  [/latest\s*(news|posts?|articles?)|from\s*the\s*blog/i, 'blog'],
+]
+
+// Rules applied to H2 text only as a secondary fallback.
+// 'about' is intentionally excluded — "About Us" appears in the footer of many
+// local business sites, and matching it would mis-classify every service page.
+const H2_RULES: Array<[RegExp, PageType]> = [
+  [/book\s*(now|an?\s*appointment|online)|schedule\s*(an?\s*appointment|now)/i, 'booking'],
+  [/contact\s*us|get\s*in\s*touch|reach\s*us|call\s*us\s*today/i, 'contact'],
+  [/our\s*menu|view\s*(the\s*)?menu|food\s*&\s*drinks/i, 'menu'],
+  [/photo\s*gallery|our\s*(gallery|portfolio|work|projects?)/i, 'gallery'],
   [/service\s*area|areas?\s*we\s*serve|serving\s*(the\s*)?\w+/i, 'location'],
   [/our\s*services?|what\s*we\s*(do|offer)|services?\s*(we\s*)?provide/i, 'service'],
   [/latest\s*(news|posts?|articles?)|from\s*the\s*blog/i, 'blog'],
@@ -57,10 +73,16 @@ export function classifyPage(
     if (pattern.test(pathname)) return type
   }
 
-  // Heading text matching (fallback)
-  const headingText = [...h1s, ...h2s, title].join(' ')
-  for (const [pattern, type] of HEADING_RULES) {
-    if (pattern.test(headingText)) return type
+  // H1 + title matching (authoritative page identity — checked before H2s)
+  const primaryText = [...h1s, title].join(' ')
+  for (const [pattern, type] of H1_RULES) {
+    if (pattern.test(primaryText)) return type
+  }
+
+  // H2 fallback — excludes 'about' to avoid matching site-wide "About Us" footer sections
+  const h2Text = h2s.join(' ')
+  for (const [pattern, type] of H2_RULES) {
+    if (pattern.test(h2Text)) return type
   }
 
   return 'other'

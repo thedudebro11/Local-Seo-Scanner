@@ -128,6 +128,14 @@ export async function gbpStage(
   ctx.gbpResult = gbpResult
   ctx.allFindings = [...ctx.allFindings, ...findings]
 
+  // Also push into categoryFindings so scoreStage deducts these from the
+  // localSeo and trust category scores (scoreStage reads categoryFindings, not allFindings).
+  for (const f of findings) {
+    const bucket = ctx.categoryFindings[f.category as keyof typeof ctx.categoryFindings]
+    if (bucket) bucket.push(f)
+  }
+
+
   log.info(
     `GBP check: found=${gbpResult.found}, method=${gbpResult.placeId ? 'api' : 'none'}, ` +
     `mapEmbed=${hasMapEmbed}, reviewLink=${hasReviewLink}, findings=${findings.length}`,

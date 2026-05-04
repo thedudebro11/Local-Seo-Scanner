@@ -30,6 +30,8 @@ import { roadmapStage }     from './stages/roadmapStage'
 import { revenueStage }     from './stages/revenueStage'
 import { opportunityStage } from './stages/opportunityStage'
 import { gbpStage }         from './stages/gbpStage'
+import { designStage }      from './stages/designStage'
+import { blueprintStage }   from './stages/blueprintStage'
 import { reportStage }      from './stages/reportStage'
 import { buildJsonPath, buildHtmlPath } from '../storage/pathResolver'
 
@@ -68,6 +70,13 @@ export async function runScanJob(
       await runOptional('impact',     ctx, emit, impactStage)
     }
 
+    // GBP stage runs before scoring so its findings (map embed, review link,
+    // phone mismatch, etc.) are counted in the localSeo and trust category scores.
+    await runOptional('gbp',         ctx, emit, gbpStage)
+
+    // Design analysis runs before scoring — no browser needed, reads crawled HTML.
+    await runOptional('design',      ctx, emit, designStage)
+
     // ── Required (score must succeed) ───────────────────────────────────────
     await scoreStage(ctx, emit)
 
@@ -80,7 +89,7 @@ export async function runScanJob(
     await runOptional('roadmap',     ctx, emit, roadmapStage)
     await runOptional('revenue',     ctx, emit, revenueStage)
     await runOptional('opportunity', ctx, emit, opportunityStage)
-    await runOptional('gbp',         ctx, emit, gbpStage)
+    await runOptional('blueprint',   ctx, emit, blueprintStage)
 
     // ── Required (write files) ───────────────────────────────────────────────
     await reportStage(ctx, emit)

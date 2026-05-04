@@ -20,6 +20,7 @@ export function ReportActions({ result, onNewScan }: Props): JSX.Element {
 
   const hasHtmlReport = Boolean(result.artifacts.htmlPath)
   const hasJsonReport = Boolean(result.artifacts.jsonPath)
+  const hasBlueprint = Boolean(result.artifacts.blueprintPath)
 
   async function handleOpenReport(): Promise<void> {
     if (!result.artifacts.htmlPath) return
@@ -144,6 +145,16 @@ export function ReportActions({ result, onNewScan }: Props): JSX.Element {
           Open Reports Folder
         </Button>
 
+        <Button
+          variant="secondary"
+          onClick={() => result.artifacts.blueprintPath && window.api.openReport(result.artifacts.blueprintPath)}
+          disabled={!hasBlueprint}
+          title={hasBlueprint ? 'Open the site rebuild blueprint in your editor' : 'Blueprint not generated yet'}
+          style={hasBlueprint ? { borderColor: 'var(--color-brand)', color: 'var(--color-brand)' } : {}}
+        >
+          Open Site Blueprint
+        </Button>
+
         {onNewScan && (
           <Button variant="ghost" onClick={onNewScan}>
             ← New Scan
@@ -177,6 +188,12 @@ export function ReportActions({ result, onNewScan }: Props): JSX.Element {
           <div style={styles.metaRow}>
             <span style={styles.metaLabel}>JSON Data</span>
             <span style={styles.metaPath}>{result.artifacts.jsonPath}</span>
+          </div>
+        )}
+        {hasBlueprint && (
+          <div style={styles.metaRow}>
+            <span style={styles.metaLabel}>Site Blueprint</span>
+            <span style={styles.metaPath}>{result.artifacts.blueprintPath}</span>
           </div>
         )}
         {!hasHtmlReport && (

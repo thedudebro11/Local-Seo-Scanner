@@ -217,9 +217,11 @@ export interface AuditResult {
   roadmap?: FixRoadmapItem[]
   seoOpportunities?: OpportunityItem[]
   gbpCheck?: GbpCheckResult
+  design?: DesignSignals
   artifacts: {
     jsonPath?: string
     htmlPath?: string
+    blueprintPath?: string
     screenshotPaths?: Record<string, string>
   }
 }
@@ -337,4 +339,39 @@ export interface ScoreOutput {
   value: number
   label: string
   rationale: string[]
+}
+
+// ─── Design Analysis ──────────────────────────────────────────────────────────
+
+export type DesignEra = 'modern' | 'standard' | 'dated' | 'old'
+
+export interface DesignSignals {
+  /** Whether a responsive viewport meta tag is present. */
+  hasViewportMeta: boolean
+  /** Number of <table> elements on the homepage — high count signals dated layout. */
+  tableCount: number
+  /** Number of inline style="" attributes on the homepage. */
+  inlineStyleCount: number
+  /** Google Font families loaded (e.g. ['Roboto', 'Open Sans']). */
+  googleFontFamilies: string[]
+  /** Whether an icon library (Font Awesome, Material Icons, etc.) is detected. */
+  hasIconLibrary: boolean
+  /** Whether an animation library (AOS, WOW.js, GSAP, etc.) is detected. */
+  hasAnimationLibrary: boolean
+  /** CSS framework or CMS detected from class names / resource paths. */
+  frameworkHint: 'tailwind' | 'bootstrap5' | 'bootstrap4' | 'bootstrap3' | 'wordpress' | 'squarespace' | 'wix' | 'custom' | 'unknown'
+  /** Number of inline SVG elements — higher count suggests modern icon usage. */
+  svgCount: number
+  /** Number of external CSS files linked. */
+  cssFileCount: number
+  /** Whether CSS custom properties (variables) are used. */
+  hasCustomProperties: boolean
+  /** Estimated design era based on signals. */
+  designEra: DesignEra
+  /** 0–100 design quality score based on signals. */
+  designScore: number
+  /** Human-readable list of design weaknesses. */
+  issues: string[]
+  /** Human-readable list of design strengths. */
+  strengths: string[]
 }

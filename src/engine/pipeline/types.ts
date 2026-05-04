@@ -18,6 +18,7 @@ import type {
   CategoryScore,
   CrawledPage,
   CompetitorAnalysisResult,
+  DesignSignals,
   Finding,
   FixRoadmapItem,
   GbpCheckResult,
@@ -38,12 +39,15 @@ export type ScanStageName =
   | 'analysis'
   | 'visual'
   | 'impact'
+  | 'gbp'
+  | 'design'
   | 'score'
   | 'competitor'
   | 'confidence'
   | 'roadmap'
   | 'revenue'
   | 'opportunity'
+  | 'blueprint'
   | 'report'
   | 'complete'
 
@@ -120,6 +124,7 @@ export interface ScanJobContext {
   revenueImpact?: RevenueImpactEstimate
   seoOpportunities?: OpportunityItem[]
   gbpResult?: GbpCheckResult
+  designResult?: DesignSignals
 
   // ── report stage ──────────────────────────────────────────────────────────
   artifacts: AuditResult['artifacts']
