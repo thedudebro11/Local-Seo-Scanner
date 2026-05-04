@@ -20,6 +20,12 @@ export interface AppSettings {
   currency: Currency
   /** Google Places API key — empty string means GBP API checks are skipped. */
   googlePlacesApiKey: string
+  /**
+   * GitHub Personal Access Token with `gist` scope.
+   * Used to upload HTML reports as GitHub Gists for shareable links.
+   * Empty string means sharing is disabled.
+   */
+  githubToken: string
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -27,4 +33,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   agencyLogoBase64: '',
   currency: 'USD',
   googlePlacesApiKey: '',
+  githubToken: '',
 }

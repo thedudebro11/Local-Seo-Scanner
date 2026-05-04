@@ -14,6 +14,9 @@ export function ReportActions({ result, onNewScan }: Props): JSX.Element {
   const [emailSent, setEmailSent] = useState(false)
   const [exportingPdf, setExportingPdf] = useState(false)
   const [pdfExported, setPdfExported] = useState(false)
+  const [sharing, setSharing] = useState(false)
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [shareError, setShareError] = useState<string | null>(null)
 
   const hasHtmlReport = Boolean(result.artifacts.htmlPath)
   const hasJsonReport = Boolean(result.artifacts.jsonPath)
@@ -50,6 +53,27 @@ export function ReportActions({ result, onNewScan }: Props): JSX.Element {
       await window.api.openReport(pdfPath)
     } finally {
       setExportingPdf(false)
+    }
+  }
+
+  async function handleShareReport(): Promise<void> {
+    if (!result.artifacts.htmlPath) return
+    setSharing(true)
+    setShareError(null)
+    try {
+      const url = await window.api.shareReport(result.artifacts.htmlPath)
+      setShareUrl(url)
+      await window.api.openReport(url)  // open in default browser
+    } catch (err) {
+      setShareError((err as Error).message)
+    } finally {
+      setSharing(false)
+    }
+  }
+
+  async function handleCopyShareUrl(): Promise<void> {
+    if (shareUrl) {
+      await navigator.clipboard.writeText(shareUrl)
     }
   }
 
@@ -93,6 +117,16 @@ export function ReportActions({ result, onNewScan }: Props): JSX.Element {
 
         <Button
           variant="secondary"
+          onClick={handleShareReport}
+          loading={sharing}
+          disabled={!hasHtmlReport}
+          title="Upload report to a private GitHub Gist and get a shareable link (configure token in Settings)"
+        >
+          {sharing ? 'Uploading…' : shareUrl ? '✓ Link Copied' : 'Share Link'}
+        </Button>
+
+        <Button
+          variant="secondary"
           onClick={handleEmailReport}
           loading={emailing}
           disabled={!hasHtmlReport}
@@ -116,6 +150,20 @@ export function ReportActions({ result, onNewScan }: Props): JSX.Element {
           </Button>
         )}
       </div>
+
+      {/* Share URL display */}
+      {shareUrl && (
+        <div style={styles.shareRow}>
+          <span style={styles.shareLabel}>Shareable link</span>
+          <span style={styles.shareUrl}>{shareUrl}</span>
+          <button style={styles.copyBtn} onClick={handleCopyShareUrl} title="Copy to clipboard">
+            Copy
+          </button>
+        </div>
+      )}
+      {shareError && (
+        <div style={styles.shareError}>{shareError}</div>
+      )}
 
       {/* Artifact info */}
       <div style={styles.meta}>
@@ -185,5 +233,46 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     color: 'var(--color-text-muted)',
     fontStyle: 'italic',
+  },
+  shareRow: {
+    display: 'flex',
+    gap: 'var(--space-3)',
+    alignItems: 'center',
+    flexWrap: 'wrap' as const,
+    padding: '8px 12px',
+    backgroundColor: 'rgba(99,102,241,0.08)',
+    border: '1px solid rgba(99,102,241,0.2)',
+    borderRadius: 'var(--radius-md)',
+  },
+  shareLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: 'var(--color-brand)',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.05em',
+    flexShrink: 0,
+  },
+  shareUrl: {
+    fontSize: 11,
+    fontFamily: 'var(--font-mono)',
+    color: 'var(--color-text-secondary)',
+    flex: 1,
+    wordBreak: 'break-all' as const,
+  },
+  copyBtn: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: 'var(--color-brand)',
+    background: 'none',
+    border: '1px solid var(--color-brand)',
+    borderRadius: 'var(--radius-sm)',
+    padding: '2px 8px',
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+  shareError: {
+    fontSize: 12,
+    color: 'var(--color-high)',
+    padding: '6px 0',
   },
 }

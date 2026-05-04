@@ -154,6 +154,13 @@ const api = {
   setMonitorSchedule: (siteId: string, intervalDays: number): Promise<void> =>
     ipcRenderer.invoke('monitoring:set-schedule', siteId, intervalDays),
 
+  /**
+   * Upload the HTML report to a private GitHub Gist and return a shareable
+   * htmlpreview.github.io URL. Requires a GitHub token in Settings.
+   */
+  shareReport: (htmlPath: string): Promise<string> =>
+    ipcRenderer.invoke('file:share-report', htmlPath),
+
   // ── Auto-update ────────────────────────────────────────────────────────────
 
   installUpdate: (): Promise<void> =>

@@ -15,6 +15,8 @@ export default function SettingsPage(): JSX.Element {
   const [agencyNameDraft, setAgencyNameDraft] = useState('')
   const [apiKeyDraft, setApiKeyDraft] = useState('')
   const [showApiKey, setShowApiKey] = useState(false)
+  const [githubTokenDraft, setGithubTokenDraft] = useState('')
+  const [showGithubToken, setShowGithubToken] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
 
@@ -23,8 +25,9 @@ export default function SettingsPage(): JSX.Element {
     if (loaded) {
       setAgencyNameDraft(settings.agencyName)
       setApiKeyDraft(settings.googlePlacesApiKey ?? '')
+      setGithubTokenDraft(settings.githubToken ?? '')
     }
-  }, [loaded, settings.agencyName, settings.googlePlacesApiKey])
+  }, [loaded, settings.agencyName, settings.googlePlacesApiKey, settings.githubToken])
 
   const flashSaved = (): void => {
     setSavedFlash(true)
@@ -54,6 +57,11 @@ export default function SettingsPage(): JSX.Element {
 
   const handleSaveApiKey = async (): Promise<void> => {
     await save({ googlePlacesApiKey: apiKeyDraft.trim() })
+    flashSaved()
+  }
+
+  const handleSaveGithubToken = async (): Promise<void> => {
+    await save({ githubToken: githubTokenDraft.trim() })
     flashSaved()
   }
 
@@ -196,6 +204,43 @@ export default function SettingsPage(): JSX.Element {
           {settings.googlePlacesApiKey
             ? <span style={{ ...styles.hint, color: 'var(--color-low)' }}>✓ API key configured</span>
             : <span style={styles.hint}>Leave blank to skip GBP API checks (on-site signals still checked)</span>
+          }
+        </div>
+      </Card>
+
+      {/* ── Share Reports ────────────────────────────────────────────────── */}
+      <Card style={styles.section}>
+        <div style={styles.sectionHeader}>
+          <div>
+            <h3 style={styles.sectionTitle}>Share Reports</h3>
+            <p style={styles.sectionSub}>
+              Optional. Uploads reports as private GitHub Gists — gives you a link to send clients directly.
+              Create a token at <strong>github.com/settings/tokens</strong> with the <code>gist</code> scope.
+            </p>
+          </div>
+        </div>
+
+        <div style={styles.fieldGroup}>
+          <label style={styles.label}>GitHub Personal Access Token</label>
+          <div style={styles.inputRow}>
+            <input
+              style={styles.input}
+              type={showGithubToken ? 'text' : 'password'}
+              placeholder="ghp_…"
+              value={githubTokenDraft}
+              onChange={(e) => setGithubTokenDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveGithubToken() }}
+            />
+            <Button size="sm" variant="ghost" onClick={() => setShowGithubToken((v) => !v)}>
+              {showGithubToken ? 'Hide' : 'Show'}
+            </Button>
+            <Button size="sm" variant="secondary" onClick={handleSaveGithubToken}>
+              Save
+            </Button>
+          </div>
+          {settings.githubToken
+            ? <span style={{ ...styles.hint, color: 'var(--color-low)' }}>✓ Token configured — "Share Link" enabled on reports</span>
+            : <span style={styles.hint}>Leave blank to disable report sharing</span>
           }
         </div>
       </Card>

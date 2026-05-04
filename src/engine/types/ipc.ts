@@ -29,6 +29,7 @@ export type IpcChannel =
   | 'monitoring:list-sites'
   | 'monitoring:remove-site'
   | 'monitoring:set-schedule'
+  | 'file:share-report'
 
 // ─── Progress ─────────────────────────────────────────────────────────────────
 
@@ -87,6 +88,7 @@ export interface ElectronAPI {
   listMonitoredSites: () => Promise<TrackedSite[]>
   removeMonitoredSite: (siteId: string) => Promise<void>
   setMonitorSchedule: (siteId: string, intervalDays: number) => Promise<void>
+  shareReport: (htmlPath: string) => Promise<string>
   installUpdate: () => Promise<void>
   onUpdateAvailable: (cb: (info: { version: string }) => void) => () => void
   onUpdateDownloaded: (cb: (info: { version: string }) => void) => () => void

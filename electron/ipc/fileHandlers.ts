@@ -1,5 +1,6 @@
 import { ipcMain, shell } from 'electron'
 import path from 'path'
+import fs from 'fs-extra'
 import type { SavedScanMeta } from '../../src/engine/types/ipc'
 import type { AuditResult } from '../../src/engine/types/audit'
 
@@ -43,6 +44,41 @@ export function registerFileHandlers(): void {
       await browser.close()
     }
     return pdfPath
+  })
+
+  // Upload the HTML report to a GitHub Gist and return a viewable URL
+  ipcMain.handle('file:share-report', async (_, htmlPath: string): Promise<string> => {
+    const { readSettings } = await import('../../src/engine/settings/settingsStorage')
+    const settings = await readSettings()
+    const token = settings.githubToken?.trim()
+    if (!token) throw new Error('No GitHub token configured. Add one in Settings → Share Reports.')
+
+    const html = await fs.readFile(htmlPath, 'utf8')
+    const filename = path.basename(path.dirname(htmlPath)) + '-seo-report.html'
+
+    const res = await fetch('https://api.github.com/gists', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+      body: JSON.stringify({
+        description: 'Local SEO Audit Report',
+        public: false,
+        files: { [filename]: { content: html } },
+      }),
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`GitHub API error ${res.status}: ${err}`)
+    }
+
+    const gist = await res.json() as { id: string; files: Record<string, { raw_url: string }> }
+    const rawUrl = Object.values(gist.files)[0].raw_url
+    // htmlpreview.github.io renders raw HTML from GitHub
+    return `https://htmlpreview.github.io/?${rawUrl}`
   })
 
   // Highlight the report in Finder/Explorer and open the system mail client
