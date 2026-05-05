@@ -23,13 +23,15 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const fs = require("fs-extra");
-const runAudit = require("./runAudit-CK0BDZZC.js");
+const runAudit = require("./runAudit-Bs5whFay.js");
 const index = require("../index.js");
-require("./runScanJob-BVY7ZwiS.js");
+require("./runScanJob-BwZ3bgJV.js");
 require("path");
 require("./settingsStorage-DcgDEctW.js");
 require("./scanRepository-B5pnqpoU.js");
 require("cheerio/slim");
+require("fs/promises");
+require("date-fns");
 require("electron");
 require("child_process");
 require("events");

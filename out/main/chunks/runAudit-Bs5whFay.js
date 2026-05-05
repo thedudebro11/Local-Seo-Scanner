@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const runScanJob = require("./runScanJob-BVY7ZwiS.js");
+const runScanJob = require("./runScanJob-BwZ3bgJV.js");
 require("../index.js");
 require("electron");
 require("path");
@@ -19,6 +19,8 @@ require("http");
 require("./settingsStorage-DcgDEctW.js");
 require("./scanRepository-B5pnqpoU.js");
 require("cheerio/slim");
+require("fs/promises");
+require("date-fns");
 async function runAudit(request, emitProgress, sharedBrowser) {
   return runScanJob.runScanJob(request, emitProgress, sharedBrowser);
 }

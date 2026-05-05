@@ -12147,7 +12147,7 @@ function registerScanHandlers(mainWindow2) {
       }
     };
     try {
-      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-CK0BDZZC.js"));
+      const { runAudit } = await Promise.resolve().then(() => require("./chunks/runAudit-Bs5whFay.js"));
       const result = await runAudit(request, emitProgress);
       return result;
     } catch (err) {
@@ -12164,7 +12164,7 @@ function registerBulkScanHandlers(mainWindow2) {
       }
     };
     try {
-      const { runBulkScan } = await Promise.resolve().then(() => require("./chunks/runBulkScan-d1nTm-9m.js"));
+      const { runBulkScan } = await Promise.resolve().then(() => require("./chunks/runBulkScan-C8aM-zFo.js"));
       return await runBulkScan(request, emitProgress);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -12346,6 +12346,9 @@ function buildJsonPath(scanId) {
 function buildHtmlPath(scanId) {
   return path$9.join(getScanArtifactsDir(scanId), "report.html");
 }
+function buildBlueprintPath(scanId) {
+  return path$9.join(getScanArtifactsDir(scanId), "blueprint.md");
+}
 function getIndexPath() {
   return path$9.join(getReportsDir(), "index.json");
 }
@@ -12374,6 +12377,7 @@ function getMarketDashboardPath(dashboardId) {
 }
 const pathResolver = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
+  buildBlueprintPath,
   buildHtmlPath,
   buildJsonPath,
   generateScanId,
@@ -12569,7 +12573,7 @@ async function runCheck() {
 async function scanSite(site) {
   log.info(`Scheduled scan starting: ${site.domain}`);
   try {
-    const { runScanJob } = await Promise.resolve().then(() => require("./chunks/runScanJob-BVY7ZwiS.js"));
+    const { runScanJob } = await Promise.resolve().then(() => require("./chunks/runScanJob-BwZ3bgJV.js"));
     const result = await runScanJob(
       {
         url: `https://${site.domain}`,
@@ -12693,6 +12697,7 @@ require$$1$2.app.on("web-contents-created", (_, contents) => {
     }
   });
 });
+exports.buildBlueprintPath = buildBlueprintPath;
 exports.buildHtmlPath = buildHtmlPath;
 exports.buildJsonPath = buildJsonPath;
 exports.createLogger = createLogger;
@@ -12705,6 +12710,7 @@ exports.getIndexPath = getIndexPath;
 exports.getLicensePath = getLicensePath;
 exports.getMarketDashboardPath = getMarketDashboardPath;
 exports.getMarketDashboardsDir = getMarketDashboardsDir;
+exports.getScanArtifactsDir = getScanArtifactsDir;
 exports.getScanSummaryPath = getScanSummaryPath;
 exports.getScreenshotsDir = getScreenshotsDir;
 exports.getSettingsPath = getSettingsPath;
